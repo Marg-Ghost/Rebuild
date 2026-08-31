@@ -4,11 +4,11 @@ import sqlite3
 conn = sqlite3.connect("data/ai_algoritmus/user.db")
 cursor = conn.cursor()
 
-
-def save_vector(weight_matrix1, weight_matrix2,weight_vector1,vector_hl_1,vector_hl_2,base_vector1,base_vector2,base3,):
+# mit type beeing food und activity
+def save_vector(type, weight_matrix1, weight_matrix2,weight_vector1,vector_hl_1,vector_hl_2,base_vector1,base_vector2,base3,):
     # 1. Tabelle erstellen (falls sie noch nicht existiert)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS food (
+        CREATE TABLE IF NOT EXISTS {type} (
             weight_matrix1 TEXT,
             weight_matrix2 TEXT,
             weight_vector1 TEXT,
@@ -24,7 +24,7 @@ def save_vector(weight_matrix1, weight_matrix2,weight_vector1,vector_hl_1,vector
         # 2. Daten in die Tabelle einfügen (mit Datensicherheit durch SQL-Platzhalter ?)
         cursor.execute(
             """
-            INSERT INTO food VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO {type} VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
             (
                 json.dumps(weight_matrix1),
@@ -51,7 +51,7 @@ def load_vector_data():
         cursor.execute("""
             SELECT weight_matrix1, weight_matrix2, weight_vector1, 
                    vector_hl_1, vector_hl_2, base_vector1, base_vector2, base3 
-            FROM food 
+            FROM {type} 
             ORDER BY ROWID DESC LIMIT 1
         """)
 
