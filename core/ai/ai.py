@@ -11,22 +11,20 @@ TABLE_FOOD = "food"
 TABLE_ACTIVITY = "act"
 
 DATA_HEALTH = "data/ai_algoritmus/health.db"
-HEALTH_TABLE_FOOD = "food_naehrwerte"   # muss exakt zur echten Tabelle passen - pruefen!
+HEALTH_TABLE_FOOD = "food_naehrwerte"  
+HEALTH_TABLE_ACTIVITY = "act_naehrwerte"
 
-C_AI = "core/ai/ai"   # kompiliertes Binary (aus ai.c), NICHT die .c-Datei selbst
+# complilierte C Data
+C_AI = "core/ai/ai"
 
 INPUT_NEURONEN = 8
 HIDDEN_NEURONEN = 8
 OUTPUT_NEURONEN = 1
 LERNRATE = 0.05
 
-# ---------------------------------------------------------------------------
-# FESTES LAYOUT - muss 1:1 zu den #define-Kommentaren in ai.c passen!
-# Aendert sich hier was, muss ai.c neu kompiliert UND synchron angepasst werden.
-# ---------------------------------------------------------------------------
-W1_SIZE = HIDDEN_NEURONEN * INPUT_NEURONEN    # 64
+W1_SIZE = HIDDEN_NEURONEN * INPUT_NEURONEN    # 64 für 8x8 Matrix
 B1_SIZE = HIDDEN_NEURONEN                      # 8
-W2_SIZE = HIDDEN_NEURONEN * HIDDEN_NEURONEN    # 64
+W2_SIZE = HIDDEN_NEURONEN * HIDDEN_NEURONEN    # 64 für 8x8 Matrix
 B2_SIZE = HIDDEN_NEURONEN                      # 8
 W3_SIZE = OUTPUT_NEURONEN * HIDDEN_NEURONEN    # 8
 B3_SIZE = OUTPUT_NEURONEN                      # 1
@@ -37,25 +35,39 @@ OUT_BUF_FLOATS = W1_SIZE + B1_SIZE + W2_SIZE + B2_SIZE + W3_SIZE + B3_SIZE + OUT
 SHM_INPUT_NAME = "ai_input"
 SHM_OUTPUT_NAME = "ai_output"
 
+"""
+Hilfsfunktionen
+"""
+# Translator
+# C will nur [] ncht 2 dimenesionen
 
-def flatten(matrix_2d):
-    return [v for row in matrix_2d for v in row]
+def simple_list(matrix_2d):
+    ergebnis = []
+    for i in matrix_2d:
+        for j in i:
+            ergebnis.append(j)
+    return ergebnis
 
 
-def unflatten(flat, rows, cols):
-    return [flat[i * cols:(i + 1) * cols] for i in range(rows)]
+def unsimple_list(flat, rows, cols):
+    complex_list = []
+    k = 0
+    for i in range(rows):
+        part = [] 
+        part.append(flat[k:k + cols])
+        k += cols
+        complex_list.append(part[0])  
+            
+    return complex_list
 
 
-# ---------------------------------------------------------------------------
-# Shared-Memory <-> C Bruecke: packt/entpackt EXAKT das Layout aus ai.c
-# ---------------------------------------------------------------------------
 def _rufe_ai_auf(modus, W1, b1, W2, b2, W3, b3, input_vector, expected, lernrate):
+    # Input Array ++
     in_floats = [float(modus)] + W1 + b1 + W2 + b2 + W3 + b3 + input_vector + expected + [float(lernrate)]
     assert len(in_floats) == IN_BUF_FLOATS, f"Input-Layout stimmt nicht: {len(in_floats)} != {IN_BUF_FLOATS}"
     in_bytes = struct.pack(f"{IN_BUF_FLOATS}f", *in_floats)
 
-    # Falls von einem vorherigen (abgebrochenen) Lauf noch Segmente existieren,
-    # erst aufraeumen - sonst schlaegt create=True mit "FileExistsError" fehl.
+    # Quasi Cache leeren
     for name in (SHM_INPUT_NAME, SHM_OUTPUT_NAME):
         try:
             alt = shared_memory.SharedMemory(name=name)
@@ -63,7 +75,8 @@ def _rufe_ai_auf(modus, W1, b1, W2, b2, W3, b3, input_vector, expected, lernrate
             alt.unlink()
         except FileNotFoundError:
             pass
-
+    
+    # Declared die Variable + den SPeicher für die C Übergabe
     shm_in = shared_memory.SharedMemory(name=SHM_INPUT_NAME, create=True, size=len(in_bytes))
     shm_in.buf[:len(in_bytes)] = in_bytes
 
@@ -71,6 +84,7 @@ def _rufe_ai_auf(modus, W1, b1, W2, b2, W3, b3, input_vector, expected, lernrate
     shm_out = shared_memory.SharedMemory(name=SHM_OUTPUT_NAME, create=True, size=out_size_bytes)
 
     try:
+        # Drect execution of C mit list pointer and return pointer
         subprocess.run([C_AI, SHM_INPUT_NAME, SHM_OUTPUT_NAME], check=True)
 
         out_bytes = bytes(shm_out.buf[:out_size_bytes])
@@ -79,6 +93,7 @@ def _rufe_ai_auf(modus, W1, b1, W2, b2, W3, b3, input_vector, expected, lernrate
         shm_in.close(); shm_in.unlink()
         shm_out.close(); shm_out.unlink()
 
+    # orga return arr
     pos = 0
     W1n = out_floats[pos:pos + W1_SIZE]; pos += W1_SIZE
     b1n = out_floats[pos:pos + B1_SIZE]; pos += B1_SIZE
@@ -161,7 +176,6 @@ def save_data(type_int: int, weight1, weight2, weight3, b1, b2, b3):
 
 
 def load_health(type_str: str):
-    """Gibt (features, ziel_score) zurueck - beides wird fuer's Training gebraucht."""
     conn = sqlite3.connect(DATA_HEALTH)
     cursor = conn.cursor()
     try:
@@ -175,14 +189,18 @@ def load_health(type_str: str):
                     ORDER BY ROWID DESC LIMIT 1
                 """)
                 row = cursor.fetchone()
+
                 if row is None:
-                    print("Keine Daten in der Datenbank gefunden.")
+                    print("2 : No DB : food")
                     return None, None
-                features = list(row[0:8])
-                ziel_score = row[8] / 100.0
+
+                features = list(row[0:8]) # Format ist dann so [[row]...]
+                ziel_score = row[8] / 100.0 # umformatierung von formated auf SIgmurid formart
                 return features, ziel_score
+
+
             case "act":
-                print("activity-Laden noch nicht implementiert.")
+                print("2 : No DB : act")
                 return None, None
             case _:
                 raise ValueError(f"Unbekannter type_str: {type_str}")
@@ -197,41 +215,43 @@ def load_health(type_str: str):
 execute Functions
 """
 
-def _weights_zu_flachen_listen(gewichte: dict):
-    W1 = flatten(gewichte["weight_matrix1"])
-    W2 = flatten(gewichte["weight_matrix2"])
-    W3 = flatten(gewichte["weight_vector1"])
+def _weights_zu_simple_listen(gewichte: dict):
+    W1 = simple_list(gewichte["weight_matrix1"])
+    W2 = simple_list(gewichte["weight_matrix2"])
+    W3 = simple_list(gewichte["weight_vector1"])
     b1 = gewichte["base_vector1"]
     b2 = gewichte["base_vector2"]
     b3 = [gewichte["base3"]]
     return W1, b1, W2, b2, W3, b3
 
 
-def forwardpropagation(type_int: int):
+def forwardpropagation(type_int: int) -> int | None:
     weight1 = load_data(type_int)
     if weight1 is None:
-        print("Keine Gewichte vorhanden - bitte erst trainieren.")
+        print(" 1 : Keine Gewichte vorhanden -> trainging needed")
         return None
 
     health_need = "food" if type_int == 0 else "act"
+
     data1, ziel_score = load_health(health_need)
     if data1 is None:
         return None
-    data_vector = data1  # war vorher die kaputte List-Comprehension - data1 ist schon die richtige Liste
 
-    W1, b1, W2, b2, W3, b3 = _weights_zu_flachen_listen(weight1)
+    data_vector = data1  
 
-    # modus=0 -> nur forward, expected/lernrate werden von ai.c ignoriert,
-    # trotzdem muessen wir Platzhalter mitschicken, weil das Layout fest ist
+    W1, b1, W2, b2, W3, b3 = _weights_zu_simple_listen(weight1)
+
+    # modus=0 nur forward / 1 mit lernrate , etc.
+    # trotzdem Platzhalter mitschicken, weil das Layout fest ist | vgl. C #define
     _, _, _, _, _, _, output = _rufe_ai_auf(
         modus=0, W1=W1, b1=b1, W2=W2, b2=b2, W3=W3, b3=b3,
         input_vector=data_vector, expected=[0.0], lernrate=0.0,
     )
 
-    vorhersage_1_100 = round(1 + 99 * output[0])
+    berteilung_formated = round(100 * output[0])
     echt = round(ziel_score * 100) if ziel_score is not None else "?"
-    print(f"Vorhersage: {vorhersage_1_100} / 100  (echter Wert war: {echt})")
-    return vorhersage_1_100
+    print(f"Vorhersage: {berteilung_formated} / 100  (echter Wert war: {echt})")
+    return berteilung_formated
 
 
 """
@@ -254,7 +274,7 @@ def backprpergation(type_int: int, epochen: int = 1):
         W2, b2 = rnd(W2_SIZE), rnd(B2_SIZE)
         W3, b3 = rnd(W3_SIZE), rnd(B3_SIZE)
     else:
-        W1, b1, W2, b2, W3, b3 = _weights_zu_flachen_listen(weight1)
+        W1, b1, W2, b2, W3, b3 = _weights_zu_simple_listen(weight1)
 
     health_need = "food" if type_int == 0 else "act"
     data1, ziel_score = load_health(health_need)
@@ -273,15 +293,9 @@ def backprpergation(type_int: int, epochen: int = 1):
 
     save_data(
         type_int,
-        unflatten(W1, HIDDEN_NEURONEN, INPUT_NEURONEN),
-        unflatten(W2, HIDDEN_NEURONEN, HIDDEN_NEURONEN),
-        unflatten(W3, OUTPUT_NEURONEN, HIDDEN_NEURONEN),
+        unsimple_list(W1, HIDDEN_NEURONEN, INPUT_NEURONEN),
+        unsimple_list(W2, HIDDEN_NEURONEN, HIDDEN_NEURONEN),
+        unsimple_list(W3, OUTPUT_NEURONEN, HIDDEN_NEURONEN),
         b1, b2, b3[0],
     )
     print(f"Training fertig, Gewichte gespeichert (type={type_int}).")
-
-
-if __name__ == "__main__":
-    os.makedirs(os.path.dirname(PATH_DB), exist_ok=True)
-    backprpergation(type_int=0, epochen=50)
-    forwardpropagation(type_int=0)
