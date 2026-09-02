@@ -32,7 +32,7 @@ async def login(request: Request):
     user_id = data.get("user_id")
 
     if not user_id:
-        raise HTTPException(status_code=400, detail="user_id fehlt")
+        raise HTTPException(status_code=400 , detail="user_id fehlt")
 
     request.session["usr"] = str(user_id)
     return {"ok": True, "usr": request.session["usr"]}
