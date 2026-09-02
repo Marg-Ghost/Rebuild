@@ -40,14 +40,12 @@ Hilfsfunktionen
 """
 # Translator
 # C will nur [] ncht 2 dimenesionen
-
 def simple_list(matrix_2d):
     ergebnis = []
     for i in matrix_2d:
         for j in i:
             ergebnis.append(j)
     return ergebnis
-
 
 def unsimple_list(flat, rows, cols):
     complex_list = []
@@ -59,7 +57,6 @@ def unsimple_list(flat, rows, cols):
         complex_list.append(part[0])  
             
     return complex_list
-
 
 def _rufe_ai_auf(modus, W1, b1, W2, b2, W3, b3, input_vector, expected, lernrate):
     # Input Array ++
@@ -105,11 +102,9 @@ def _rufe_ai_auf(modus, W1, b1, W2, b2, W3, b3, input_vector, expected, lernrate
 
     return W1n, b1n, W2n, b2n, W3n, b3n, output
 
-
 """
 LOAD und save
 """
-
 def _typ_name(type_int: int) -> str:
     match type_int:
         case 0:
@@ -118,7 +113,6 @@ def _typ_name(type_int: int) -> str:
             return TABLE_ACTIVITY
         case _:
             raise ValueError(f"Unbekannter type: {type_int}")
-
 
 def load_data(type_int: int) -> dict | None:
     conn = sqlite3.connect(PATH_DB)
@@ -151,7 +145,6 @@ def load_data(type_int: int) -> dict | None:
     finally:
         conn.close()
 
-
 def save_data(type_int: int, weight1, weight2, weight3, b1, b2, b3):
     conn = sqlite3.connect(PATH_DB)
     cursor = conn.cursor()
@@ -173,7 +166,6 @@ def save_data(type_int: int, weight1, weight2, weight3, b1, b2, b3):
     ))
     conn.commit()
     conn.close()
-
 
 def load_health(type_str: str):
     conn = sqlite3.connect(DATA_HEALTH)
@@ -210,11 +202,9 @@ def load_health(type_str: str):
     finally:
         conn.close()
 
-
 """
 execute Functions
 """
-
 def _weights_zu_simple_listen(gewichte: dict):
     W1 = simple_list(gewichte["weight_matrix1"])
     W2 = simple_list(gewichte["weight_matrix2"])
@@ -223,7 +213,6 @@ def _weights_zu_simple_listen(gewichte: dict):
     b2 = gewichte["base_vector2"]
     b3 = [gewichte["base3"]]
     return W1, b1, W2, b2, W3, b3
-
 
 def forwardpropagation(type_int: int) -> int | None:
     weight1 = load_data(type_int)
@@ -253,11 +242,9 @@ def forwardpropagation(type_int: int) -> int | None:
     print(f"Vorhersage: {berteilung_formated} / 100  (echter Wert war: {echt})")
     return berteilung_formated
 
-
 """
 training Functions
 """
-
 def backprpergation(type_int: int, epochen: int = 1):
     if type_int == 2:
         # SKip for now!
@@ -299,3 +286,5 @@ def backprpergation(type_int: int, epochen: int = 1):
         b1, b2, b3[0],
     )
     print(f"Training fertig, Gewichte gespeichert (type={type_int}).")
+
+    

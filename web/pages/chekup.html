@@ -4,45 +4,50 @@
         <title>Checkup</title>
     </head>
     <body>
-        <main id = "first">
+        <main id="first">
             <h1>Checkup</h1>
-            <section id = "sleep">
 
+            <section>
+                <label for="usr_input">User:</label>
+                <input id="usr_input" type="text" placeholder="z.B. alice" />
+                <button onclick="loginUser()">Login</button>
+                <button onclick="loadCurrentUser()">Aktuellen User laden</button>
+                <div id="login_status">nicht eingeloggt</div>
             </section>
+
+            <section id="sleep"></section>
         </main>
-        <main id = "common">
-            <h1>Checkup</h1>
 
-
-            <section id = "food">
+        <main id="common">
+            <section id="food">
                 <h3>total</h3>
-                <section id = "food_prew">
+                <section id="food_prew">
                     <div>no previous food entires of today</div>
                 </section>
                 <h3>New Checkup</h3>
-                <section id = "food_current">
-                    <div id="section"><input type="text"/></div>
+                <section id="food_current">
+                    <div class="food"><input type="text" /></div>
                     <button onclick="add_note('food')">add</button>
                 </section>
             </section>
 
-
             <section id="outdoor_activity">
                 <h3>total</h3>
-                <section id = "activity_prew">
+                <section id="activity_prew">
                     <div>no previous activity entires of today</div>
                 </section>
                 <h3>New Checkup</h3>
-                <section id = "activity_current">
-                    <div class="activity"> <input type="text"/> </div>
+                <section id="activity_current">
+                    <div class="activity"><input type="text" /></div>
                     <button onclick="add_note('activity')">add</button>
                 </section>
             </section>
 
-
             <section>
-                <button onclick = "send_data()">Complete</button>
+                <button onclick="send_data()">Complete</button>
             </section>
         </main>
+
+        <script src="../main.js"></script>
     </body>
 </html>

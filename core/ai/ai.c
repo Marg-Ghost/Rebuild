@@ -179,10 +179,7 @@ void backprop_step(float* W1, float* b1, float* W2, float* b2,
     }
 }
 
-// ===========================================================
-// Shared Memory oeffnen (Python hat das Segment bereits ANGELEGT - hier nur
-// oeffnen + in den eigenen Adressraum einblenden, NICHT neu anlegen)
-// ===========================================================
+// open python memory in Heap
 float* shm_oeffnen(const char* name, size_t anzahl_floats) {
     int fd = shm_open(name, O_RDWR, 0666);
     if (fd < 0) {
@@ -197,11 +194,3 @@ float* shm_oeffnen(const char* name, size_t anzahl_floats) {
     }
     return ptr;
 }
-
-// ===========================================================
-// main: liest argv[1]=input_shm_name, argv[2]=output_shm_name
-// (KEIN Dict, KEIN argc-basiertes "7 Parameter?" Raten - der Modus (forward
-// vs. forward+backprop) steht jetzt explizit als erster Wert IM Speicher,
-// weil das mit dem festen Layout zuverlaessiger ist als aus der Anzahl der
-// Kommandozeilenargumente zu raten.)
-// ===========================================================
