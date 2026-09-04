@@ -11,11 +11,15 @@ function add_note(node_type) {
 }
 
 async function loginUser() {
-    const userInput = document.getElementById('usr_input');
-    const userId = userInput.value.trim();
+    const method = document.querySelector('input[name="login_method"]:checked').value;
+    const usernameInput = document.getElementById('username_input');
+    const emailInput = document.getElementById('email_input');
+    const phoneInput = document.getElementById('phone_input');
+    const identifierInput = method === 'username' ? usernameInput : method === 'email' ? emailInput : phoneInput;
+    const identifier = identifierInput.value.trim();
 
-    if (!userId) {
-        alert('Bitte Benutzer eingeben');
+    if (!identifier) {
+        alert('Bitte einen Identifikator eingeben');
         return;
     }
 
@@ -23,7 +27,7 @@ async function loginUser() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ user_id: userId })
+        body: JSON.stringify({ method, identifier, password: document.getElementById('pwd_input').value })
     });
 
     const result = await response.json();
@@ -35,6 +39,48 @@ async function loginUser() {
     }
 
     document.getElementById('login_status').textContent = `Eingeloggt als: ${result.usr}`;
+}
+
+function updateLoginFields() {
+    const method = document.querySelector('input[name="login_method"]:checked').value;
+    const usernameInput = document.getElementById('username_input');
+    const emailInput = document.getElementById('email_input');
+    const phoneInput = document.getElementById('phone_input');
+
+    usernameInput.hidden = method !== 'username';
+    emailInput.hidden = method !== 'email';
+    phoneInput.hidden = method !== 'phone';
+    usernameInput.required = method === 'username';
+    emailInput.required = method === 'email';
+    phoneInput.required = method === 'phone';
+}
+
+async function registerUser() {
+    const username = document.getElementById('usr_input_reg').value.trim();
+    const email = document.getElementById('email_input_reg').value.trim();
+    const phone = document.getElementById('phone_input_reg').value.trim();
+    const password = document.getElementById('pwd_input_reg').value;
+
+    if (!email) {
+        alert('Bitte eine E-Mail-Adresse eingeben');
+        return;
+    }
+
+    const response = await fetch('/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ username, email, phone, password })
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+        alert(result.detail || 'Registrierung fehlgeschlagen');
+        return;
+    }
+
+    alert('Registrierung erfolgreich');
+    load_r_or_l('login');
 }
 
 async function loadCurrentUser() {
@@ -88,4 +134,20 @@ async function send_data() {
     }
 
     alert(`Daten gespeichert für User: ${data.usr}`);
+}
+
+
+
+// login and register page functions
+function toggleAccordion(sectionId) {
+    const login = document.getElementById('login');
+    const register = document.getElementById('register');
+    const showRegister = sectionId === 'register';
+
+    login.hidden = showRegister;
+    register.hidden = !showRegister;
+}
+
+function load_r_or_l(type_return) {
+    toggleAccordion(type_return);
 }

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleep Detail View</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            background-color: #121212; /* Dunkler Hintergrund wie im Screenshot */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Hauptkarte Container */
+        .card-container {
+            background-color: #ffffff;
+            width: 800px;
+            height: 450px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            overflow: hidden;
+        }
+
+        /* --- LINKER BEREICH: AVATAR & GEHIRN --- */
+        .avatar-section {
+            position: relative;
+            background: linear-gradient(180deg, #00ff00 0%, #a2ff00 50%, #ffffff 100%);
+            border-top-left-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            overflow: hidden;
+        }
+
+        .avatar-img {
+            height: 90%;
+            object-fit: contain;
+        }
+
+        /* Gehirn-PNG Overlay */
+        .brain-overlay {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 110px;
+            height: auto;
+            pointer-events: none; /* Macht das Bild klick-durchlässig */
+        }
+
+        /* --- RECHTER BEREICH: STATS & GRAPH --- */
+        .stats-section {
+            padding: 40px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Hauptzeit Anzeige */
+        .main-stat {
+            position: relative;
+            border-bottom: 4px solid #000000;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+
+        .main-stat .number {
+            font-size: 55px;
+            font-weight: 400;
+        }
+
+        .main-stat .unit {
+            font-size: 28px;
+            margin-left: 5px;
+        }
+
+        .main-stat .label-today {
+            position: absolute;
+            right: 0;
+            bottom: 8px;
+            font-size: 20px;
+        }
+
+        /* Tabellarische Werte */
+        .stat-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 18px;
+        }
+
+        .stat-row {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .stat-row .val {
+            font-weight: normal;
+        }
+
+        .stat-row .change {
+            font-weight: bold;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .change.positive { color: #28a745; }
+        .change.negative { color: #28a745; } /* Im Figma auch grün, passe es bei Bedarf auf rot an */
+
+        /* Graph Card unten */
+        .graph-card {
+            background-color: #d9d9d9;
+            height: 150px;
+            border-radius: 4px;
+            position: relative;
+            padding: 12px;
+            margin-top: 15px;
+        }
+
+        .graph-badge {
+            background-color: #ffffff;
+            padding: 4px 15px;
+            border-radius: 20px;
+            font-size: 16px;
+            display: inline-block;
+        }
+
+        /* Dummy Canvas / SVG Platzhalter für deine spätere Chart-Lib */
+        .chart-placeholder {
+            width: 100%;
+            height: 80px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card-container">
+        
+        <!-- Links: Avatar mit Highlight -->
+        <div class="avatar-section">
+            <img src="web/assets/avatare/main1.png" alt="Avatar" class="avatar-img">
+            <img src="web/assets/body/brain.png" alt="Gehirn" class="brain-overlay">
+        </div>
+
+        <!-- Rechts: Messwerte & Graph -->
+        <div class="stats-section">
+            
+            <div class="top-data">
+                <!-- 6 hours today -->
+                <div class="main-stat">
+                    <span class="number">6</span><span class="unit">hours</span>
+                    <span class="label-today">today</span>
+                </div>
+
+                <!-- Statistik Details -->
+                <div class="stat-list">
+                    <div class="stat-row">
+                        <span>&Oslash; Week:</span>
+                        <span class="val">6.7 h</span>
+                        <span class="change positive">+4,3%</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>&Oslash; Month:</span>
+                        <span class="val">7.3 h</span>
+                        <span class="change positive">+0,3%</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>late night (past Midnight) | Month</span>
+                        <span class="val">5</span>
+                        <span class="change negative">-2</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graph unten -->
+            <div class="graph-card">
+                <span class="graph-badge">hours slept</span>
+                
+                <!-- SVG Zick-Zack-Linie als Platzhalter -->
+                <svg class="chart-placeholder" viewBox="0 0 300 80">
+                    <polyline points="10,70 50,30 90,70 130,30 160,70 190,50 270,50" 
+                              fill="none" stroke="#333333" stroke-width="2"/>
+                </svg>
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>

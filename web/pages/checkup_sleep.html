@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Checkup</title>
+
+    </head>
+    <body>
+        <main id = "first">
+            <h1>Checkup</h1>
+        </main>
+
+        <main id="sleep">
+            <section id="sleep">
+                <h3>total</h3>
+                <h3>New Checkup</h3>
+                <p>how many hours of sleep did you get today?</p>
+                <section id = "sleep_current">
+                    <input type="range" min="0" max="12" step="0.5" onchange="updateHours()"/>
+                    <p id = "hours">0 hours</p>
+                </section>
+                <input type="checkbox" id="sleep_checkbox" name="sleep_checkbox" value="sleep_checkbox">
+                <label for="sleep_checkbox">I did not sleep yet</label>
+            </section>
+
+
+            <section>
+                <button onclick = "send_data()">Complete</button>
+            </section>
+        </main>
+        <script src="/main.js"></script>
+    </body>
+</html>

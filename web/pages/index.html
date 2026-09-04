@@ -1,34 +1,73 @@
-<!Doctype HTML>
-<html>
-    <head>
-        <title>Hackerton</title>
-    </head>
-    <body>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Dashboard</title>
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+    <div id="profile-nav-container">
         <section id="profile">
-            <h1>Max</h1>
-            <h2>Mustermann</h2>
+            <h1>MAX</h1>
+            <h2>MUSTERMANN</h2>
             <ul>
-                <li>age : 1</li>
-                <li>gender : m/w/d</li>
+                <li>&rarr; age : 32</li>
+                <li>&rarr; gender : m/w/d</li>
             </ul>
+
+            <nav id="sidebar-nav">
+                <a href="#">Task Calender</a>
+                <a href="#">checkup 0 / 3</a>
+                <a href="#">AI - Assistent</a>
+            </nav>
+
+            <div id="rebuild-btn">
+                <img src="../assets/logo.png" alt="Rebuild Logo"/>
+                <span>Rebuild</span>
+            </div>
         </section>
+    </div>
 
-        <nav id="navbar">
-            <img src="web/assets/logo.png" alt="AVATAR"/>
-        </nav>
+    <figure id="avatar-container">
+        <nav id="gehirn" class="body-zone"></nav>
+        <nav id="magen" class="body-zone"></nav>
+        <nav id="beine" class="body-zone"></nav>
+        <img src="../assets/avatare/man1.png" alt="AVATAR" class="main-avatar"/>
+    </figure>
 
-        <figure>
-            <nav id="gehirn"></nav>
-            <nav id="magen"></nav>
-            <nav id="beine"></nav>
-            <img src="web/assets/avatare/main1.png" alt="AVATAR"/>
-        </figure>
-
+    <div id="dashboard-right">
         <section id="graph">
-            <figure id="health"></figure>
-            <figure id="effiency"></figure>
+            <figure id="health" class="stat-card">
+                <span class="stat-number">45</span>
+                <span class="stat-label">HEALTH</span>
+            </figure>
+            <figure id="effiency" class="stat-card" style="margin-top: 15px;">
+                <span class="stat-number">45</span>
+                <span class="stat-label">Effectivität</span>
+            </figure>
         </section>
 
-        <section id="notes"></section>
-    </body>
+        <div class="divider"></div>
+
+        <section id="notes">
+            <div class="note-group">
+                <h4>Effektiv Empfohlene Restarbeitszeit</h4>
+                <p class="big-text">5:25:44</p>
+            </div>
+
+            <div class="note-group">
+                <h4>Currently Most Defizit</h4>
+                <p class="big-text" style="font-size: 22px;">Zu wenig Schlaf</p>
+            </div>
+
+            <div class="note-group">
+                <h4>Pending high value Priorities (for today)</h4>
+                <p class="big-text">5</p>
+            </div>
+        </section>
+    </div>
+
+</body>
 </html>

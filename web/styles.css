@@ -1,0 +1,193 @@
+* {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body {
+            background-color: #ffffff;
+            color: #000000;
+            display: grid;
+            grid-template-columns: 200px 1fr 300px;
+            height: 100vh;
+            padding: 30px;
+            gap: 20px;
+        }
+
+        /* --- LEFT COLUMN: PROFILE & SIDEBAR --- */
+        #profile-nav-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        #profile h1 {
+            font-size: 38px;
+            font-weight: 400;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+
+        #profile h2 {
+            font-size: 38px;
+            font-weight: 400;
+            line-height: 1.1;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        #profile ul {
+            list-style: none;
+            font-size: 14px;
+        }
+
+        #sidebar-nav {
+            border: 3px solid #000;
+            border-radius: 20px;
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            margin-top: 30px;
+            width: 140px;
+        }
+
+        #sidebar-nav a {
+            color: #ff0000;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        #rebuild-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 60px;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        #rebuild-btn img {
+            width: 35px;
+            height: 35px;
+        }
+
+        #rebuild-btn span {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* --- CENTER COLUMN: AVATAR & HOVER ZONES --- */
+        #avatar-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #avatar-container img.main-avatar {
+            max-height: 80vh;
+            object-fit: contain;
+        }
+
+        /* Interaktive Hover-Zonen */
+        .body-zone {
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-sizing: border-box;
+        }
+
+        /* Gehirn / Kopf (Grün) */
+        #gehirn {
+            top: 18%;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid transparent;
+        }
+        #gehirn:hover {
+            border-color: #00ff00;
+            box-shadow: 0 0 15px #00ff00;
+        }
+
+        /* Magen / Torso (Orange) */
+        #magen {
+            top: 38%;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            border: 4px solid transparent;
+        }
+        #magen:hover {
+            border-color: #ff8800;
+            box-shadow: 0 0 15px #ff8800;
+        }
+
+        /* Beine / Unterkörper (Gelb) */
+        #beine {
+            top: 56%;
+            width: 130px;
+            height: 250px;
+            border: 4px solid transparent;
+        }
+        #beine:hover {
+            border-color: #ffff00;
+            box-shadow: 0 0 15px #ffff00;
+        }
+
+        /* --- RIGHT COLUMN: STATS & NOTES --- */
+        #dashboard-right {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stat-card {
+            border: 3px solid #000;
+            padding: 15px;
+            position: relative;
+            height: 100px;
+            background-color: #e0e0e0;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            position: absolute;
+            bottom: 10px;
+            left: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .divider {
+            border-bottom: 3px solid #000;
+            margin: 10px 0;
+        }
+
+        #notes {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            font-size: 14px;
+        }
+
+        .note-group h4 {
+            color: #555;
+            font-weight: normal;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .note-group p.big-text {
+            font-size: 28px;
+            font-weight: bold;
+        }
+    
