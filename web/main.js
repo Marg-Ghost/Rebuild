@@ -1,44 +1,29 @@
 function add_note(node_type) {
-    if (node_type === 'activity') {
-        const node_obj = document.getElementById('activity_current');
-        const node_class = 'activity';
-        node_obj.insertAdjacentHTML('beforeend', `<div class="${node_class}"><input type="text" /></div>`);
-    } else if (node_type === 'food') {
-        const node_obj = document.getElementById('food_current');
-        const node_class = 'food';
-        node_obj.insertAdjacentHTML('beforeend', `<div class="${node_class}"><input type="text" /></div>`);
-    }
+    const node = document.getElementById(`${node_type}_current`);
+    if (!node || !['activity', 'food'].includes(node_type)) return;
+
+    const label = node_type === 'food' ? 'Lebensmittel oder Mahlzeit' : 'Aktivität im Freien';
+    const placeholder = node_type === 'food' ? 'z. B. Frühstück, Obst, Pasta' : 'z. B. Spaziergang, Radfahren';
+    node.insertAdjacentHTML('beforeend', `
+        <div class="entry-row ${node_type}">
+            <input type="text" aria-label="${label}" placeholder="${placeholder}">
+            <button class="icon-button" type="button" aria-label="Eintrag entfernen" onclick="remove_note(this)">&times;</button>
+        </div>`);
+    node.lastElementChild.querySelector('input').focus();
 }
 
-async function loginUser() {
-    const method = document.querySelector('input[name="login_method"]:checked').value;
-    const usernameInput = document.getElementById('username_input');
-    const emailInput = document.getElementById('email_input');
-    const phoneInput = document.getElementById('phone_input');
-    const identifierInput = method === 'username' ? usernameInput : method === 'email' ? emailInput : phoneInput;
-    const identifier = identifierInput.value.trim();
+function remove_note(button) {
+    const row = button.closest('.entry-row');
+    const list = row?.parentElement;
+    if (!row || !list) return;
 
-    if (!identifier) {
-        alert('Bitte einen Identifikator eingeben');
+    if (list.children.length === 1) {
+        row.querySelector('input').value = '';
+        row.querySelector('input').focus();
         return;
     }
 
-    const response = await fetch('/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ method, identifier, password: document.getElementById('pwd_input').value })
-    });
-
-    const result = await response.json();
-    console.log('login result:', result);
-
-    if (!response.ok) {
-        alert(result.detail || 'Login fehlgeschlagen');
-        return;
-    }
-
-    document.getElementById('login_status').textContent = `Eingeloggt als: ${result.usr}`;
+    row.remove();
 }
 
 function updateLoginFields() {
@@ -97,11 +82,20 @@ async function loadCurrentUser() {
     document.getElementById('login_status').textContent = `Aktiver User: ${data.usr}`;
 }
 
-async function send_data() {
+async function send_data(event) {
+    event?.preventDefault();
     const food_div = document.getElementsByClassName('food');
     const activity_div = document.getElementsByClassName('activity');
     const list_food = [];
     const list_activity = [];
+    const sleepInput = document.getElementById('sleep_input');
+    const submitButton = document.querySelector('.submit-button');
+    const status = document.getElementById('checkup_status');
+
+    if (!sleepInput?.value) {
+        sleepInput?.focus();
+        return;
+    }
 
     Array.from(food_div).forEach((e) => {
         const value = e.querySelector('input')?.value ?? e.innerText.trim();
@@ -114,26 +108,34 @@ async function send_data() {
     });
 
     const payload = {
+        sleep_hours: Number(sleepInput.value),
         food: list_food,
         activity: list_activity
     };
 
-    const response = await fetch('/api/checkup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(payload)
-    });
+    submitButton.disabled = true;
+    if (status) status.textContent = 'Speichere deine Angaben ...';
 
-    const data = await response.json();
-    console.log('saved:', data);
+    try {
+        const response = await fetch('/api/checkup_data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        });
 
-    if (!response.ok) {
-        alert(data.detail || 'Speichern fehlgeschlagen');
-        return;
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || 'Speichern fehlgeschlagen');
+        }
+
+        if (status) status.textContent = 'Gespeichert. Willkommen bei Rebuild.';
+        window.setTimeout(() => { window.location.href = '/home'; }, 500);
+    } catch (error) {
+        if (status) status.textContent = error.message;
+        submitButton.disabled = false;
     }
-
-    alert(`Daten gespeichert für User: ${data.usr}`);
 }
 
 
@@ -151,3 +153,50 @@ function toggleAccordion(sectionId) {
 function load_r_or_l(type_return) {
     toggleAccordion(type_return);
 }
+
+async function loginUser() {
+    const method = document.querySelector('input[name="login_method"]:checked').value;
+    const usernameInput = document.getElementById('username_input');
+    const emailInput = document.getElementById('email_input');
+    const phoneInput = document.getElementById('phone_input');
+    const identifierInput = method === 'username' ? usernameInput : method === 'email' ? emailInput : phoneInput;
+    const identifier = identifierInput.value.trim();
+
+    if (!identifier) {
+        alert('Bitte einen Identifikator eingeben');
+        return;
+    }
+
+    try {
+        const response = await fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ method, identifier, password: document.getElementById('pwd_input').value })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            alert(result.detail || 'Login fehlgeschlagen');
+            return;
+        }
+
+        document.getElementById('login_status').textContent = `Eingeloggt als: ${result.usr}`;
+        const checkupResponse = await fetch('/register_checkup', {
+            method: 'POST',
+            credentials: 'include'
+        });
+        const checkupResult = await checkupResponse.json();
+
+        if (!checkupResponse.ok) {
+            alert(checkupResult.detail || 'Checkup-Status konnte nicht geladen werden');
+            return;
+        }
+
+        window.location.href = checkupResult.db === 'empty' ? '/checkup_first' : '/home';
+    } catch (error) {
+        alert('Server nicht erreichbar');
+        console.error(error);
+    }
+}
+

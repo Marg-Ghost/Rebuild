@@ -9,7 +9,7 @@ app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
 WEB_DIR = BASE_DIR / "web"
 
-app.mount("/assets", StaticFiles(directory=WEB_DIR / "assets"), name="assets")
+app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
 app.add_middleware(
     SessionMiddleware,
@@ -31,7 +31,38 @@ async def index_page():
         return FileResponse(str(WEB_DIR / "pages" / "login.html"))
     except Exception as e:
         raise HTTPException(status_code=404, detail="custom. Page not found")
+@app.get("/home")
+async def index_page():
+    try:
+        return FileResponse(str(WEB_DIR / "pages" / "index.html"))
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="custom. Page not found")
 
+@app.get("/checkup_first")
+async def checkup_first_page():
+    try:
+        return FileResponse(str(WEB_DIR / "pages" / "checkup_first.html"))
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="custom. Page not found")
+
+@app.post("/register_checkup")
+async def register_checkup(request: Request):
+    import data.user.login_requests as login_requests
+    user_id = request.session.get("user_id")
+    usr = request.session.get("usr")
+
+    if user_id is None and not usr:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    if user_id is None:
+        user_id = login_requests.get_user_id(usr)
+        if user_id is None:
+            raise HTTPException(status_code=404, detail="User nicht gefunden")
+        request.session["user_id"] = user_id
+
+    return {"db": "complete" if login_requests.has_checkup_for_user(user_id) else "empty"}
+
+    
 # Linked PAges 
 @app.get("/ai")
 async def ai_page():
@@ -43,16 +74,11 @@ async def tasks_page():
 async def checkup_page():
     return FileResponse(str(WEB_DIR / "pages" / "chekup.html"))
 
-@app.get("/main.js")
-async def main_script():
-    return FileResponse(str(WEB_DIR / "main.js"), media_type="application/javascript")
-
-@app.get("/styles.css")
-async def styles():
-    return FileResponse(str(WEB_DIR / "styles.css"), media_type="text/css")
-
 # user spesific api reqests
 # user getter
+#db profiling
+
+#login und register
 @app.post("/login")
 async def login(request: Request):
     data = await request.json()
@@ -71,7 +97,12 @@ async def login(request: Request):
     if result != 0:
         raise HTTPException(status_code=401, detail="Login-Daten sind falsch")
 
+    user_id = login_requests.get_user_id(identifier)
+    if user_id is None:
+        raise HTTPException(status_code=404, detail="User nicht gefunden")
+
     request.session["usr"] = identifier
+    request.session["user_id"] = user_id
     return {"ok": True, "usr": identifier}
 
 @app.post("/register")
@@ -96,7 +127,6 @@ async def register(request: Request):
 
 
 # user get db data 
-
 #API endpoints
 @app.get("/api/me")
 async def get_current_user(request: Request):
@@ -124,12 +154,20 @@ async def get_checkup_data(request: Request):
 
 @app.post("/api/checkup_data")
 async def save_checkup_data(request: Request):
+    import data.user.login_requests as login_requests
     usr = request.session.get("usr")
+    user_id = request.session.get("user_id")
 
     if not usr:
         raise HTTPException(status_code=401, detail="nicht eingeloggt")
 
     data = await request.json()
+    if user_id is None:
+        user_id = login_requests.get_user_id(usr)
+
+    if user_id is None or not login_requests.save_checkup_for_user(user_id, data):
+        raise HTTPException(status_code=404, detail="User nicht gefunden")
+
     return {
         "ok": True,
         "usr": usr,
@@ -139,5 +177,4 @@ async def save_checkup_data(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
