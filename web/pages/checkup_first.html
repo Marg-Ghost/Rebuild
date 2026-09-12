@@ -213,7 +213,7 @@
                 <p class="question-help">Welche Lebensmittel oder Mahlzeiten gehören an einem normalen Tag dazu?</p>
                 <div id="food_current" class="entry-list">
                     <div class="entry-row food">
-                        <input type="text" aria-label="Lebensmittel oder Mahlzeit" placeholder="z. B. Frühstück, Obst, Pasta">
+                        <input class="food_input" type="text" aria-label="Lebensmittel oder Mahlzeit" placeholder="z. B. Frühstück, Obst, Pasta">
                         <button class="icon-button" type="button" aria-label="Eintrag entfernen" onclick="remove_note(this)">&times;</button>
                     </div>
                 </div>
@@ -225,14 +225,14 @@
                 <p class="question-help">Welche Aktivität im Freien machst du an einem normalen Tag?</p>
                 <div id="activity_current" class="entry-list">
                     <div class="entry-row activity">
-                        <input type="text" aria-label="Aktivität im Freien" placeholder="z. B. Spaziergang, Radfahren">
+                        <input class="act_input" type="text" aria-label="Aktivität im Freien" placeholder="z. B. Spaziergang, Radfahren">
                         <button class="icon-button" type="button" aria-label="Eintrag entfernen" onclick="remove_note(this)">&times;</button>
                     </div>
                 </div>
                 <button class="add-button" type="button" onclick="add_note('activity')">+ Aktivität hinzufügen</button>
             </section>
 
-            <button class="submit-button" type="submit">Checkup abschließen</button>
+            <button class="submit-button" type="submit" onclick="confirm_register()">Checkup abschließen</button>
             <p id="checkup_status" role="status" aria-live="polite"></p>
         </form>
     </main>

@@ -138,8 +138,6 @@ async function send_data(event) {
     }
 }
 
-
-
 // login and register page functions
 function toggleAccordion(sectionId) {
     const login = document.getElementById('login');
@@ -200,3 +198,19 @@ async function loginUser() {
     }
 }
 
+async function confirm_register() {
+    const sleep_val = document.getElementById(sleep_input);
+
+    const food_list = [];
+    const food_element = document.getElementsByClassName("food_input");
+    food_element.forEach(element => {
+        food_list.append(element);        
+    });
+
+    const act_list = [];
+    const act_elemnt = document.getElementsByClassName("act_input");
+    act_elemnt.forEach(element => {
+        act_list.append(element);        
+    });
+    
+}

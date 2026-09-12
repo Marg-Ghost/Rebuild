@@ -52,6 +52,7 @@ def init_db() -> None:
 init_db()
 
 
+# login logic
 def login_user(identifier: str, password: str, method: str) -> int:
     column = {"username": "username", "email": "email", "phone": "phone"}.get(method)
     if column is None:
@@ -127,6 +128,14 @@ def has_checkup_for_user(user_id: int) -> bool:
         ).fetchone()
     return checkup is not None
 
+def has_checkup(identifier: str) -> bool:
+    user_id = get_user_id(identifier)
+    if user_id is None:
+        return False
+
+    return has_checkup_for_user(user_id)
+
+# interaction with user acc health data
 
 def save_checkup_for_user(user_id: int, checkup_data: dict) -> bool:
     import json
@@ -145,18 +154,20 @@ def save_checkup_for_user(user_id: int, checkup_data: dict) -> bool:
         )
     return True
 
-
-def has_checkup(identifier: str) -> bool:
-    user_id = get_user_id(identifier)
-    if user_id is None:
-        return False
-
-    return has_checkup_for_user(user_id)
-
-
 def save_checkup(identifier: str, checkup_data: dict) -> bool:
     user_id = get_user_id(identifier)
     if user_id is None:
         return False
 
     return save_checkup_for_user(user_id, checkup_data)
+
+def get_health_int (usr : str) -> int :
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            health = conn.execute(
+                f"SELECT health_float FROM profile WHERE username = ?",
+                (usr)
+            ).fetchone()
+            return health
+    except Exception as e:
+        print (f"[Error] {e}")

@@ -131,10 +131,18 @@ async def register(request: Request):
 app.get("/api/checkup_register")
 async def checkup_register(request: Request):
     data = await request.json()
-    sleep = float(data.get("sleep"))
+    usr = request.session.get("usr")
+
+    #health = 1000 als standartwert
+    health = 1000
+    sleep = list(data.get("sleep"))
     food = list(data.get("food"))
     act = list(data.get("act"))
+    from core.input_vector import all_check
+    forge_health = all_check(health, sleep, food, act)
     
+    
+
 
 # user get db data 
 #API endpoints
