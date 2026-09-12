@@ -38,6 +38,8 @@ def init_db() -> None:
             if column not in columns:
                 conn.execute(f"ALTER TABLE login ADD COLUMN {column} {definition}")
 
+        conn.execute("UPDATE login SET id = rowid WHERE id IS NULL")
+
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON login(email)")
         conn.execute(
             "CREATE UNIQUE INDEX IF NOT EXISTS users_phone_idx ON login(phone) WHERE phone IS NOT NULL"
@@ -72,9 +74,13 @@ def register_user(
 ) -> int:
     try:
         with sqlite3.connect(DB_PATH) as conn:
-            conn.execute(
+            cursor = conn.execute(
                 "INSERT INTO login (username, email, password, phone) VALUES (?, ?, ?, ?)",
                 (username or None, email, password, phone or None),
+            )
+            conn.execute(
+                "UPDATE login SET id=? WHERE rowid=? AND id IS NULL",
+                (cursor.lastrowid, cursor.lastrowid),
             )
     except sqlite3.IntegrityError:
         return 1
@@ -87,12 +93,29 @@ def get_all_user() -> list:
     return all
 
 
-def get_user_id(identifier: str) -> int | None:
+def get_user_id(identifier: str, method: str | None = None) -> int | None:
     with sqlite3.connect(DB_PATH) as conn:
-        user = conn.execute(
-            "SELECT id FROM login WHERE username=? OR email=? OR phone=?",
-            (identifier, identifier, identifier),
-        ).fetchone()
+        column = {"username": "username", "email": "email", "phone": "phone"}.get(method)
+        if column is not None:
+            user = conn.execute(
+                f"SELECT COALESCE(id, rowid) FROM login WHERE {column}=?",
+                (identifier,),
+            ).fetchone()
+        elif "@" in identifier:
+            user = conn.execute(
+                "SELECT COALESCE(id, rowid) FROM login WHERE email=?",
+                (identifier,),
+            ).fetchone()
+        elif "+" in identifier or identifier.isdigit():
+            user = conn.execute(
+                "SELECT COALESCE(id, rowid) FROM login WHERE phone=?",
+                (identifier,),
+            ).fetchone()
+        else:
+            user = conn.execute(
+                "SELECT COALESCE(id, rowid) FROM login WHERE username=?",
+                (identifier,),
+            ).fetchone()
     return user[0] if user else None
 
 

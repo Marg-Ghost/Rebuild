@@ -214,7 +214,7 @@ def _weights_zu_simple_listen(gewichte: dict):
     b3 = [gewichte["base3"]]
     return W1, b1, W2, b2, W3, b3
 
-def forwardpropagation(type_int: int) -> int | None:
+def forwardpropagation(type_int: int, train=true, input_vector = None) -> int | None:
     weight1 = load_data(type_int)
     if weight1 is None:
         print(" 1 : Keine Gewichte vorhanden -> trainging needed")
@@ -223,11 +223,16 @@ def forwardpropagation(type_int: int) -> int | None:
     health_need = "food" if type_int == 0 else "act"
 
     data1, ziel_score = load_health(health_need)
-    if data1 is None:
-        return None
 
-    data_vector = data1  
-
+    if train:
+        if data1 is None:
+            return None
+        data_vector = data1  
+    else:
+        if input_vector is None:
+            return None
+        data_vector = input_vector
+    
     W1, b1, W2, b2, W3, b3 = _weights_zu_simple_listen(weight1)
 
     # modus=0 nur forward / 1 mit lernrate , etc.

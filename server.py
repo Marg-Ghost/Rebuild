@@ -25,14 +25,16 @@ async def index_page():
         return FileResponse(str(WEB_DIR / "pages" / "root.html"))
     except Exception as e:
         raise HTTPException(status_code=404, detail="custom. Page not found")
+
 @app.get("/login")
-async def index_page():
+async def login_page():
     try:
         return FileResponse(str(WEB_DIR / "pages" / "login.html"))
     except Exception as e:
         raise HTTPException(status_code=404, detail="custom. Page not found")
+
 @app.get("/home")
-async def index_page():
+async def home_page():
     try:
         return FileResponse(str(WEB_DIR / "pages" / "index.html"))
     except Exception as e:
@@ -97,9 +99,9 @@ async def login(request: Request):
     if result != 0:
         raise HTTPException(status_code=401, detail="Login-Daten sind falsch")
 
-    user_id = login_requests.get_user_id(identifier)
-    if user_id is None:
-        raise HTTPException(status_code=404, detail="User nicht gefunden")
+    user_id = login_requests.get_user_id(identifier, method)
+    #if user_id is None:
+    #    raise HTTPException(status_code=404, detail="User nicht gefunden")
 
     request.session["usr"] = identifier
     request.session["user_id"] = user_id
@@ -125,6 +127,14 @@ async def register(request: Request):
 
     return {"ok": True, "username": username or None, "email": email, "phone": phone or None}
 
+# register checkup data
+app.get("/api/checkup_register")
+async def checkup_register(request: Request):
+    data = await request.json()
+    sleep = float(data.get("sleep"))
+    food = list(data.get("food"))
+    act = list(data.get("act"))
+    
 
 # user get db data 
 #API endpoints
