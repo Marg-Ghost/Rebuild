@@ -22,14 +22,14 @@ app.add_middleware(
 @app.get("/")
 async def index_page():
     try:
-        return FileResponse(str(WEB_DIR / "pages" / "root.html"))
+        return FileResponse(str(WEB_DIR / "pages" / "login" / "root.html"))
     except Exception as e:
         raise HTTPException(status_code=404, detail="custom. Page not found")
 
 @app.get("/login")
 async def login_page():
     try:
-        return FileResponse(str(WEB_DIR / "pages" / "login.html"))
+        return FileResponse(str(WEB_DIR / "pages" / "login" / "login.html"))
     except Exception as e:
         raise HTTPException(status_code=404, detail="custom. Page not found")
 
@@ -50,14 +50,14 @@ async def load_calendar():
 @app.get("/checkup_first")
 async def checkup_first_page():
     try:
-        return FileResponse(str(WEB_DIR / "pages" / "checkup_first.html"))
+        return FileResponse(str(WEB_DIR / "pages" / "checkups" / "checkup_first.html"))
     except Exception as e:
         raise HTTPException(status_code=404, detail="custom. Page not found")
 
 @app.get("/register_info")
 async def register_info_page():
     try:
-        return FileResponse(str(WEB_DIR / "pages" / "register_info.html"))
+        return FileResponse(str(WEB_DIR / "pages" / "login" / "register_info.html"))
     except Exception as e:
         raise HTTPException(status_code=404, detail="custom. Page not found")
 
