@@ -48,6 +48,28 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS calendar_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT,
+                start_at TEXT NOT NULL,
+                end_at TEXT,
+                priority INTEGER NOT NULL DEFAULT 3 CHECK (priority BETWEEN 1 AND 5),
+                status TEXT NOT NULL DEFAULT 'open',
+                all_day INTEGER NOT NULL DEFAULT 0 CHECK (all_day IN (0, 1)),
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS calendar_events_user_date_idx
+            ON calendar_events(username, start_at)
+            """
+        )
 
 
 init_db()
@@ -344,4 +366,51 @@ def get_index_intel(user : str) -> list:
                 health_curve = {}
 
     return [count, health, health_curve]
+
+
+def create_calendar_event(
+    username: str,
+    title: str,
+    start_at: str,
+    end_at: str | None,
+    description: str | None,
+    priority: int,
+    all_day: bool,
+) -> int:
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.execute(
+            """
+            INSERT INTO calendar_events
+                (username, title, description, start_at, end_at, priority, all_day)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (username, title, description, start_at, end_at, priority, int(all_day)),
+        )
+    return cursor.lastrowid
+
+
+def get_calendar_events(username: str, start_at: str, end_at: str) -> list[dict]:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """
+            SELECT id, title, description, start_at, end_at, priority, status, all_day
+            FROM calendar_events
+            WHERE username=?
+              AND start_at < ?
+              AND COALESCE(end_at, start_at) >= ?
+            ORDER BY start_at, priority DESC, id
+            """,
+            (username, end_at, start_at),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def delete_calendar_event(username: str, event_id: int) -> bool:
+    with sqlite3.connect(DB_PATH) as conn:
+        deleted = conn.execute(
+            "DELETE FROM calendar_events WHERE id=? AND username=?",
+            (event_id, username),
+        )
+    return deleted.rowcount > 0
     

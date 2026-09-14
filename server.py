@@ -40,6 +40,13 @@ async def load_home():
     except Exception as e:
         raise HTTPException(status_code=404, detail="custom. Page not found")
 
+@app.get("/kalender")
+async def load_calendar():
+    try:
+        return FileResponse(str(WEB_DIR / "pages" / "kalender" / "kalender.html"))
+    except Exception as e:
+        raise HTTPException(status_code=404, detail="custom. Page not found")
+
 @app.get("/checkup_first")
 async def checkup_first_page():
     try:
@@ -245,6 +252,45 @@ async def get_index_data(request : Request):
 
     from data.user.db_interaction import get_index_intel
     return  get_index_intel(usr)
+
+
+@app.get("/api/calendar")
+async def get_calendar(request: Request, year: int, month: int):
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    from tasks.calendar import list_month_events
+    try:
+        return list_month_events(username, year, month)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.post("/api/calendar", status_code=201)
+async def add_calendar_event(request: Request):
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    from tasks.calendar import add_event
+    try:
+        event_id = add_event(username, await request.json())
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    return {"ok": True, "id": event_id}
+
+
+@app.delete("/api/calendar/{event_id}")
+async def delete_calendar_event(event_id: int, request: Request):
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    from tasks.calendar import remove_event
+    if not remove_event(username, event_id):
+        raise HTTPException(status_code=404, detail="Termin nicht gefunden")
+    return {"ok": True}
 
 
 if __name__ == "__main__":

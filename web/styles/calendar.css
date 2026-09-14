@@ -1,0 +1,63 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 1rem;
+}
+
+#month_current,
+#event_form {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+#month_current button,
+#event_form button,
+#event_form input,
+#event_form select {
+    padding: 0.5rem;
+}
+
+#table table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    width: 100%;
+}
+
+#table th,
+#table td {
+    border: 1px solid #bbb;
+    height: 5rem;
+    padding: 0.4rem;
+    vertical-align: top;
+}
+
+#table th {
+    height: auto;
+}
+
+.empty-day {
+    background: #f3f3f3;
+}
+
+.calendar-event {
+    border: 0;
+    color: #111;
+    cursor: pointer;
+    display: block;
+    margin-top: 0.35rem;
+    max-width: 100%;
+    overflow: hidden;
+    padding: 0.2rem;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.priority-5 { background: #f08a8a; }
+.priority-4 { background: #f2b880; }
+.priority-3 { background: #f3d27a; }
+.priority-2 { background: #a9d8a4; }
+.priority-1 { background: #b6cbe8; }
