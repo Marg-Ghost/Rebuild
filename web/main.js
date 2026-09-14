@@ -82,8 +82,7 @@ async function loadCurrentUser() {
     document.getElementById('login_status').textContent = `Aktiver User: ${data.usr}`;
 }
 
-async function send_data(event) {
-    event?.preventDefault();
+async function send_data() {
     const food_div = document.getElementsByClassName('food');
     const activity_div = document.getElementsByClassName('activity');
     const list_food = [];
@@ -107,8 +106,10 @@ async function send_data(event) {
         if (value) list_activity.push(value);
     });
 
-    const payload = {
+    const pass_payload = {
         sleep_hours: Number(sleepInput.value),
+        sleep_point: Number(document.getElementById('sleep_point_input').value),
+        sleep_count: Number(document.getElementById('sleep_count_input').value),
         food: list_food,
         activity: list_activity
     };
@@ -121,7 +122,7 @@ async function send_data(event) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify(payload)
+            body: JSON.stringify(pass_payload)
         });
 
         const data = await response.json();
@@ -191,26 +192,47 @@ async function loginUser() {
             return;
         }
 
-        window.location.href = checkupResult.db === 'empty' ? '/checkup_first' : '/home';
+        if (checkupResult.profile === 'empty') {
+            window.location.href = '/register_info';
+        } else if (checkupResult.db === 'empty') {
+            window.location.href = '/checkup_first';
+        } else {
+            window.location.href = '/home';
+        }
     } catch (error) {
         alert('Server nicht erreichbar');
         console.error(error);
     }
 }
 
-async function confirm_register() {
-    const sleep_val = document.getElementById(sleep_input);
+async function saveProfile() {
+    const status = document.getElementById('profile_status');
+    const sickness = Array.from(document.querySelectorAll('input[name="sickness"]:checked'))
+        .map((input) => input.value);
 
-    const food_list = [];
-    const food_element = document.getElementsByClassName("food_input");
-    food_element.forEach(element => {
-        food_list.append(element);        
-    });
+    status.textContent = 'Speichere deine Angaben ...';
+    try {
+        const response = await fetch('/register_info', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                age: document.getElementById('age_input').value,
+                hobbies: document.getElementById('hobbies_input').value,
+                job: document.getElementById('job_input').value,
+                sickness
+            })
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.detail || 'Speichern fehlgeschlagen');
+        }
+        window.location.href = '/checkup_first';
+    } catch (error) {
+        status.textContent = error.message;
+    }
+}
 
-    const act_list = [];
-    const act_elemnt = document.getElementsByClassName("act_input");
-    act_elemnt.forEach(element => {
-        act_list.append(element);        
-    });
-    
+function confirm_register() {
+    send_data();
 }

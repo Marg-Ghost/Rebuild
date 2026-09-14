@@ -4,23 +4,23 @@ import ollama
 
 HEALTH_SLEEP = [18, 19, 20, 22, 23]
 
-conn = sqlite3.connect("data/user/user.db")
+conn = sqlite3.connect("data/ai_konstanten/health.db")
 cursor = conn.cursor() 
 
-def all_check (sleep:list, food : list, act : list, health : float) -> int:
+def all_check(health: float, sleep: list, food: list, act: list) -> list:
     # sleep data/logic
-    sleep_score = sleep[0]
-    point_score = sleep[1]
-    count_score = sleep[2]
+    sleep_score = float(sleep[0])
+    point_score = float(sleep[1])
+    count_score = int(sleep[2])
     sleep_impact = sleep_clac(sleep_score, point_score, count_score)
 
     # food section
-    from ai.ai import forwardpropagation
+    from core.ai.ai import forwardpropagation
     input_vec_f = create_food_vector("food", food)
-    return_val_f =forwardpropagation("food",train=False,input_vector=input_vec_f)
+    return_val_f = forwardpropagation(0, train=False, input_vector=input_vec_f)
     # act section
-    input_vec_a = create_food_vector("act", act )
-    return_val_a = forwardpropagation("act",train=False,input_vector=input_vec_a)
+    input_vec_a = create_food_vector("act", act)
+    return_val_a = forwardpropagation(1, train=False, input_vector=input_vec_a)
 
     # get return -> impact val
     food_impact = get_impact("food", return_val_f)
@@ -31,8 +31,8 @@ def all_check (sleep:list, food : list, act : list, health : float) -> int:
     health += food_impact
     health += act_impact
 
-    return health
- 
+    return [health,[sleep_score,point_score,count_score],return_val_f,return_val_a]
+""" 
 def register_vector(sleep: list, food : list, act : list):
     global HEALTH_SLEEP
     health_start = 1ooo
@@ -47,20 +47,16 @@ def register_vector(sleep: list, food : list, act : list):
         sleep_point_count = 1
 
     all_check([sleep_time, sleep_point, sleep_point_count], food, act)
-
+"""
 def sleep_clac (sleep_score : int, point_score : int, count_score : int) -> float:
     erg = sleep_score + point_score * math.exp(count_score)
     return erg
     
-def create_food_vector(type : str, vec : list) -> list :
-    conn = sqlite3.connect("data/ai_konstanten/health.db")
-    cursor = conn.cursor() 
-    input_vecor = [0,0,0,0,0,0,0,0]
-    ollama_list =[]
-    ollama_vector[]
-    
-    length = len(vec)
-    table = None
+def create_food_vector(type: str, vec: list) -> list:
+    database = sqlite3.connect("data/ai_konstanten/health.db")
+    database_cursor = database.cursor()
+    input_vector = [0.0] * 8
+
     if type == "food":
         table = "food_nährwerte"
     elif type == "act":
@@ -68,42 +64,22 @@ def create_food_vector(type : str, vec : list) -> list :
     else:
         raise ValueError("No type given")
 
+    name_column = "food_name" if type == "food" else "activity_name"
     for element in vec:
-        cursor.execute("SELECT * FROM {table} WHERE name = ? ", (element))
-        return_array = cursor.fetchone()
-        if return_array not None:
-            input_vecor[0] += return_array[1] 
-            input_vecor[1] += return_array[2] 
-            input_vecor[2] += return_array[3] 
-            input_vecor[3] += return_array[4] 
-            input_vecor[4] += return_array[5] 
-            input_vecor[5] += return_array[6] 
-            input_vecor[6] += return_array[7] 
-            input_vecor[7] += return_array[8]        
-        else:
-            ollama_list.append(element) 
-
-
-    if ollama_list != []:
-        answer = ollama.request(content = {user : "user", content : f"make input vector fot ...{ollama_list}"})
-        if  answer[0] == "[" and answer[-1] == "]":
-            ollama_vector = list(answer)
-
-    # for sec reasons hier einen for loop keine 1:1 zuweisung
-    for i in ollama_vector:
-            input_vecor[i] += ollama_vector[i]
+        database_cursor.execute(
+            f'SELECT * FROM "{table}" WHERE "{name_column}"=?',
+            (str(element).strip(),),
+        )
+        return_array = database_cursor.fetchone()
+        if return_array is not None:
+            for index in range(8):
+                input_vector[index] += float(return_array[index + 2] or 0)
     
-    if type == "act":
-        input_vecor[0] /= length
-        input_vecor[1] /= length 
-        input_vecor[2] /= length 
-        input_vecor[3] /= length 
-        input_vecor[4]  /= length
-        input_vecor[5]  /= length
-        input_vecor[6]  /= length
-        input_vecor[7] /= length
+    if type == "act" and vec:
+        input_vector = [value / len(vec) for value in input_vector]
 
-    return input_vecor
+    database.close()
+    return input_vector
      
 def get_impact(type : str, number : int) -> int:
     table_name = None
@@ -114,8 +90,11 @@ def get_impact(type : str, number : int) -> int:
     else:
         raise ValueError("no type given!")
 
-    cursor.execute("SELECT return FROM {table_name} WHERE Score = ? ", (number))
+    if number is None:
+        return 0.0
+
+    cursor.execute(f'SELECT "return" FROM "{table_name}" WHERE "Score "=?', (number,))
     return_val = cursor.fetchone()
 
-    return return_val
+    return float(return_val[0]) if return_val else 0.0
         

@@ -1,73 +1,59 @@
 <!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Health Dashboard</title>
-    <link rel="stylesheet" href="../styles.css">
-</head>
-<body>
-
-    <div id="profile-nav-container">
-        <section id="profile">
-            <h1>MAX</h1>
-            <h2>MUSTERMANN</h2>
-            <ul>
-                <li>&rarr; age : 32</li>
-                <li>&rarr; gender : m/w/d</li>
-            </ul>
-
-            <nav id="sidebar-nav">
-                <a href="#">Task Calender</a>
-                <a href="#">checkup 0 / 3</a>
-                <a href="#">AI - Assistent</a>
-            </nav>
-
-            <div id="rebuild-btn">
-                <img src="../assets/logo.png" alt="Rebuild Logo"/>
-                <span>Rebuild</span>
-            </div>
-        </section>
-    </div>
-
-    <figure id="avatar-container">
-        <nav id="gehirn" class="body-zone"></nav>
-        <nav id="magen" class="body-zone"></nav>
-        <nav id="beine" class="body-zone"></nav>
-        <img src="../assets/avatare/man1.png" alt="AVATAR" class="main-avatar"/>
-    </figure>
-
-    <div id="dashboard-right">
-        <section id="graph">
-            <figure id="health" class="stat-card">
-                <span class="stat-number">45</span>
-                <span class="stat-label">HEALTH</span>
+<html>
+    <head>
+        <title></title>
+        <link rel="stylesheet" href="/static/styles/main.css">
+    </head>
+    <body>
+        <nav id="navbar">
+            <figure>
+                <img alt="ai">
+                <p>AI-Assitant</p>
             </figure>
-            <figure id="effiency" class="stat-card" style="margin-top: 15px;">
-                <span class="stat-number">45</span>
-                <span class="stat-label">Effectivität</span>
+            <figure>
+                <img alt="Kalender">
+                <p>Kalender</p>
             </figure>
+            <figure>
+                <img alt="Profile">
+                <p>Profile</p>
+            </figure>
+        </nav>
+        <section id="nav_menu">
+            <figure>
+                <img src="/static/assets/body.svg"/>
+            </figure>
+            <button herf="brain.html" class="select" id="brain" type="button" data-label="Brain" aria-label="Brain"></button>
+            <button herf="brain.html" class="select" id="stomach" type="button" data-label="Stomach" aria-label="Stomach"></button>
+            <button herf="brain.html" class="select" id="activity" type="button" data-label="Activity" aria-label="Activity"></button>
         </section>
-
-        <div class="divider"></div>
-
-        <section id="notes">
-            <div class="note-group">
-                <h4>Effektiv Empfohlene Restarbeitszeit</h4>
-                <p class="big-text">5:25:44</p>
-            </div>
-
-            <div class="note-group">
-                <h4>Currently Most Defizit</h4>
-                <p class="big-text" style="font-size: 22px;">Zu wenig Schlaf</p>
-            </div>
-
-            <div class="note-group">
-                <h4>Pending high value Priorities (for today)</h4>
-                <p class="big-text">5</p>
-            </div>
-        </section>
-    </div>
-
-</body>
+        <main>
+            <section id="checkup">
+                <div id="checkupcount" class="piecharm"></div>
+                <p>Checkup<span id="checkupwert_today">10/10</span></p>
+                <button>start Checkup</button>
+            </section>
+            <section id="health">
+                <h3 id="health_count">1010</h3>
+                <p>Health points</p>
+                <div id="graph"></div>
+            </section>
+            <section id="menu-bar">
+                <section id="recomenden">
+                    <img alt="ai"/>
+                    <p>You sould work more</p>
+                </section>
+                <section id="Kalender">
+                    <img alt="kalender"/>
+                    <p>ImportantTasks : <span>10</span></p>
+                </section>
+                <section id="effecency">
+                    <p>Efficency after last checkup</p>
+                    <div class="piecharm"id="effincy_graph"></div>
+                    <h3 id="Effincynumber">100</h3>
+                </section>
+            </section>
+        </main>
+        <script src="/static/index.js"></script>
+    </body>
 </html>

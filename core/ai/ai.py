@@ -214,7 +214,7 @@ def _weights_zu_simple_listen(gewichte: dict):
     b3 = [gewichte["base3"]]
     return W1, b1, W2, b2, W3, b3
 
-def forwardpropagation(type_int: int, train=true, input_vector = None) -> int | None:
+def forwardpropagation(type_int: int, train=True, input_vector=None) -> int | None:
     weight1 = load_data(type_int)
     if weight1 is None:
         print(" 1 : Keine Gewichte vorhanden -> trainging needed")
