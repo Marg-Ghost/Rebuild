@@ -1,0 +1,86 @@
+/* Statt .catalog-control */
+.sleep-control {
+  position: relative;
+  display: block;
+}
+
+.sleep-control input {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* Neue Styles für deine Haupt-Container hinzufügen */
+.checkup-shell {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.checkup-card {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.entry-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+}
+
+.catalog-control {
+  position: relative;
+  grid-column: 1 / -1;
+}
+
+.catalog-control input {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.catalog-options[hidden] {
+  display: none;
+}
+
+.catalog-options {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  right: 0;
+  left: 0;
+  max-height: 15rem;
+  overflow-y: auto;
+  border: 1px solid #8a8a8a;
+  background: #fff;
+  box-shadow: 0 4px 10px rgb(0 0 0 / 14%);
+}
+
+.catalog-option {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 0;
+  border-bottom: 1px solid #e4e4e4;
+  background: #fff;
+  color: #222;
+  text-align: left;
+  cursor: pointer;
+}
+
+.catalog-option:hover,
+.catalog-option:focus-visible {
+  background: #edf4f2;
+  outline: 2px solid #316b5b;
+  outline-offset: -2px;
+}
+
+.catalog-empty {
+  padding: 0.65rem 0.7rem;
+  color: #555;
+}
+
+.reference-preview {
+  grid-column: 1 / -1;
+}

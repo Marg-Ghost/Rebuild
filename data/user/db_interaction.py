@@ -44,7 +44,40 @@ def init_db() -> None:
                 "health_sum" REAL NOT NULL,
                 "sleep_sum" TEXT NOT NULL,
                 "food_sum" REAL NOT NULL,
-                "act_sum" REAL NOT NULL
+                "act_sum" REAL NOT NULL,
+                "sleep_count" INTEGER NOT NULL DEFAULT 0,
+                "food_count" INTEGER NOT NULL DEFAULT 0,
+                "act_count" INTEGER NOT NULL DEFAULT 0
+            )
+            """
+        )
+        daily_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(daily_checkup)")
+        }
+        for column in ("sleep_count", "food_count", "act_count"):
+            if column not in daily_columns:
+                conn.execute(
+                    f'ALTER TABLE daily_checkup ADD COLUMN "{column}" INTEGER NOT NULL DEFAULT 0'
+                )
+        conn.execute(
+            """
+            UPDATE daily_checkup
+            SET sleep_count=checkup_count, food_count=checkup_count, act_count=checkup_count
+            WHERE sleep_count=0 AND food_count=0 AND act_count=0 AND checkup_count > 0
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS daily_sleep_checkup (
+                username TEXT NOT NULL,
+                checkup_date TEXT NOT NULL,
+                started_after_checkup INTEGER NOT NULL DEFAULT 0,
+                completed INTEGER NOT NULL DEFAULT 0,
+                sleep_hours REAL,
+                sleep_point REAL,
+                sleep_count INTEGER,
+                sleep_quality REAL,
+                PRIMARY KEY (username, checkup_date)
             )
             """
         )
@@ -250,7 +283,17 @@ def get_health_int(usr: str) -> str | None:
     except sqlite3.Error:
         return None
 
-def save_checkup_entrie(user: str, health: float, sleep: list, food: float, act: float, first = False):
+def save_checkup_entrie(
+    user: str,
+    health: float,
+    sleep: list,
+    food: float,
+    act: float,
+    first=False,
+    include_sleep=True,
+    include_food=True,
+    include_activity=True,
+):
     import json
     import datetime
     today = datetime.date.today().isoformat()
@@ -258,7 +301,8 @@ def save_checkup_entrie(user: str, health: float, sleep: list, food: float, act:
     with sqlite3.connect(DB_PATH) as conn:
         daily = conn.execute(
             """
-            SELECT checkup_date, checkup_count, health_sum, sleep_sum, food_sum, act_sum
+                 SELECT checkup_date, checkup_count, health_sum, sleep_sum, food_sum, act_sum,
+                     sleep_count, food_count, act_count
             FROM daily_checkup
             WHERE username=?
             """,
@@ -266,13 +310,20 @@ def save_checkup_entrie(user: str, health: float, sleep: list, food: float, act:
         ).fetchone()
 
         if daily is not None and daily[0] != today:
-            old_date, count, health_sum, sleep_sum, food_sum, act_sum = daily
-            sleep_sum = json.loads(sleep_sum)
+            old_date = daily[0]
+            count = daily[1]
+            health_sum = daily[2]
+            sleep_sum = json.loads(daily[3])
+            food_sum = daily[4]
+            act_sum = daily[5]
+            sleep_count = daily[6]
+            food_count = daily[7]
+            act_count = daily[8]
             averages = {
-                "health": health_sum / count,
-                "sleep": [value / count for value in sleep_sum],
-                "food": food_sum / count,
-                "act": act_sum / count,
+                "health": health_sum / count if count else 0.0,
+                "sleep": [value / sleep_count for value in sleep_sum] if sleep_count else [0.0, 0.0, 0.0],
+                "food": food_sum / food_count if food_count else 0.0,
+                "act": act_sum / act_count if act_count else 0.0,
             }
             profile = conn.execute(
                 "SELECT health_curve,sleep_curve,food_curve,act_curve FROM profile WHERE username=?",
@@ -309,26 +360,185 @@ def save_checkup_entrie(user: str, health: float, sleep: list, food: float, act:
             sleep_sum = [0.0, 0.0, 0.0]
             food_sum = 0.0
             act_sum = 0.0
+            sleep_count = 0
+            food_count = 0
+            act_count = 0
         else:
             count = daily[1]
             health_sum = daily[2]
             sleep_sum = json.loads(daily[3])
             food_sum = daily[4]
             act_sum = daily[5]
+            sleep_count = daily[6]
+            food_count = daily[7]
+            act_count = daily[8]
 
         count += 1
         health_sum += health
-        sleep_sum = [old + new for old, new in zip(sleep_sum, sleep)]
-        food_sum += food
-        act_sum += act
+        if include_sleep:
+            sleep_sum = [old + new for old, new in zip(sleep_sum, sleep)]
+            sleep_count += 1
+        if include_food:
+            food_sum += food
+            food_count += 1
+        if include_activity:
+            act_sum += act
+            act_count += 1
         conn.execute(
             """
             INSERT OR REPLACE INTO daily_checkup
-            (username, checkup_date, checkup_count, health_sum, sleep_sum, food_sum, act_sum)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (username, checkup_date, checkup_count, health_sum, sleep_sum, food_sum, act_sum,
+             sleep_count, food_count, act_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (user, today, count, health_sum, json.dumps(sleep_sum), food_sum, act_sum),
+            (
+                user, today, count, health_sum, json.dumps(sleep_sum), food_sum, act_sum,
+                sleep_count, food_count, act_count,
+            ),
         )
+    return True
+
+
+def get_daily_sleep_checkup(user: str) -> dict:
+    import datetime
+
+    today = datetime.date.today().isoformat()
+    with sqlite3.connect(DB_PATH) as conn:
+        state = conn.execute(
+            """
+            SELECT started_after_checkup, completed, sleep_hours, sleep_quality
+            FROM daily_sleep_checkup
+            WHERE username=? AND checkup_date=? AND completed=1
+            """,
+            (user, today),
+        ).fetchone()
+        if state is None:
+            state = conn.execute(
+                """
+                SELECT started_after_checkup, completed, sleep_hours, sleep_quality
+                FROM daily_sleep_checkup
+                WHERE username=? AND completed=0
+                ORDER BY checkup_date DESC LIMIT 1
+                """,
+                (user,),
+            ).fetchone()
+
+    if state is None:
+        return {"date": today, "status": "not_started", "started_after_checkup": False}
+    return {
+        "date": today,
+        "status": "complete" if state[1] else "pending",
+        "started_after_checkup": bool(state[0]),
+        "sleep_hours": state[2],
+        "sleep_quality": state[3],
+    }
+
+
+def mark_sleep_not_yet(user: str) -> bool:
+    import datetime
+
+    today = datetime.date.today().isoformat()
+    with sqlite3.connect(DB_PATH) as conn:
+        state = conn.execute(
+            """
+            SELECT completed FROM daily_sleep_checkup
+            WHERE username=? AND checkup_date=?
+            """,
+            (user, today),
+        ).fetchone()
+        if state and state[0]:
+            return False
+        pending = conn.execute(
+            "SELECT 1 FROM daily_sleep_checkup WHERE username=? AND completed=0 LIMIT 1",
+            (user,),
+        ).fetchone()
+        if pending:
+            return True
+        conn.execute(
+            """
+            INSERT INTO daily_sleep_checkup
+                (username, checkup_date, started_after_checkup, completed)
+            VALUES (?, ?, 1, 0)
+            ON CONFLICT(username, checkup_date)
+            DO UPDATE SET started_after_checkup=1
+            WHERE daily_sleep_checkup.completed=0
+            """,
+            (user, today),
+        )
+    return True
+
+
+def save_daily_sleep_checkup(
+    user: str,
+    sleep_hours: float,
+    sleep_point: float,
+    sleep_quality: float,
+) -> bool:
+    import datetime
+    import json
+
+    today = datetime.date.today().isoformat()
+    with sqlite3.connect(DB_PATH) as conn:
+        state = conn.execute(
+            """
+            SELECT checkup_date, started_after_checkup, completed
+            FROM daily_sleep_checkup
+            WHERE username=? AND completed=0
+            ORDER BY checkup_date DESC LIMIT 1
+            """,
+            (user,),
+        ).fetchone()
+        if state is None:
+            state = conn.execute(
+                """
+                SELECT checkup_date, started_after_checkup, completed
+                FROM daily_sleep_checkup
+                WHERE username=? AND checkup_date=?
+                """,
+                (user, today),
+            ).fetchone()
+        if state and state[2]:
+            return False
+
+        pending_date = state[0] if state else today
+        started_after_checkup = int(bool(state and state[1]))
+    saved = save_checkup_entrie(
+        user,
+        1000.0 + sleep_quality,
+        [sleep_hours, sleep_point, started_after_checkup],
+        0.0,
+        0.0,
+        include_food=False,
+        include_activity=False,
+    )
+    if not saved:
+        return False
+
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            """
+            INSERT INTO daily_sleep_checkup
+                (username, checkup_date, started_after_checkup, completed,
+                 sleep_hours, sleep_point, sleep_count, sleep_quality)
+            VALUES (?, ?, ?, 1, ?, ?, ?, ?)
+            ON CONFLICT(username, checkup_date)
+            DO UPDATE SET completed=1, sleep_hours=excluded.sleep_hours,
+                sleep_point=excluded.sleep_point, sleep_count=excluded.sleep_count,
+                sleep_quality=excluded.sleep_quality
+            """,
+            (user, today, started_after_checkup, sleep_hours, sleep_point,
+             started_after_checkup, sleep_quality),
+        )
+        if pending_date != today:
+            conn.execute(
+                """
+                UPDATE daily_sleep_checkup
+                SET completed=1, sleep_hours=?, sleep_point=?, sleep_count=?, sleep_quality=?
+                WHERE username=? AND checkup_date=? AND completed=0
+                """,
+                (sleep_hours, sleep_point, started_after_checkup, sleep_quality,
+                 user, pending_date),
+            )
     return True
 
 
@@ -366,6 +576,41 @@ def get_index_intel(user : str) -> list:
                 health_curve = {}
 
     return [count, health, health_curve]
+
+
+def get_daily_feature_values(user: str) -> dict:
+    import datetime
+    import json
+
+    today = datetime.date.today().isoformat()
+    with sqlite3.connect(DB_PATH) as conn:
+        data = conn.execute(
+            """
+                 SELECT checkup_date, checkup_count, sleep_sum, food_sum, act_sum,
+                     sleep_count, food_count, act_count
+            FROM daily_checkup
+            WHERE username=?
+            """,
+            (user,),
+        ).fetchone()
+
+    if data is None or data[0] != today or data[1] == 0:
+        return {
+            "date": today,
+            "checkup_count": 0,
+            "sleep_hours": None,
+            "food_score": None,
+            "activity_score": None,
+        }
+
+    sleep_values = json.loads(data[2])
+    return {
+        "date": today,
+        "checkup_count": data[1],
+        "sleep_hours": sleep_values[0] / data[5] if data[5] else None,
+        "food_score": data[3] / data[6] if data[6] else None,
+        "activity_score": data[4] / data[7] if data[7] else None,
+    }
 
 
 def create_calendar_event(

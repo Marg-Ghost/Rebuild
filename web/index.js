@@ -25,6 +25,35 @@ async function post_current_data()
     //manipulate
     checkup.innerText = data[0]+ "/ 10";
     health.innerText = data[1] ;
+
+    try {
+        const statusResponse = await fetch('/api/daily-checkup/status', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        const statusData = await statusResponse.json();
+        if (!statusResponse.ok) throw new Error(statusData.detail || 'Checkup-Status nicht verfuegbar');
+
+        const sleepStatus = document.getElementById('sleep_checkup_today');
+        const checkupButton = document.getElementById('start-checkup');
+        if (sleepStatus && checkupButton) {
+            if (statusData.sleep.status === 'complete') {
+                sleepStatus.textContent = 'Schlaf-Check-in abgeschlossen';
+                checkupButton.textContent = 'Food- und Activity-Checkup starten';
+            } else {
+                sleepStatus.textContent = statusData.sleep.status === 'pending'
+                    ? 'Erster Check-in offen: Schlaf nachtragen'
+                    : 'Erster Check-in des Tages: Schlaf';
+                checkupButton.textContent = 'Ersten Check-in fortsetzen';
+            }
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+function navigateToFeature(path) {
+    window.location.href = path;
 }
 
 //bei jedem bootup der seite sollte reichen

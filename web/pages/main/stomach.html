@@ -1,0 +1,26 @@
+
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Ernährung</title>
+    </head>
+    <body data-feature="food_score">
+        <nav id="navbar">
+            <a href="/home">Dashboard</a>
+            <a href="/kalender">Kalender</a>
+        </nav>
+        <figure>
+            <img src="/static/assets/body.svg" alt="Körperübersicht">
+            <img src="/static/assets/legs.svg" alt="Magenbereich">
+        </figure>
+        <main>
+            <h1>Ernährungswert heute</h1>
+            <p><span id="feature-value">Wird geladen ...</span></p>
+            <p id="feature-status" aria-live="polite"></p>
+        </main>
+        <script src="/static/feature.js"></script>
+    </body>
+</html>

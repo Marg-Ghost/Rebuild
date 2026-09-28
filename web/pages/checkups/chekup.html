@@ -1,45 +1,52 @@
-<!Doctype HTML>
-<html>
+<!doctype html>
+<html lang="de">
     <head>
-        <title>Checkup</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Tages-Checkup</title>
+        <link rel="stylesheet" href="/static/styles/main.css">
     </head>
     <body>
-        <main id = "first">
-            <h1>Checkup</h1>
-            <section id="sleep"></section>
-        </main>
+        <main>
+            <h1>Tages-Checkup</h1>
+            <p>Heute: <span id="checkup_date">-</span></p>
 
-        <main id="common">
             <section id="food">
-                <h3>total</h3>
-                <section id = "food_prew">
-                    <div>no previous food entires of today</div>
-                </section>
-                <h3>New Checkup</h3>
-                <section id = "food_current">
-                    <div id="section"><input type="text"/></div>
-                    <button onclick="add_note('food')">add</button>
-                </section>
+                <h2>Ernährung heute</h2>
+                <p>Aktueller Durchschnitt: <span id="food_total">-</span></p>
+                <div id="food_current" class="entry-list">
+                    <div class="entry-row food">
+                        <div class="catalog-control">
+                            <input class="food_input" type="text" data-kind="food" aria-label="Lebensmittel" aria-autocomplete="list" aria-expanded="false" placeholder="Lebensmittel auswählen" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
+                            <div class="catalog-options" role="listbox" hidden></div>
+                        </div>
+                        <button type="button" onclick="remove_note(this)" aria-label="Eintrag entfernen">&times;</button>
+                        <output class="reference-preview" aria-live="polite"></output>
+                    </div>
+                </div>
+                <button type="button" onclick="add_note('food')">Essen hinzufügen</button>
             </section>
-
 
             <section id="outdoor_activity">
-                <h3>total</h3>
-                <section id = "activity_prew">
-                    <div>no previous activity entires of today</div>
-                </section>
-                <h3>New Checkup</h3>
-                <section id = "activity_current">
-                    <div class="activity"> <input type="text"/> </div>
-                    <button onclick="add_note('activity')">add</button>
-                </section>
+                <h2>Aktivität heute</h2>
+                <p>Aktueller Durchschnitt: <span id="activity_total">-</span></p>
+                <div id="activity_current" class="entry-list">
+                    <div class="entry-row activity">
+                        <div class="catalog-control">
+                            <input class="act_input" type="text" data-kind="activity" aria-label="Aktivität" aria-autocomplete="list" aria-expanded="false" placeholder="Aktivität auswählen" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
+                            <div class="catalog-options" role="listbox" hidden></div>
+                        </div>
+                        <button type="button" onclick="remove_note(this)" aria-label="Eintrag entfernen">&times;</button>
+                        <output class="reference-preview" aria-live="polite"></output>
+                    </div>
+                </div>
+                <button type="button" onclick="add_note('activity')">Aktivität hinzufügen</button>
             </section>
 
-
-            <section>
-                <button onclick = "send_data()">Complete</button>
-            </section>
+            <button class="submit-button" type="button" onclick="send_daily_checkup()" disabled>Checkup speichern</button>
+            <p id="checkup_status" role="status" aria-live="polite"></p>
+            <a href="/home">Zurück</a>
         </main>
-        <script src="/main.js"></script>
+        <script src="/static/main.js?v=20260928-dropdown"></script>
     </body>
 </html>

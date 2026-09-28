@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Erster Tages-Check-in</title>
+        <link rel="stylesheet" href="/static/styles/main.css">
+    </head>
+    <body>
+        <main>
+            <h1>Erster Check-in des Tages</h1>
+            <p>Der Tages-Checkup startet mit deinem Schlaf. Wenn du noch nicht geschlafen hast, bleibt dieser Check-in offen.</p>
+            <section>
+                <label for="sleep_hours">Geschlafene Stunden</label>
+                <input id="sleep_hours" type="number" min="0.5" max="24" step="0.5" placeholder="z. B. 7.5">
+                <label for="sleep_start_time">Ungefähre Einschlafzeit</label>
+                <input id="sleep_start_time" type="time">
+                <button type="button" onclick="submitSleepCheckup('slept')">Schlaf eintragen</button>
+            </section>
+            <button type="button" onclick="submitSleepCheckup('not_slept')">Noch nicht geschlafen</button>
+            <p id="sleep_checkup_status" role="status" aria-live="polite"></p>
+            <a href="/home">Zurück zum Dashboard</a>
+        </main>
+        <script src="/static/main.js?v=20260928-dropdown"></script>
+    </body>
+</html>

@@ -2,6 +2,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
 
 app = FastAPI()
@@ -36,9 +37,21 @@ async def login_page():
 @app.get("/home")
 async def load_home():
     try:
-        return FileResponse(str(WEB_DIR / "pages" / "index.html"))
+        return FileResponse(str(WEB_DIR / "pages" / "main" / "index.html"))
     except Exception as e:
         raise HTTPException(status_code=404, detail="custom. Page not found")
+
+@app.get("/brain")
+async def load_brain():
+    return FileResponse(str(WEB_DIR / "pages" / "main" / "brain.html"))
+
+@app.get("/stomach")
+async def load_stomach():
+    return FileResponse(str(WEB_DIR / "pages" / "main" / "stomach.html"))
+
+@app.get("/activity")
+async def load_activity():
+    return FileResponse(str(WEB_DIR / "pages" / "main" / "activity.html"))
 
 @app.get("/kalender")
 async def load_calendar():
@@ -53,6 +66,23 @@ async def checkup_first_page():
         return FileResponse(str(WEB_DIR / "pages" / "checkups" / "checkup_first.html"))
     except Exception as e:
         raise HTTPException(status_code=404, detail="custom. Page not found")
+
+@app.get("/checkup")
+async def daily_checkup_page(request: Request):
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    from data.user.db_interaction import get_daily_sleep_checkup
+    if get_daily_sleep_checkup(username)["status"] != "complete":
+        return FileResponse(str(WEB_DIR / "pages" / "checkups" / "sleep_checkup.html"))
+    return FileResponse(str(WEB_DIR / "pages" / "checkups" / "chekup.html"))
+
+@app.get("/sleep-checkup")
+async def sleep_checkup_page(request: Request):
+    if not request.session.get("usr"):
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+    return FileResponse(str(WEB_DIR / "pages" / "checkups" / "sleep_checkup.html"))
 
 @app.get("/register_info")
 async def register_info_page():
@@ -201,6 +231,42 @@ async def get_checkup_data(request: Request):
     }
 
 
+async def resolve_catalog_item_or_error(kind: str, query: str) -> tuple[dict, str]:
+    from core.input_vector import get_catalog_item, get_catalog_items
+
+    item = get_catalog_item(kind, query)
+    if item:
+        return item, "exact"
+
+    candidates = [entry["name"] for entry in get_catalog_items(kind)]
+    from llm.ai_ollama import match_catalog_entry
+    try:
+        matched_name = await run_in_threadpool(
+            match_catalog_entry, kind, query, candidates
+        )
+    except Exception as error:
+        raise HTTPException(
+            status_code=503,
+            detail="Ollama ist nicht erreichbar oder das konfigurierte Modell fehlt.",
+        ) from error
+
+    item = get_catalog_item(kind, matched_name) if matched_name else None
+    if item is None:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Kein passender {kind}-Eintrag in der Referenzdatenbank gefunden.",
+        )
+    return item, "ollama"
+
+
+async def resolve_checkup_entries(kind: str, values: list[str]) -> list[str]:
+    resolved = []
+    for value in values:
+        item, _ = await resolve_catalog_item_or_error(kind, value.strip())
+        resolved.append(item["name"])
+    return resolved
+
+
 @app.post("/api/checkup_data")
 async def save_checkup_data(request: Request):
     import data.user.db_interaction as db_interaction
@@ -211,6 +277,8 @@ async def save_checkup_data(request: Request):
         raise HTTPException(status_code=401, detail="nicht eingeloggt")
     health = 1000.0
     data = await request.json()
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400, detail="Ungültige Checkup-Daten")
     try:
         sleep = [
             float(data.get("sleep_hours")),
@@ -219,12 +287,24 @@ async def save_checkup_data(request: Request):
         ]
         food = data.get("food", [])
         act = data.get("activity", [])
-        if not isinstance(food, list) or not isinstance(act, list) or sleep[2] < 0:
+        if (
+            not isinstance(food, list)
+            or not isinstance(act, list)
+            or len(food) > 50
+            or len(act) > 50
+            or not all(isinstance(item, str) and item.strip() for item in food + act)
+            or sleep[2] < 0
+            or not 0 <= sleep[0] <= 24
+        ):
             raise ValueError
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="Ungültige Checkup-Daten")
 
+    food = await resolve_checkup_entries("food", food)
+    act = await resolve_checkup_entries("activity", act)
     result = all_check(health, sleep, food, act)
+    if result[2] is None or result[3] is None:
+        raise HTTPException(status_code=503, detail="KI-Auswertung fehlgeschlagen; Checkup wurde nicht gespeichert.")
     db_interaction.save_checkup_entrie(
         usr,
         result[0],
@@ -243,6 +323,140 @@ async def save_checkup_data(request: Request):
         "activity_score": result[3],
     }
 
+
+@app.get("/api/checkup/catalog")
+async def get_checkup_catalog(request: Request):
+    if not request.session.get("usr"):
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    from core.input_vector import get_catalog_items
+    return {
+        "food": get_catalog_items("food"),
+        "activity": get_catalog_items("activity"),
+    }
+
+
+@app.post("/api/checkup/resolve")
+async def resolve_checkup_item(request: Request):
+    if not request.session.get("usr"):
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    data = await request.json()
+    kind = data.get("kind")
+    query = str(data.get("query") or "").strip()
+    if kind not in {"food", "activity"} or not query:
+        raise HTTPException(status_code=400, detail="Katalogtyp oder Suchbegriff fehlt")
+
+    item, match_type = await resolve_catalog_item_or_error(kind, query)
+    return {"item": item, "match_type": match_type}
+
+
+@app.get("/api/daily-checkup/status")
+async def get_daily_checkup_status(request: Request):
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    import data.user.db_interaction as db_interaction
+    return {
+        "daily": db_interaction.get_daily_feature_values(username),
+        "sleep": db_interaction.get_daily_sleep_checkup(username),
+    }
+
+
+@app.post("/api/daily-checkup")
+async def save_daily_checkup(request: Request):
+    import data.user.db_interaction as db_interaction
+    from core.input_vector import all_check
+
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+    if db_interaction.get_daily_sleep_checkup(username)["status"] != "complete":
+        raise HTTPException(status_code=409, detail="Bitte zuerst den Schlaf-Check-in abschließen.")
+
+    data = await request.json()
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400, detail="Ungültige Checkup-Daten")
+    food = data.get("food", [])
+    activity = data.get("activity", [])
+    if (
+        not isinstance(food, list)
+        or not isinstance(activity, list)
+        or len(food) > 50
+        or len(activity) > 50
+        or not all(isinstance(item, str) and item.strip() for item in food + activity)
+    ):
+        raise HTTPException(status_code=400, detail="Ungültige Food- oder Activity-Einträge")
+
+    food = await resolve_checkup_entries("food", food)
+    activity = await resolve_checkup_entries("activity", activity)
+    result = all_check(1000.0, [0.0, 0.0, 0], food, activity)
+    if result[2] is None or result[3] is None:
+        raise HTTPException(status_code=503, detail="KI-Gewichte fehlen; Checkup wurde nicht gespeichert.")
+
+    saved = db_interaction.save_checkup_entrie(
+        username,
+        result[0],
+        [0.0, 0.0, 0],
+        result[2],
+        result[3],
+        include_sleep=False,
+    )
+    if not saved:
+        raise HTTPException(status_code=500, detail="Checkup konnte nicht gespeichert werden.")
+    return {"ok": True, "food_score": result[2], "activity_score": result[3]}
+
+
+@app.get("/api/sleep-checkup")
+async def get_sleep_checkup(request: Request):
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+    from data.user.db_interaction import get_daily_sleep_checkup
+    return get_daily_sleep_checkup(username)
+
+
+@app.post("/api/sleep-checkup")
+async def save_sleep_checkup(request: Request):
+    import data.user.db_interaction as db_interaction
+    from core.input_vector import get_sleep_point, sleep_clac
+
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    data = await request.json()
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400, detail="Ungültiger Schlaf-Check-in")
+    action = data.get("action")
+    if action == "not_slept":
+        if not db_interaction.mark_sleep_not_yet(username):
+            raise HTTPException(status_code=409, detail="Der Schlaf-Check-in ist heute bereits abgeschlossen.")
+        return db_interaction.get_daily_sleep_checkup(username)
+    if action != "slept":
+        raise HTTPException(status_code=400, detail="Ungültiger Schlafstatus")
+
+    try:
+        sleep_hours = float(data.get("sleep_hours"))
+        sleep_start_time = str(data.get("sleep_start_time") or "")
+        sleep_start_hour = int(sleep_start_time.split(":", 1)[0])
+        if not 0 <= sleep_hours <= 24 or not 0 <= sleep_start_hour <= 23:
+            raise ValueError
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Schlafstunden oder Einschlafzeit ungültig")
+
+    sleep_state = db_interaction.get_daily_sleep_checkup(username)
+    sleep_count = int(sleep_state["started_after_checkup"])
+    sleep_point = get_sleep_point(sleep_start_hour)
+    sleep_quality = sleep_clac(sleep_hours, sleep_point, sleep_count)
+    saved = db_interaction.save_daily_sleep_checkup(
+        username, sleep_hours, sleep_point, sleep_quality
+    )
+    if not saved:
+        raise HTTPException(status_code=409, detail="Der Schlaf-Check-in ist heute bereits abgeschlossen.")
+    return db_interaction.get_daily_sleep_checkup(username)
+
 # Get the user DATA
 @app.get("/api/get_health_data/index")
 async def get_index_data(request : Request):
@@ -252,6 +466,16 @@ async def get_index_data(request : Request):
 
     from data.user.db_interaction import get_index_intel
     return  get_index_intel(usr)
+
+
+@app.get("/api/daily-features")
+async def get_daily_features(request: Request):
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    from data.user.db_interaction import get_daily_feature_values
+    return get_daily_feature_values(username)
 
 
 @app.get("/api/calendar")
@@ -295,4 +519,5 @@ async def delete_calendar_event(event_id: int, request: Request):
 
 if __name__ == "__main__":
     import uvicorn
+    
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)

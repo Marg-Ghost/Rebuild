@@ -23,15 +23,16 @@
             <figure>
                 <img src="/static/assets/body.svg"/>
             </figure>
-            <button herf="brain.html" class="select" id="brain" type="button" data-label="Brain" aria-label="Brain"></button>
-            <button herf="stomach.html" class="select" id="stomach" type="button" data-label="Stomach" aria-label="Stomach"></button>
-            <button herf="activity.html" class="select" id="activity" type="button" data-label="Activity" aria-label="Activity"></button>
+            <button onclick="navigateToFeature('/brain')" class="select" id="brain" type="button" data-label="Brain" aria-label="Brain">b</button>
+            <button onclick="navigateToFeature('/stomach')" class="select" id="stomach" type="button" data-label="Stomach" aria-label="Stomach">s</button>
+            <button onclick="navigateToFeature('/activity')" class="select" id="activity" type="button" data-label="Activity" aria-label="Activity">a</button>
         </section>
         <main>
             <section id="checkup">
                 <div id="checkupcount" class="piecharm"></div>
                 <p>Checkup<span id="checkupwert_today">10/10</span></p>
-                <button>start Checkup</button>
+                <p id="sleep_checkup_today">Schlaf-Check-in wird geladen ...</p>
+                <button id="start-checkup" type="button" onclick="navigateToFeature('/checkup')">Start Checkup</button>
             </section>
             <section id="health">
                 <h3 id="health_count">1010</h3>

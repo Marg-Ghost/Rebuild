@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Erster Checkup | Rebuild</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/styles/main.css">
 </head>
 <body class="checkup-page">
     <main class="checkup-shell">
@@ -36,8 +36,12 @@
                 <p class="question-help">Welche Lebensmittel oder Mahlzeiten gehören an einem normalen Tag dazu?</p>
                 <div id="food_current" class="entry-list">
                     <div class="entry-row food">
-                        <input class="food_input" type="text" aria-label="Lebensmittel oder Mahlzeit" placeholder="z. B. Frühstück, Obst, Pasta">
+                        <div class="catalog-control">
+                            <input class="food_input" type="text" data-kind="food" aria-label="Lebensmittel oder Mahlzeit" aria-autocomplete="list" aria-expanded="false" placeholder="z. B. Frühstück, Obst, Pasta" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
+                            <div class="catalog-options" role="listbox" hidden></div>
+                        </div>
                         <button class="icon-button" type="button" aria-label="Eintrag entfernen" onclick="remove_note(this)">&times;</button>
+                        <output class="reference-preview" aria-live="polite"></output>
                     </div>
                 </div>
                 <button class="add-button" type="button" onclick="add_note('food')">+ Essen hinzufügen</button>
@@ -48,8 +52,12 @@
                 <p class="question-help">Welche Aktivität im Freien machst du an einem normalen Tag?</p>
                 <div id="activity_current" class="entry-list">
                     <div class="entry-row activity">
-                        <input class="act_input" type="text" aria-label="Aktivität im Freien" placeholder="z. B. Spaziergang, Radfahren">
+                        <div class="catalog-control">
+                            <input class="act_input" type="text" data-kind="activity" aria-label="Aktivität im Freien" aria-autocomplete="list" aria-expanded="false" placeholder="z. B. Spaziergang, Radfahren" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
+                            <div class="catalog-options" role="listbox" hidden></div>
+                        </div>
                         <button class="icon-button" type="button" aria-label="Eintrag entfernen" onclick="remove_note(this)">&times;</button>
+                        <output class="reference-preview" aria-live="polite"></output>
                     </div>
                 </div>
                 <button class="add-button" type="button" onclick="add_note('activity')">+ Aktivität hinzufügen</button>
@@ -59,6 +67,6 @@
             <p id="checkup_status" role="status" aria-live="polite"></p>
         </form>
     </main>
-    <script src="/static/main.js"></script>
+    <script src="/static/main.js?v=20260928-dropdown"></script>
 </body>
 </html>
