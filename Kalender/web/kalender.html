@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta>
+    </head>
+    <body>
+        <section id="add_date" style="display: hidden;">
+            <h1>Add to Agenda</h1>
+            <div>
+                <h3>Date and Time*</h3>
+                <input type="date"/>
+                <input type="time"/>
+
+                <h3>Importance*</h3>
+                <input type="range" id="slider" min="1" max="4" step="1" value="1" oninput="sliderOutput.value = this.value">
+                <output id="sliderOutput">1</output>
+
+                <h3>Type*</h3>
+                <select name="type" id="type_select">
+                    <option value="work">Work</option>
+                    <option value="private">Private</option>
+                </select>
+
+                <h3>Content(recomended)</h3>
+                <input type="text" placeholder="Task..."/>
+
+                <input type="submit"/>
+            </div>
+        </section>
+</html>
