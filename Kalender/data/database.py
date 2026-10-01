@@ -36,5 +36,29 @@ def init_db():
 
     conn.commit()
 
-# Datenbank initialisieren
+def save_date(usr, date):
+    task = {
+        user_id=1,
+        task_date=date.date,
+        task_time=date.time,
+        importance=date.importance,
+        task_type=date.task_type,
+        content=date.content
+    }
+    cursor.execute("""
+    INSERT INTO tasks (user_id, task_date, task_time, importance, task_type, content)
+    VALUES (?, ?, ?, ?, ?, ?)
+""", (task.user_id, task.task_date, task.task_time, task.importance, task.task_type, task.content))
+    conn.commit()
+
+def get_data(usr, month) -> list:
+    cursor.execute("""
+    SELECT task_date, task_time, importance, task_type, content
+    FROM tasks
+    WHERE task_date = "2026-{month}"
+    """)
+    anzeigewerte = cursor.fetchone()
+    return anzeigewerte
+
+
 init_db()

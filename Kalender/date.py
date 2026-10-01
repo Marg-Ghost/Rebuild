@@ -6,8 +6,11 @@ class Date():
         self.task_type = task_type
         self.importance = importance
         self.content = content
+import data.database as database
 
 def init_date(usr ,date, time, task_type : str, importance : int, content :str):
     save_date = new Date(date, time, task_type : str, importance : int, content :str)
-    import data.database as database
     database.save_date(usr, save_date)
+
+def get_date(usr, month) -> list[str]:
+    return database.get_data(usr, month)
