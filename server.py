@@ -9,8 +9,10 @@ app = FastAPI()
 
 BASE_DIR = Path(__file__).resolve().parent
 WEB_DIR = BASE_DIR / "web"
+KALENDER_WEB_DIR = BASE_DIR / "Kalender" / "web"
 
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
+app.mount("/kalender-static", StaticFiles(directory=KALENDER_WEB_DIR), name="kalender-static")
 
 app.add_middleware(
     SessionMiddleware,
@@ -478,43 +480,61 @@ async def get_daily_features(request: Request):
     return get_daily_feature_values(username)
 
 
-@app.get("/api/calendar")
-async def get_calendar(request: Request, year: int, month: int):
-    username = request.session.get("usr")
-    if not username:
+####################################
+# Kalender
+####################################
+@app.post("/api/kalender/add")
+async def add_kalender_entry(request: Request):
+    usr = request.session.get("usr")
+    if not usr:
         raise HTTPException(status_code=401, detail="nicht eingeloggt")
 
-    from tasks.calendar import list_month_events
+    data = await request.json()
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400, detail="Ungültige Kalenderdaten")
+
+    from Kalender.date import init_date
     try:
-        return list_month_events(username, year, month)
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-
-
-@app.post("/api/calendar", status_code=201)
-async def add_calendar_event(request: Request):
-    username = request.session.get("usr")
-    if not username:
-        raise HTTPException(status_code=401, detail="nicht eingeloggt")
-
-    from tasks.calendar import add_event
-    try:
-        event_id = add_event(username, await request.json())
+        event_id = init_date(
+            usr,
+            str(data.get("date") or "").strip(),
+            str(data.get("time") or "").strip(),
+            str(data.get("task_type") or "").strip(),
+            int(data.get("importance")),
+            str(data.get("content") or "").strip(),
+        )
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     return {"ok": True, "id": event_id}
 
-
-@app.delete("/api/calendar/{event_id}")
-async def delete_calendar_event(event_id: int, request: Request):
-    username = request.session.get("usr")
-    if not username:
+@app.get("/api/kalender/get")
+async def get_kalender_entries(request: Request, month: int, year: int | None = None):
+    usr = request.session.get("usr")
+    if not usr:
         raise HTTPException(status_code=401, detail="nicht eingeloggt")
 
-    from tasks.calendar import remove_event
-    if not remove_event(username, event_id):
-        raise HTTPException(status_code=404, detail="Termin nicht gefunden")
-    return {"ok": True}
+    from datetime import date as current_date
+    from Kalender.date import get_date
+    if year is None:
+        year = current_date.today().year
+    try:
+        entries = get_date(usr, month, year)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    return {"ok": True, "entries": entries}
+
+@app.get("/api/current-month")
+async def get_current_month(request: Request):
+    usr = request.session.get("usr")
+    if not usr:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    from datetime import datetime
+    now = datetime.now()
+    return {"year": now.year, "month": now.month}
+
+
+
 
 
 if __name__ == "__main__":

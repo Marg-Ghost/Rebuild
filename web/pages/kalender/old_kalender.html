@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Kalender</title>
+        <link rel="stylesheet" href="/static/styles/calendar.css">
+    </head>
+    <body>
+        <nav id="navbar">
+            <figure>
+                <img alt="ai">
+                <p>AI-Assitant</p>
+            </figure>
+            <figure>
+                <img alt="Kalender">
+                <p>Kalender</p>
+            </figure>
+            <figure>
+                <img alt="Profile">
+                <p>Profile</p>
+            </figure>
+        </nav>
+        <main>
+            <section id="current_date">
+                <p id="day_number"><span>01</span> |</p>
+                <p id="day">Mo</p>
+            </section>
+            <section id="task_date">
+                <div id="priority_5">
+                    <p >important</p>
+                </div>
+                <div id="priority_4">
+                    <p >high</p>
+                </div>
+                <div id="priority_3">
+                    <p >medium</p>
+                </div>
+                <div id="priority_2">
+                    <p >low</p>
+                </div>
+                <div id="priority_1">
+                    <p >trivial</p>
+                </div>
+            </section>
+            <section id="month_current">
+                <button id="previous_month" type="button" aria-label="Vorheriger Monat">&lt;</button>
+                <p id="month_date"><span>01</span> |</p>
+                <p id="month">January</p>
+                <button id="next_month" type="button" aria-label="Nächster Monat">&gt;</button>
+            </section>
+            <form id="event_form">
+                <input id="event_title" type="text" placeholder="Termin" required>
+                <input id="event_start" type="date" required>
+                <select id="event_priority">
+                    <option value="5">important</option>
+                    <option value="4">high</option>
+                    <option value="3" selected>medium</option>
+                    <option value="2">low</option>
+                    <option value="1">trivial</option>
+                </select>
+                <button type="submit">Hinzufügen</button>
+            </form>
+            <section id="table">
+                <table>
+                    <thead>
+                        <tr>
+                        <th>MO</th>
+                        <th>DI</th>
+                        <th>MI</th>
+                        <th>DO</th>
+                        <th>FR</th>
+                        <th>SA</th>
+                        <th>SO</th>
+                        </tr>
+                    </thead>
+                    <tbody id="calendar_body"></tbody>
+                    </table>
+            </section>
+        </main>
+        <script src="/static/calendar.js"></script>
+    </body>
+</html>

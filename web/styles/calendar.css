@@ -5,7 +5,8 @@ body {
 }
 
 #month_current,
-#event_form {
+#event_form,
+#task_form {
     align-items: center;
     display: flex;
     gap: 0.75rem;
@@ -15,7 +16,10 @@ body {
 #month_current button,
 #event_form button,
 #event_form input,
-#event_form select {
+#event_form select,
+#task_form button,
+#task_form input,
+#task_form select {
     padding: 0.5rem;
 }
 

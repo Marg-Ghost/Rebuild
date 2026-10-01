@@ -1,98 +1,183 @@
+const monthNames = [
+    "Januar", "Februar", "März", "April", "Mai", "Juni",
+    "Juli", "August", "September", "Oktober", "November", "Dezember"
+];
+
+let selected_month;
+let selected_year;
+
 function toggle_add() {
-  const add_element = document.getElementById("add_date");
-  if (add_element.style.display === "none") {
-    add_element.style.display = "block"; // oder "flex" / "grid"
-  } else {
-    add_element.style.display = "none";
-  }
+    const add_element = document.getElementById("add_date");
+    add_element.hidden = !add_element.hidden;
 }
 
-function show_data(){
-  
-  const response;
-  const data = response.json()
-  //db anbindung and ei db request
-  data.forEach(element => {
-      time = data[task_time], importance, task_type, content
-  }); 
+function show_status(message) {
+    document.getElementById("calendar_status").textContent = message;
 }
 
-function set_data(){
-  const date = document.getElementById("data");
-  const time = document.getElementById("time");
-  const sliderOutput = document.getElementById("sliderOutput");
-  const type_select = document.getElementById("type_select");
-  const content = document.getElementById("content");
+async function show_data(month, year) {
+    try {
+        const response = await fetch(`/api/kalender/get?month=${month}&year=${year}`, {
+            credentials: "include"
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || "Kalenderdaten konnten nicht geladen werden.");
 
-  // in der git merge dnann server abfrage
-}
+        for (const entry of data.entries) {
+            const table_cell = document.getElementById(`day_${entry.task_date}`);
+            if (!table_cell) continue;
 
-// build a proper table
-function calculate_date(year, month){
-    day = 1;
-    century = year[0],year[1];
-    h = {
-        0 : "Saturday",
-        1 : "Sunday",
-        2 : "Monday",
-        3 : "Tuesday",
-        4 : "Wednesday",
-        5 : "Thursday",
-        6 : "Friday"
+            const item = document.createElement("div");
+            item.className = "entry";
+            const importance = document.createElement("span");
+            importance.className = "importance";
+            importance.textContent = String(entry.importance);
+            const content = document.createElement("span");
+            content.textContent = entry.content || "Task";
+            const type = document.createElement("span");
+            type.className = "task-type";
+            type.textContent = entry.task_type;
+            item.append(importance, content, type);
+            if (entry.task_time) {
+                const time = document.createElement("span");
+                time.className = "task-time";
+                time.textContent = entry.task_time;
+                item.append(time);
+            }
+            table_cell.append(item);
+        }
+        show_status("");
+    } catch (error) {
+        show_status(error.message || "Kalenderdaten konnten nicht geladen werden.");
     }
-    date = (day + ((13*(month))/5)+year+(year/4)+(century/4)-2*century) % 7;
-    return h[date];
 }
 
-function get_all_enties(month,year){
-    const table = document.getElementById("show_month");
-    let febuary = year % 4 == 0 ? 29 : 28;
+async function set_data(event) {
+    event.preventDefault();
+    const date = document.getElementById("date");
+    const time = document.getElementById("time");
+    const sliderOutput = document.getElementById("sliderOutput");
+    const type_select = document.getElementById("type_select");
+    const content = document.getElementById("content");
+
+    try {
+        const response = await fetch("/api/kalender/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+                date: date.value,
+                time: time.value,
+                importance: sliderOutput.value,
+                task_type: type_select.value,
+                content: content.value
+            })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || "Task konnte nicht gespeichert werden.");
+
+        const task_month = Number(date.value.slice(5, 7));
+        const task_year = Number(date.value.slice(0, 4));
+        document.getElementById("task_form").reset();
+        sliderOutput.value = "1";
+        document.getElementById("add_date").hidden = true;
+        await get_all_enties(task_month, task_year);
+        show_status("Task gespeichert.");
+    } catch (error) {
+        show_status(error.message || "Task konnte nicht gespeichert werden.");
+    }
+}
+
+function calculate_date(year, month) {
+    let calculation_month = month;
+    let calculation_year = year;
+    if (calculation_month < 3) {
+        calculation_month += 12;
+        calculation_year -= 1;
+    }
+
+    const century = Math.floor(calculation_year / 100);
+    const year_of_century = calculation_year % 100;
+    const weekday = (1
+        + Math.floor(13 * (calculation_month + 1) / 5)
+        + year_of_century
+        + Math.floor(year_of_century / 4)
+        + Math.floor(century / 4)
+        + 5 * century) % 7;
+    return (weekday + 5) % 7;
+}
+
+async function get_all_enties(month, year) {
+    const selected_date = new Date(year, month - 1, 1);
+    selected_month = selected_date.getMonth() + 1;
+    selected_year = selected_date.getFullYear();
+
+    const table = document.getElementById("calendar_days");
     const month_days = {
-      1 :  31,
-      2 : febuary,
-      3 : 31,
-      4 : 30,
-      5 : 31,
-      6 : 30,
-      7 : 30,
-      8 : 31,
-      9 : 30,
-      10 : 31,
-      11 : 30,
-      12 : 31,
+        1: 31,
+        2: ((selected_year % 4 === 0 && selected_year % 100 !== 0) || selected_year % 400 === 0) ? 29 : 28,
+        3: 31,
+        4: 30,
+        5: 31,
+        6: 30,
+        7: 31,
+        8: 31,
+        9: 30,
+        10: 31,
+        11: 30,
+        12: 31
+    };
+    const days_in_month = month_days[selected_month];
+    const starting_day = calculate_date(selected_year, selected_month);
+    const cell_count = Math.ceil((starting_day + days_in_month) / 7) * 7;
+    table.replaceChildren();
+    document.getElementById("month_label").textContent = `${monthNames[selected_month - 1]} ${selected_year}`;
+
+    let day_counter = 0;
+    for (let index = 0; index < cell_count; index++) {
+        if (day_counter === 0) table.appendChild(document.createElement("tr"));
+        const cell = document.createElement("td");
+        const day = index - starting_day + 1;
+        if (day < 1 || day > days_in_month) {
+            cell.className = "empty-day";
+        } else {
+            const day_string = String(day).padStart(2, "0");
+            cell.id = `day_${selected_year}-${String(selected_month).padStart(2, "0")}-${day_string}`;
+            cell.textContent = String(day);
+        }
+        table.lastElementChild.appendChild(cell);
+        day_counter += 1;
+        if (day_counter === 7) day_counter = 0;
     }
-    const month_day = month_days[month];
-    const starting_day = calculate_date(year,month);
-    
-    let day_counter = 1;
-    for (let i = 0; i < month_day; i++){
-      if (day_counter == 0){
-        table.innerHTML += "<tr>";
-     }
-     table.innerHTML += "<td>" + day_counter + "</td>";
-     day_counter++;
-     if (day_counter == 7){
-        table.innerHTML += "</tr>";
-        day_counter = 0;
-     }
-  }
+
+    await show_data(selected_month, selected_year);
 }
-function get_month_name(){
-  //hier einen Call an den Server und dann über datime datime now den current month name zurückgeben
-  return month; //month muss int sein (vgl. hash tabel oben)
-}  
-function get_year(){
-  //hier einen Call an den Server und dann über datime datime now den current year zurückgeben
-  return year; //year muss int sein (vgl. hash tabel oben)
-}  
-addEventListener("DOMContentLoaded", function() {
-  const current_month = get_month_name();
-  const current_year = get_year();
-  let selected_month = current_month;
-  let selected_year = current_year;
-  get_all_enties(selected_month, selected_year);
-  
+
+async function get_month_name() {
+    try {
+        const response = await fetch("/api/current-month", { credentials: "include" });
+        if (response.ok) {
+            const data = await response.json();
+            return [data.month, data.year];
+        }
+    } catch {
+        show_status("Aktueller Monat konnte nicht vom Server geladen werden.");
+    }
+    const now = new Date();
+    return [now.getMonth() + 1, now.getFullYear()];
 }
+
+document.addEventListener("DOMContentLoaded", async () => {
+    document.getElementById("last").addEventListener("click", () => get_all_enties(selected_month - 1, selected_year));
+    document.getElementById("next").addEventListener("click", () => get_all_enties(selected_month + 1, selected_year));
+    document.getElementById("toggle_add_button").addEventListener("click", toggle_add);
+    document.getElementById("task_form").addEventListener("submit", set_data);
+    document.getElementById("slider").addEventListener("input", (event) => {
+        document.getElementById("sliderOutput").value = event.target.value;
+    });
+    const [current_month, current_year] = await get_month_name();
+    await get_all_enties(current_month, current_year);
+});
 
 
 

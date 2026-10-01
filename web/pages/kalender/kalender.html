@@ -7,77 +7,48 @@
         <link rel="stylesheet" href="/static/styles/calendar.css">
     </head>
     <body>
-        <nav id="navbar">
-            <figure>
-                <img alt="ai">
-                <p>AI-Assitant</p>
-            </figure>
-            <figure>
-                <img alt="Kalender">
-                <p>Kalender</p>
-            </figure>
-            <figure>
-                <img alt="Profile">
-                <p>Profile</p>
-            </figure>
-        </nav>
-        <main>
-            <section id="current_date">
-                <p id="day_number"><span>01</span> |</p>
-                <p id="day">Mo</p>
+        <main id="current_month">
+            <section id="month_current" aria-label="Monatsansicht">
+                <button id="last" type="button" aria-label="Vorheriger Monat">&lt;</button>
+                <h1 id="month_label"></h1>
+                <button id="next" type="button" aria-label="Nächster Monat">&gt;</button>
             </section>
-            <section id="task_date">
-                <div id="priority_5">
-                    <p >important</p>
-                </div>
-                <div id="priority_4">
-                    <p >high</p>
-                </div>
-                <div id="priority_3">
-                    <p >medium</p>
-                </div>
-                <div id="priority_2">
-                    <p >low</p>
-                </div>
-                <div id="priority_1">
-                    <p >trivial</p>
-                </div>
-            </section>
-            <section id="month_current">
-                <button id="previous_month" type="button" aria-label="Vorheriger Monat">&lt;</button>
-                <p id="month_date"><span>01</span> |</p>
-                <p id="month">January</p>
-                <button id="next_month" type="button" aria-label="Nächster Monat">&gt;</button>
-            </section>
-            <form id="event_form">
-                <input id="event_title" type="text" placeholder="Termin" required>
-                <input id="event_start" type="date" required>
-                <select id="event_priority">
-                    <option value="5">important</option>
-                    <option value="4">high</option>
-                    <option value="3" selected>medium</option>
-                    <option value="2">low</option>
-                    <option value="1">trivial</option>
-                </select>
-                <button type="submit">Hinzufügen</button>
-            </form>
             <section id="table">
-                <table>
+                <table id="show_month">
                     <thead>
                         <tr>
-                        <th>MO</th>
-                        <th>DI</th>
-                        <th>MI</th>
-                        <th>DO</th>
-                        <th>FR</th>
-                        <th>SA</th>
-                        <th>SO</th>
+                            <th>Mo</th><th>Di</th><th>Mi</th><th>Do</th>
+                            <th>Fr</th><th>Sa</th><th>So</th>
                         </tr>
                     </thead>
-                    <tbody id="calendar_body"></tbody>
-                    </table>
+                    <tbody id="calendar_days"></tbody>
+                </table>
             </section>
+            <div id="interaction">
+                <button id="toggle_add_button" type="button">Add Task</button>
+            </div>
         </main>
-        <script src="/static/calendar.js"></script>
+
+        <section id="add_date" hidden>
+            <h2>Add to Agenda</h2>
+            <form id="task_form">
+                <label>Datum <input id="date" type="date" required></label>
+                <label>Uhrzeit <input id="time" type="time"></label>
+                <label>Wichtigkeit
+                    <input id="slider" type="range" min="1" max="4" step="1" value="1">
+                    <output id="sliderOutput">1</output>
+                </label>
+                <label>Typ
+                    <select id="type_select">
+                        <option value="work">Work</option>
+                        <option value="private">Private</option>
+                    </select>
+                </label>
+                <label>Inhalt <input id="content" type="text" placeholder="Task..."></label>
+                <button type="submit">Hinzufügen</button>
+            </form>
+        </section>
+        <p id="calendar_status" role="status" aria-live="polite"></p>
+        <script src="/kalender-static/kalender.js"></script>
     </body>
 </html>
