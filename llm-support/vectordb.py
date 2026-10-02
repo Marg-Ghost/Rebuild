@@ -92,3 +92,15 @@ def summarize_for_storage(raw_text: str) -> list[str]:
     collection.upsert(documents=entries, ids=ids_new)
     load_data.save_txt(documents, ids)
     return entries
+
+
+def store_summary(summary: str) -> None:
+    summary = summary.strip()
+    if not summary:
+        return
+
+    memory_id = str(uuid.uuid4())
+    documents.append(summary)
+    ids.append(memory_id)
+    collection.upsert(documents=[summary], ids=[memory_id])
+    load_data.save_txt(documents, ids)
