@@ -1,0 +1,11 @@
+Based on a ollama model:
+| Modell          | Größe |     Ollama/RAM | Qualität | Medizinisches Reasoning | Geschwindigkeit | Empfehlung         |
+| --------------- | ----: | -------------: | -------- | ----------------------- | --------------- | ------------------ |
+| Qwen 3.x        |  4–8B |        niedrig | ⭐⭐⭐⭐     | ⭐⭐⭐⭐                    | ⭐⭐⭐⭐⭐           | 🟢                 |
+| Gemma 3         | 4–12B | niedrig–mittel | ⭐⭐⭐⭐     | ⭐⭐⭐⭐                    | ⭐⭐⭐⭐            | 🟢                 |
+| Llama 3.x       |    8B |         mittel | ⭐⭐⭐⭐     | ⭐⭐⭐⭐                    | ⭐⭐⭐⭐            | 🟢                 |
+| Mistral         | 7–12B |         mittel | ⭐⭐⭐⭐     | ⭐⭐⭐                     | ⭐⭐⭐⭐            | 🟡                 |
+| größere Modelle |  20B+ |           hoch | ⭐⭐⭐⭐⭐    | ⭐⭐⭐⭐⭐                   | ⭐⭐              | 🔴 lokal schwierig |
+
+
+=> wir benutzten erst ein Qwen 8B dass hat sich in alten Projekten schon als recht handlebar gezeigt
