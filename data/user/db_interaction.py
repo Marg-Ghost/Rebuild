@@ -1,4 +1,7 @@
 import sqlite3
+import json
+from datetime import datetime
+from contextlib import closing
 from pathlib import Path
 
 DB_PATH = Path(__file__).resolve().with_name("user.db")
@@ -77,8 +80,38 @@ def init_db() -> None:
                 sleep_point REAL,
                 sleep_count INTEGER,
                 sleep_quality REAL,
+                slept_after_midnight INTEGER,
                 PRIMARY KEY (username, checkup_date)
             )
+            """
+        )
+        sleep_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(daily_sleep_checkup)")
+        }
+        if "slept_after_midnight" not in sleep_columns:
+            conn.execute(
+                "ALTER TABLE daily_sleep_checkup ADD COLUMN slept_after_midnight INTEGER"
+            )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS daily_food_activity_checkups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                checkup_date TEXT NOT NULL,
+                checkup_number INTEGER NOT NULL CHECK (checkup_number BETWEEN 1 AND 5),
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                food_entries TEXT NOT NULL,
+                activity_entries TEXT NOT NULL,
+                food_score REAL NOT NULL,
+                activity_score REAL NOT NULL,
+                UNIQUE (username, checkup_date, checkup_number)
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS daily_food_activity_checkups_user_date_idx
+            ON daily_food_activity_checkups(username, checkup_date)
             """
         )
         conn.execute(
@@ -103,9 +136,71 @@ def init_db() -> None:
             ON calendar_events(username, start_at)
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS llm_problem_memory (
+                username TEXT PRIMARY KEY,
+                summaries_by_date TEXT NOT NULL DEFAULT '{}',
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
 
 
 init_db()
+
+
+def get_recent_llm_summaries(username: str, limit: int = 2) -> list[str]:
+    if limit <= 0:
+        return []
+
+    with closing(sqlite3.connect(DB_PATH)) as conn:
+        row = conn.execute(
+            "SELECT summaries_by_date FROM llm_problem_memory WHERE username=?",
+            (username,),
+        ).fetchone()
+    if not row:
+        return []
+
+    try:
+        summaries = json.loads(row[0])
+    except (TypeError, json.JSONDecodeError):
+        return []
+    if not isinstance(summaries, dict):
+        return []
+
+    latest = sorted(summaries.items(), key=lambda item: item[0], reverse=True)[:limit]
+    return [f"{date}: {summary}" for date, summary in latest if isinstance(summary, str)]
+
+
+def save_llm_problem_summary(username: str, summary: str) -> str | None:
+    summary = summary.strip()
+    if not username or not summary:
+        return None
+
+    with closing(sqlite3.connect(DB_PATH)) as conn:
+        with conn:
+            row = conn.execute(
+                "SELECT summaries_by_date FROM llm_problem_memory WHERE username=?",
+                (username,),
+            ).fetchone()
+            try:
+                summaries = json.loads(row[0]) if row else {}
+            except (TypeError, json.JSONDecodeError):
+                summaries = {}
+            if not isinstance(summaries, dict):
+                summaries = {}
+
+            date_key = datetime.now().isoformat(timespec="microseconds")
+            summaries[date_key] = summary
+            conn.execute(
+                """INSERT INTO llm_problem_memory (username, summaries_by_date)
+                   VALUES (?, ?) ON CONFLICT(username) DO UPDATE SET
+                   summaries_by_date=excluded.summaries_by_date,
+                   updated_at=CURRENT_TIMESTAMP""",
+                (username, json.dumps(summaries, ensure_ascii=False)),
+            )
+    return date_key
 
 
 # login logic
@@ -293,12 +388,28 @@ def save_checkup_entrie(
     include_sleep=True,
     include_food=True,
     include_activity=True,
+    daily_entries: tuple[list[str], list[str]] | None = None,
 ):
     import json
     import datetime
     today = datetime.date.today().isoformat()
 
     with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        checkup_number = None
+        if daily_entries is not None:
+            checkup_count = conn.execute(
+                """
+                SELECT COUNT(*)
+                FROM daily_food_activity_checkups
+                WHERE username=? AND checkup_date=?
+                """,
+                (user, today),
+            ).fetchone()[0]
+            if checkup_count >= 5:
+                return False
+            checkup_number = checkup_count + 1
+
         daily = conn.execute(
             """
                  SELECT checkup_date, checkup_count, health_sum, sleep_sum, food_sum, act_sum,
@@ -396,7 +507,55 @@ def save_checkup_entrie(
                 sleep_count, food_count, act_count,
             ),
         )
+        if daily_entries is not None and checkup_number is not None:
+            food_entries, activity_entries = daily_entries
+            conn.execute(
+                """
+                INSERT INTO daily_food_activity_checkups
+                    (username, checkup_date, checkup_number, food_entries,
+                     activity_entries, food_score, activity_score)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    user,
+                    today,
+                    checkup_number,
+                    json.dumps(food_entries, ensure_ascii=False),
+                    json.dumps(activity_entries, ensure_ascii=False),
+                    food,
+                    act,
+                ),
+            )
     return True
+
+
+def get_late_sleep_nights_last_week(
+    user: str,
+    current_slept_after_midnight: bool | None = None,
+) -> int:
+    import datetime
+
+    today = datetime.date.today()
+    week_start = (today - datetime.timedelta(days=6)).isoformat()
+    if current_slept_after_midnight is None:
+        week_end = (today + datetime.timedelta(days=1)).isoformat()
+    else:
+        week_end = today.isoformat()
+
+    with sqlite3.connect(DB_PATH) as conn:
+        count = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM daily_sleep_checkup
+            WHERE username=? AND checkup_date>=? AND checkup_date<?
+                AND completed=1 AND slept_after_midnight=1
+            """,
+            (user, week_start, week_end),
+        ).fetchone()[0]
+
+    if current_slept_after_midnight is not None:
+        count += int(current_slept_after_midnight)
+    return min(count, 7)
 
 
 def get_daily_sleep_checkup(user: str) -> dict:
@@ -406,7 +565,8 @@ def get_daily_sleep_checkup(user: str) -> dict:
     with sqlite3.connect(DB_PATH) as conn:
         state = conn.execute(
             """
-            SELECT started_after_checkup, completed, sleep_hours, sleep_quality
+            SELECT started_after_checkup, completed, sleep_hours, sleep_quality,
+                   sleep_count, slept_after_midnight
             FROM daily_sleep_checkup
             WHERE username=? AND checkup_date=? AND completed=1
             """,
@@ -415,7 +575,8 @@ def get_daily_sleep_checkup(user: str) -> dict:
         if state is None:
             state = conn.execute(
                 """
-                SELECT started_after_checkup, completed, sleep_hours, sleep_quality
+                SELECT started_after_checkup, completed, sleep_hours, sleep_quality,
+                       sleep_count, slept_after_midnight
                 FROM daily_sleep_checkup
                 WHERE username=? AND completed=0
                 ORDER BY checkup_date DESC LIMIT 1
@@ -424,14 +585,45 @@ def get_daily_sleep_checkup(user: str) -> dict:
             ).fetchone()
 
     if state is None:
-        return {"date": today, "status": "not_started", "started_after_checkup": False}
+        return {
+            "date": today,
+            "status": "not_started",
+            "started_after_checkup": False,
+            "late_nights_last_week": get_late_sleep_nights_last_week(user),
+        }
     return {
         "date": today,
         "status": "complete" if state[1] else "pending",
         "started_after_checkup": bool(state[0]),
         "sleep_hours": state[2],
         "sleep_quality": state[3],
+        "late_nights_last_week": (
+            state[4] if state[1] and state[5] is not None and state[4] is not None
+            else get_late_sleep_nights_last_week(user)
+        ),
+        "slept_after_midnight": (
+            bool(state[5]) if state[5] is not None else None
+        ),
     }
+
+
+def get_sleep_checkup_history(user: str) -> list[dict]:
+    with sqlite3.connect(DB_PATH) as conn:
+        rows = conn.execute(
+            """
+            SELECT checkup_date, sleep_hours, sleep_quality
+            FROM daily_sleep_checkup
+            WHERE username=? AND completed=1
+            ORDER BY checkup_date DESC
+            LIMIT 7
+            """,
+            (user,),
+        ).fetchall()
+
+    return [
+        {"date": row[0], "sleep_hours": row[1], "sleep_quality": row[2]}
+        for row in reversed(rows)
+    ]
 
 
 def mark_sleep_not_yet(user: str) -> bool:
@@ -473,6 +665,8 @@ def save_daily_sleep_checkup(
     sleep_hours: float,
     sleep_point: float,
     sleep_quality: float,
+    late_nights_last_week: int,
+    slept_after_midnight: bool,
 ) -> bool:
     import datetime
     import json
@@ -505,7 +699,7 @@ def save_daily_sleep_checkup(
     saved = save_checkup_entrie(
         user,
         1000.0 + sleep_quality,
-        [sleep_hours, sleep_point, started_after_checkup],
+        [sleep_hours, sleep_point, late_nights_last_week / 7],
         0.0,
         0.0,
         include_food=False,
@@ -519,24 +713,27 @@ def save_daily_sleep_checkup(
             """
             INSERT INTO daily_sleep_checkup
                 (username, checkup_date, started_after_checkup, completed,
-                 sleep_hours, sleep_point, sleep_count, sleep_quality)
-            VALUES (?, ?, ?, 1, ?, ?, ?, ?)
+                 sleep_hours, sleep_point, sleep_count, sleep_quality,
+                 slept_after_midnight)
+            VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?)
             ON CONFLICT(username, checkup_date)
             DO UPDATE SET completed=1, sleep_hours=excluded.sleep_hours,
                 sleep_point=excluded.sleep_point, sleep_count=excluded.sleep_count,
-                sleep_quality=excluded.sleep_quality
+                sleep_quality=excluded.sleep_quality,
+                slept_after_midnight=excluded.slept_after_midnight
             """,
             (user, today, started_after_checkup, sleep_hours, sleep_point,
-             started_after_checkup, sleep_quality),
+             late_nights_last_week, sleep_quality, int(slept_after_midnight)),
         )
         if pending_date != today:
             conn.execute(
                 """
                 UPDATE daily_sleep_checkup
-                SET completed=1, sleep_hours=?, sleep_point=?, sleep_count=?, sleep_quality=?
+                SET completed=1, sleep_hours=?, sleep_point=?, sleep_count=?, sleep_quality=?,
+                    slept_after_midnight=NULL
                 WHERE username=? AND checkup_date=? AND completed=0
                 """,
-                (sleep_hours, sleep_point, started_after_checkup, sleep_quality,
+                (sleep_hours, sleep_point, late_nights_last_week, sleep_quality,
                  user, pending_date),
             )
     return True
@@ -611,6 +808,94 @@ def get_daily_feature_values(user: str) -> dict:
         "food_score": data[3] / data[6] if data[6] else None,
         "activity_score": data[4] / data[7] if data[7] else None,
     }
+
+
+def get_daily_food_activity_checkups(user: str) -> list[dict]:
+    import datetime
+    import json
+
+    today = datetime.date.today().isoformat()
+    with sqlite3.connect(DB_PATH) as conn:
+        rows = conn.execute(
+            """
+            SELECT checkup_number, created_at, food_entries, activity_entries,
+                   food_score, activity_score
+            FROM daily_food_activity_checkups
+            WHERE username=? AND checkup_date=?
+            ORDER BY checkup_number
+            """,
+            (user, today),
+        ).fetchall()
+
+    return [
+        {
+            "number": row[0],
+            "created_at": row[1],
+            "food": json.loads(row[2]),
+            "activity": json.loads(row[3]),
+            "food_score": row[4],
+            "activity_score": row[5],
+        }
+        for row in rows
+    ]
+
+
+def get_food_checkup_history(
+    user: str,
+    start_date: str,
+    end_date: str,
+) -> list[dict]:
+    import json
+
+    with sqlite3.connect(DB_PATH) as conn:
+        rows = conn.execute(
+            """
+            SELECT checkup_date, checkup_number, food_entries, food_score
+            FROM daily_food_activity_checkups
+            WHERE username=? AND checkup_date BETWEEN ? AND ?
+            ORDER BY checkup_date, checkup_number
+            """,
+            (user, start_date, end_date),
+        ).fetchall()
+
+    return [
+        {
+            "date": row[0],
+            "number": row[1],
+            "food": json.loads(row[2]),
+            "food_score": row[3],
+        }
+        for row in rows
+    ]
+
+
+def get_activity_checkup_history(
+    user: str,
+    start_date: str,
+    end_date: str,
+) -> list[dict]:
+    import json
+
+    with sqlite3.connect(DB_PATH) as conn:
+        rows = conn.execute(
+            """
+            SELECT checkup_date, checkup_number, activity_entries, activity_score
+            FROM daily_food_activity_checkups
+            WHERE username=? AND checkup_date BETWEEN ? AND ?
+            ORDER BY checkup_date, checkup_number
+            """,
+            (user, start_date, end_date),
+        ).fetchall()
+
+    return [
+        {
+            "date": row[0],
+            "number": row[1],
+            "activity": json.loads(row[2]),
+            "activity_score": row[3],
+        }
+        for row in rows
+    ]
 
 
 def create_calendar_event(

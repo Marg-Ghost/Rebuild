@@ -18,7 +18,7 @@ async function loadCheckupCatalog() {
             const menu = input.closest('.entry-row').querySelector('.catalog-options');
             if (!menu.hasAttribute('hidden')) renderCatalogMenu(input);
         });
-        if (submitButton) submitButton.disabled = false;
+        if (submitButton && submitButton.dataset.limitReached !== 'true') submitButton.disabled = false;
     } catch (error) {
         if (status) status.textContent = error.message;
     }
@@ -126,6 +126,14 @@ async function send_data() {
         return;
     }
 
+    const lateSleepInput = document.getElementById('sleep_count_input');
+    const lateSleepCount = Number(lateSleepInput.value);
+    if (!lateSleepInput.value.trim() || !Number.isInteger(lateSleepCount) || lateSleepCount < 0 || lateSleepCount > 7) {
+        status.textContent = 'Bitte gib eine ganze Anzahl zwischen 0 und 7 Nächten an.';
+        lateSleepInput.focus();
+        return;
+    }
+
     submitButton.disabled = true;
     if (status) status.textContent = 'Pruefe Eingaben und Referenzwerte ...';
 
@@ -160,8 +168,7 @@ async function send_data() {
 
     const pass_payload = {
         sleep_hours: Number(sleepInput.value),
-        sleep_point: Number(document.getElementById('sleep_point_input').value),
-        sleep_count: Number(document.getElementById('sleep_count_input').value),
+        sleep_count: lateSleepCount,
         food: list_food,
         activity: list_activity
     };
@@ -495,6 +502,16 @@ async function loadDailyCheckupSummary() {
     dateElement.textContent = data.daily.date;
     document.getElementById('food_total').textContent = data.daily.food_score ?? '-';
     document.getElementById('activity_total').textContent = data.daily.activity_score ?? '-';
+    const completed = Array.isArray(data.checkups) ? data.checkups.length : 0;
+    const checkupNumber = document.getElementById('checkup-number');
+    const submitButton = document.querySelector('.submit-button');
+    if (checkupNumber) checkupNumber.textContent = String(Math.min(completed + 1, 5));
+    if (submitButton && completed >= 5) {
+        submitButton.dataset.limitReached = 'true';
+        submitButton.disabled = true;
+        submitButton.textContent = 'Alle fünf Check-ins erledigt';
+        document.getElementById('checkup_status').textContent = 'Du hast heute bereits alle fünf Check-ins abgeschlossen.';
+    }
 }
 
 async function send_daily_checkup() {
@@ -520,7 +537,7 @@ async function send_daily_checkup() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.detail || 'Checkup konnte nicht gespeichert werden');
 
-        if (status) status.textContent = 'Tages-Checkup gespeichert.';
+        if (status) status.textContent = `Check-in ${data.checkup_number} von 5 gespeichert.`;
         window.setTimeout(() => { window.location.href = '/home'; }, 400);
     } catch (error) {
         if (status) status.textContent = error.message;
@@ -534,6 +551,10 @@ async function loadSleepCheckupState() {
         const response = await fetch('/api/sleep-checkup', { credentials: 'include' });
         const data = await response.json();
         if (!response.ok) throw new Error(data.detail || 'Schlafstatus konnte nicht geladen werden');
+        const weeklySummary = document.getElementById('sleep_week_summary');
+        if (weeklySummary) {
+            weeklySummary.textContent = `In den letzten 7 Tagen: ${data.late_nights_last_week}/7 Nächte nach Mitternacht.`;
+        }
         if (data.status === 'pending') {
             status.textContent = 'Der Check-in bleibt offen. Trage die Schlafstunden ein, sobald du geschlafen hast.';
         }

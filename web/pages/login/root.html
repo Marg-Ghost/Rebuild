@@ -1,13 +1,90 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>Checkup</title>
-    </head>
-    <body>
-        <main>
-            <section>
-                <a href="/login">Login</a>
-            </section>
-        </main>
-    </body>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#fffaf0">
+    <title>Anmelden | Rebuild</title>
+    <link rel="stylesheet" href="/static/styles/main.css">
+</head>
+<body class="auth-page">
+    <main class="auth-shell">
+        <section class="auth-card" aria-label="Anmelden oder registrieren">
+            <div class="auth-form-column">
+                <section id="login" class="auth-mode" aria-labelledby="login-title">
+                    <h1 id="login-title">Sign In</h1>
+                    <fieldset class="login-methods">
+                        <legend>Anmelden mit</legend>
+                        <label><input type="radio" name="login_method" value="username" checked onchange="updateLoginFields(); updateLoginIdentifierLabel()"> Benutzername</label>
+                        <label><input type="radio" name="login_method" value="email" onchange="updateLoginFields(); updateLoginIdentifierLabel()"> E-Mail</label>
+                        <label><input type="radio" name="login_method" value="phone" onchange="updateLoginFields(); updateLoginIdentifierLabel()"> Telefon</label>
+                    </fieldset>
+
+                    <div class="auth-field">
+                        <label id="login-identifier-label" for="username_input">Username</label>
+                        <input type="text" id="username_input" autocomplete="username" required>
+                        <input type="email" id="email_input" autocomplete="email" hidden>
+                        <input type="tel" id="phone_input" autocomplete="tel" hidden>
+                    </div>
+                    <div class="auth-field">
+                        <label for="pwd_input">Password</label>
+                        <input type="password" id="pwd_input" autocomplete="current-password" required>
+                    </div>
+                    <p class="auth-switch">no account? <button type="button" onclick="load_r_or_l('register')">Create one</button></p>
+                    <button class="auth-submit" type="button" onclick="loginUser()">Submit</button>
+                    <p id="login_status" class="auth-status" aria-live="polite"></p>
+                </section>
+
+                <section id="register" class="auth-mode" aria-labelledby="register-title" hidden>
+                    <h1 id="register-title">Sign Up</h1>
+                    <div class="auth-field">
+                        <label for="usr_input_reg">Username</label>
+                        <input type="text" id="usr_input_reg" autocomplete="username" required>
+                    </div>
+                    <div class="auth-field">
+                        <label for="email_input_reg">E-Mail</label>
+                        <input type="email" id="email_input_reg" autocomplete="email" required>
+                    </div>
+                    <div class="auth-field">
+                        <label for="phone_input_reg">Telefon <span>(optional)</span></label>
+                        <input type="tel" id="phone_input_reg" autocomplete="tel">
+                    </div>
+                    <div class="auth-field">
+                        <label for="pwd_input_reg">Password</label>
+                        <input type="password" id="pwd_input_reg" autocomplete="new-password" required>
+                    </div>
+                    <p class="auth-switch">already have an account? <button type="button" onclick="load_r_or_l('login')">Sign in</button></p>
+                    <button class="auth-submit" type="button" onclick="registerUser()">Create account</button>
+                </section>
+            </div>
+
+            <aside class="auth-showcase" aria-label="Deine Gesundheit im Überblick">
+                <div class="auth-watermark" aria-hidden="true">
+                    <span>REBUILD</span>
+                    <img src="/static/assets/body.svg" alt="">
+                </div>
+                <div class="auth-topics">
+                    <button class="auth-topic" type="button" aria-label="Nutrition" aria-expanded="false" aria-describedby="nutrition-tooltip">
+                        <img src="/static/assets/food.svg" alt="">
+                        <span class="auth-tooltip" id="nutrition-tooltip" role="tooltip" hidden>Deine eingetragenen Lebensmittel werden anhand ihrer Nährwerte bewertet und zu einem Score verrechnet. Wähle passende Katalogeinträge und trage Mahlzeiten regelmäßig ein, damit der Wert aussagekräftiger wird.</span>
+                    </button>
+                    <button class="auth-topic" type="button" aria-label="Health" aria-expanded="false" aria-describedby="health-tooltip">
+                        <img src="/static/assets/health.svg" alt="">
+                        <span class="auth-tooltip" id="health-tooltip" role="tooltip" hidden>Der Gesamtwert startet bei 1000 und wird durch berechnete Schlaf-, Ernährungs- und Bewegungswerte angepasst. Regelmäßige, korrekte Einträge in allen drei Bereichen machen ihn aussagekräftiger.</span>
+                    </button>
+                    <button class="auth-topic" type="button" aria-label="Sleep" aria-expanded="false" aria-describedby="sleep-tooltip">
+                        <img src="/static/assets/sleep.svg" alt="">
+                        <span class="auth-tooltip" id="sleep-tooltip" role="tooltip" hidden>Dein Schlafwert wird aus Schlafdauer, Einschlafzeit und dem Zeitpunkt deines Check-ins berechnet. Regelmäßige, korrekte Angaben machen deinen Verlauf verlässlicher.</span>
+                    </button>
+                    <button class="auth-topic" type="button" aria-label="Activity" aria-expanded="false" aria-describedby="activity-tooltip">
+                        <img src="/static/assets/activity.svg" alt="">
+                        <span class="auth-tooltip" id="activity-tooltip" role="tooltip" hidden>Deine eingetragenen Aktivitäten werden anhand von Merkmalen wie Energieverbrauch, Cardio und Kraft bewertet. Wähle passende Katalogeinträge und erfasse absolvierte Bewegung regelmäßig.</span>
+                    </button>
+                </div>
+            </aside>
+        </section>
+    </main>
+    <script src="/static/main.js"></script>
+    <script src="/static/auth.js"></script>
+</body>
 </html>

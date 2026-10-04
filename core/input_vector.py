@@ -95,8 +95,10 @@ def all_check(health: float, sleep: list, food: list, act: list) -> list:
     # sleep data/logic
     sleep_score = float(sleep[0])
     point_score = float(sleep[1])
-    count_score = int(sleep[2])
-    sleep_impact = sleep_clac(sleep_score, point_score, count_score)
+    late_nights_fraction = float(sleep[2])
+    if not 0 <= late_nights_fraction <= 1:
+        raise ValueError("late_nights_fraction muss zwischen 0 und 1 liegen")
+    sleep_impact = sleep_clac(sleep_score, point_score, late_nights_fraction)
 
     # food section
     from core.ai.ai import forwardpropagation
@@ -138,8 +140,13 @@ def register_vector(sleep: list, food : list, act : list):
 
     all_check([sleep_time, sleep_point, sleep_point_count], food, act)
 """
-def sleep_clac (sleep_score : int, point_score : int, count_score : int) -> float:
-    erg = sleep_score + point_score * math.exp(count_score)
+def sleep_clac(
+    sleep_score: float,
+    point_score: float,
+    late_nights_fraction: float,
+) -> float:
+    penalty_point = min(point_score, 0.0)
+    erg = sleep_score + penalty_point * math.exp(late_nights_fraction)
     return erg
     
 def create_food_vector(type: str, vec: list) -> list:

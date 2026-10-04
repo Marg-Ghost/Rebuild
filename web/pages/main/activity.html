@@ -1,26 +1,58 @@
-
-<!DOCTYPE html>
 <!DOCTYPE html>
 <html lang="de">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Aktivität</title>
+        <meta name="theme-color" content="#FFFAED">
+        <title>Activity | Rebuild</title>
+        <link rel="stylesheet" href="/static/styles/main.css?v=20261004-feature-v2">
+        <link rel="stylesheet" href="/static/styles/feature-pages.css?v=20261004-v4">
     </head>
-    <body data-feature="activity_score">
-        <nav id="navbar">
-            <a href="/home">Dashboard</a>
-            <a href="/kalender">Kalender</a>
-        </nav>
-        <figure>
-            <img src="/static/assets/body.svg" alt="Körperübersicht">
-            <img src="/static/assets/legs.svg" alt="Beine">
-        </figure>
-        <main>
-            <h1>Aktivitätswert heute</h1>
-            <p><span id="feature-value">Wird geladen ...</span></p>
-            <p id="feature-status" aria-live="polite"></p>
+    <body class="brain-page feature-page food-page">
+        <header class="dashboard-topbar">
+            <a class="brand" href="/home" aria-label="Opty Übersicht">
+                <span class="brand-mark">R</span>
+                <span>Rebuild</span>
+            </a>
+            <nav class="top-navigation" aria-label="Hauptnavigation">
+                <a href="/home">Übersicht</a>
+                <a href="/llm">KI-Assistent</a>
+                <a href="/kalender">Kalender</a>
+            </nav>
+            <div class="user-chip" aria-label="Angemeldeter Benutzer">
+                <span class="user-avatar" aria-hidden="true">O</span>
+                <span id="dashboard-username">Dein Bereich</span>
+            </div>
+        </header>
+
+        <main class="food-dashboard">
+            <section class="food-visual activity-visual" aria-label="Aktivität">
+                <div class="brain-halo brain-halo-outer" aria-hidden="true"></div>
+                <div class="brain-halo brain-halo-inner" aria-hidden="true"></div>
+                <img class="food-silhouette activity-silhouette" src="/static/assets/body.svg" alt="">
+                <img class="food-organ-icon activity-icon" src="/static/assets/activity.svg" alt="Activity">
+            </section>
+
+            <section class="food-data" aria-label="Deine Activity-Check-ins">
+                <section class="brain-counter-card food-counter-card" aria-labelledby="activity-counter-title">
+                    <div class="brain-counter-value" id="activity-counter-value">--</div>
+                    <h1 id="activity-counter-title">Activity score today</h1>
+                    <svg class="brain-history-chart food-history-chart" viewBox="0 0 360 100" role="img" aria-label="Activity-Score-Verlauf der letzten sieben Tage">
+                        <path class="brain-chart-line" id="activity-chart-line" d=""></path>
+                    </svg>
+                    <p class="brain-history-caption" id="activity-history-caption">Dein Activity-Verlauf erscheint nach den ersten Check-ins.</p>
+                </section>
+
+                <section class="food-entries-section" aria-labelledby="activity-entries-title">
+                    <h1 id="activity-entries-title">all Entries</h1>
+                    <div class="food-entry-list" id="activity-entry-list" aria-live="polite">
+                        <p class="food-empty-state">Einträge werden geladen ...</p>
+                    </div>
+                </section>
+                <p class="brain-status" id="activity-status" role="status" aria-live="polite"></p>
+            </section>
         </main>
-        <script src="/static/feature.js"></script>
+        <script src="/static/feature-nav.js?v=20261004-v1"></script>
+        <script src="/static/activity.js?v=20261004-activity"></script>
     </body>
 </html>

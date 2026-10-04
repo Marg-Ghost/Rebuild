@@ -1,26 +1,63 @@
-
-<!DOCTYPE html>
 <!DOCTYPE html>
 <html lang="de">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Schlaf</title>
+        <meta name="theme-color" content="#FFFAED">
+        <title>Schlaf | Rebuild</title>
+        <link rel="stylesheet" href="/static/styles/main.css?v=20261004-feature-v2">
+        <link rel="stylesheet" href="/static/styles/feature-pages.css?v=20261004-v4">
     </head>
-    <body data-feature="sleep_hours">
-        <nav id="navbar">
-            <a href="/home">Dashboard</a>
-            <a href="/kalender">Kalender</a>
-        </nav>
-        <figure>
-            <img src="/static/assets/body.svg" alt="Körperübersicht">
-            <img src="/static/assets/brain.svg" alt="Gehirn">
-        </figure>
-        <main>
-            <h1>Schlaf heute</h1>
-            <p><span id="feature-value">Wird geladen ...</span> Stunden</p>
-            <p id="feature-status" aria-live="polite"></p>
+    <body class="brain-page feature-page brain-feature-page">
+        <header class="dashboard-topbar">
+            <a class="brand" href="/home" aria-label="Opty Übersicht">
+                <span class="brand-mark">R</span>
+                <span>Rebuild</span>
+            </a>
+            <nav class="top-navigation" aria-label="Hauptnavigation">
+                <a href="/home">Übersicht</a>
+                <a href="/llm">KI-Assistent</a>
+                <a href="/kalender">Kalender</a>
+            </nav>
+            <div class="user-chip" aria-label="Angemeldeter Benutzer">
+                <span class="user-avatar" aria-hidden="true">O</span>
+                <span id="dashboard-username">Dein Bereich</span>
+            </div>
+        </header>
+
+        <main class="brain-dashboard">
+            <section class="brain-visual" aria-label="Schlaf und Gehirn">
+                <div class="brain-halo brain-halo-outer" aria-hidden="true"></div>
+                <div class="brain-halo brain-halo-inner" aria-hidden="true"></div>
+                <img class="brain-silhouette" src="/static/assets/body.svg" alt="">
+                <img class="brain-sleep-icon" src="/static/assets/sleep.svg" alt="Schlaf">
+            </section>
+
+            <section class="brain-data" aria-label="Deine Schlafdaten">
+                <div class="brain-sleep-summary">
+                    <div class="brain-sleep-value">
+                        <strong id="brain-sleep-hours">--</strong>
+                        <span>h</span>
+                    </div>
+                    <span class="brain-today-label">today</span>
+                </div>
+                <div class="brain-midnight-value">
+                    <span>past Midnight :</span>
+                    <strong id="brain-late-nights">--/7</strong>
+                </div>
+
+                <section class="brain-counter-card" aria-labelledby="brain-counter-title">
+                    <div class="brain-counter-value" id="brain-sleep-counter">--</div>
+                    <h1 id="brain-counter-title">Sleep counter</h1>
+                    <svg class="brain-history-chart" id="brain-history-chart" viewBox="0 0 360 100" role="img" aria-label="Schlafqualitäts-Verlauf der letzten sieben Check-ins">
+                        <path class="brain-chart-line" id="brain-chart-line" d=""></path>
+                    </svg>
+                    <p class="brain-history-caption" id="brain-history-caption">Dein Verlauf erscheint nach den ersten Check-ins.</p>
+                </section>
+                <p class="brain-status" id="brain-status" role="status" aria-live="polite"></p>
+            </section>
         </main>
-        <script src="/static/feature.js"></script>
+        <script src="/static/feature-nav.js?v=20261004-v1"></script>
+        <script src="/static/brain.js?v=20261004-brain"></script>
     </body>
 </html>

@@ -4,15 +4,16 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Tages-Checkup</title>
-        <link rel="stylesheet" href="/static/styles/main.css">
+        <link rel="stylesheet" href="/static/styles/main.css?v=20261004-five-checkups">
     </head>
     <body>
         <main>
             <h1>Tages-Checkup</h1>
-            <p>Heute: <span id="checkup_date">-</span></p>
+            <p>Heute: <span id="checkup_date">-</span> · Check-in <span id="checkup-number">1</span> von 5</p>
+            <p>Trage ein, was du seit deinem letzten Check-in gegessen und an Bewegung gemacht hast.</p>
 
             <section id="food">
-                <h2>Ernährung heute</h2>
+                <h2>Ernährung seit dem letzten Check-in</h2>
                 <p>Aktueller Durchschnitt: <span id="food_total">-</span></p>
                 <div id="food_current" class="entry-list">
                     <div class="entry-row food">
@@ -28,7 +29,7 @@
             </section>
 
             <section id="outdoor_activity">
-                <h2>Aktivität heute</h2>
+                <h2>Bewegung seit dem letzten Check-in</h2>
                 <p>Aktueller Durchschnitt: <span id="activity_total">-</span></p>
                 <div id="activity_current" class="entry-list">
                     <div class="entry-row activity">
@@ -43,10 +44,10 @@
                 <button type="button" onclick="add_note('activity')">Aktivität hinzufügen</button>
             </section>
 
-            <button class="submit-button" type="button" onclick="send_daily_checkup()" disabled>Checkup speichern</button>
+            <button class="submit-button" type="button" onclick="send_daily_checkup()" disabled>Check-in speichern</button>
             <p id="checkup_status" role="status" aria-live="polite"></p>
             <a href="/home">Zurück</a>
         </main>
-        <script src="/static/main.js?v=20260928-dropdown"></script>
+        <script src="/static/main.js?v=20261004-five-checkups"></script>
     </body>
 </html>

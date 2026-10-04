@@ -1,6 +1,9 @@
+import os
 from pathlib import Path
+from importlib import import_module
+import sys
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
@@ -10,13 +13,17 @@ app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
 WEB_DIR = BASE_DIR / "web"
 KALENDER_WEB_DIR = BASE_DIR / "Kalender" / "web"
+LLM_SUPPORT_DIR = BASE_DIR / "llm-support"
+_llm_queue = None
 
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 app.mount("/kalender-static", StaticFiles(directory=KALENDER_WEB_DIR), name="kalender-static")
+from dotenv import load_dotenv
+load_dotenv()
 
 app.add_middleware(
     SessionMiddleware,
-    secret_key="super-geheimes-secret-fuer-hackerthon",
+    secret_key=os.getenv("SessionMiddlewareSecreteKey"),
     max_age=60 * 60 * 24,
 )
 
@@ -32,7 +39,7 @@ async def index_page():
 @app.get("/login")
 async def login_page():
     try:
-        return FileResponse(str(WEB_DIR / "pages" / "login" / "login.html"))
+        return FileResponse(str(WEB_DIR / "pages" / "login" / "root.html"))
     except Exception as e:
         raise HTTPException(status_code=404, detail="custom. Page not found")
 
@@ -46,6 +53,19 @@ async def load_home():
 @app.get("/brain")
 async def load_brain():
     return FileResponse(str(WEB_DIR / "pages" / "main" / "brain.html"))
+
+@app.get("/llm")
+async def load_llm_chat(request: Request):
+    if not request.session.get("usr"):
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+    return FileResponse(str(LLM_SUPPORT_DIR / "llm.html"))
+
+
+@app.get("/llm-static/llm.js")
+async def load_llm_script():
+    return FileResponse(
+        str(LLM_SUPPORT_DIR / "llm.js"), media_type="application/javascript"
+    )
 
 @app.get("/stomach")
 async def load_stomach():
@@ -75,9 +95,14 @@ async def daily_checkup_page(request: Request):
     if not username:
         raise HTTPException(status_code=401, detail="nicht eingeloggt")
 
-    from data.user.db_interaction import get_daily_sleep_checkup
+    from data.user.db_interaction import (
+        get_daily_food_activity_checkups,
+        get_daily_sleep_checkup,
+    )
     if get_daily_sleep_checkup(username)["status"] != "complete":
         return FileResponse(str(WEB_DIR / "pages" / "checkups" / "sleep_checkup.html"))
+    if len(get_daily_food_activity_checkups(username)) >= 5:
+        return RedirectResponse("/home", status_code=303)
     return FileResponse(str(WEB_DIR / "pages" / "checkups" / "chekup.html"))
 
 @app.get("/sleep-checkup")
@@ -233,6 +258,83 @@ async def get_checkup_data(request: Request):
     }
 
 
+def get_llm_queue():
+    global _llm_queue
+    if _llm_queue is None:
+        support_path = str(LLM_SUPPORT_DIR)
+        if support_path not in sys.path:
+            sys.path.insert(0, support_path)
+        queue_module = import_module("llm_communication")
+        _llm_queue = queue_module.LlmRequestQueue()
+    return _llm_queue
+
+
+def validate_llm_conversation(conversation):
+    if not isinstance(conversation, list) or len(conversation) > 40:
+        raise HTTPException(status_code=400, detail="Ungültiger Gesprächsverlauf")
+    validated = []
+    for message in conversation:
+        if (
+            not isinstance(message, dict)
+            or message.get("role") not in {"user", "assistant"}
+            or not isinstance(message.get("content"), str)
+        ):
+            raise HTTPException(status_code=400, detail="Ungültiger Gesprächsverlauf")
+        validated.append({"role": message["role"], "content": message["content"][:12000]})
+    return validated
+
+
+@app.post("/api/llm/chat")
+async def llm_chat(request: Request):
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    data = await request.json()
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400, detail="Ungültige Anfrage")
+    message = data.get("message")
+    if not isinstance(message, str) or not message.strip() or len(message) > 12000:
+        raise HTTPException(status_code=400, detail="Nachricht fehlt oder ist zu lang")
+    conversation = validate_llm_conversation(data.get("conversation", []))
+
+    try:
+        answer = await get_llm_queue().submit(
+            content=message.strip(),
+            request_type="user",
+            conversation=conversation,
+            username=username,
+        )
+    except Exception as error:
+        raise HTTPException(status_code=503, detail="LLM-Anfrage fehlgeschlagen") from error
+    return {"ok": True, "answer": answer}
+
+
+@app.post("/api/llm/conversation/clear")
+async def clear_llm_conversation(request: Request):
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    data = await request.json()
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400, detail="Ungültige Anfrage")
+    conversation = validate_llm_conversation(data.get("conversation", []))
+    if not conversation:
+        return {"ok": True, "saved": False}
+
+    try:
+        summary = await get_llm_queue().submit(
+            content="",
+            request_type="super_system",
+            conversation=conversation,
+            username=username,
+        )
+    except Exception as error:
+        raise HTTPException(status_code=503, detail="Gespräch konnte nicht gespeichert werden") from error
+    return {"ok": True, "saved": True, "summary": summary}
+
+
 async def resolve_catalog_item_or_error(kind: str, query: str) -> tuple[dict, str]:
     from core.input_vector import get_catalog_item, get_catalog_items
 
@@ -272,7 +374,7 @@ async def resolve_checkup_entries(kind: str, values: list[str]) -> list[str]:
 @app.post("/api/checkup_data")
 async def save_checkup_data(request: Request):
     import data.user.db_interaction as db_interaction
-    from core.input_vector import all_check
+    from core.input_vector import all_check, get_sleep_point
     usr = request.session.get("usr")
 
     if not usr:
@@ -282,11 +384,11 @@ async def save_checkup_data(request: Request):
     if not isinstance(data, dict):
         raise HTTPException(status_code=400, detail="Ungültige Checkup-Daten")
     try:
-        sleep = [
-            float(data.get("sleep_hours")),
-            float(data.get("sleep_point", 0)),
-            int(data.get("sleep_count", 0)),
-        ]
+        sleep_hours = float(data.get("sleep_hours"))
+        late_nights_value = float(data.get("sleep_count"))
+        if not late_nights_value.is_integer():
+            raise ValueError
+        late_nights_last_week = int(late_nights_value)
         food = data.get("food", [])
         act = data.get("activity", [])
         if (
@@ -295,13 +397,15 @@ async def save_checkup_data(request: Request):
             or len(food) > 50
             or len(act) > 50
             or not all(isinstance(item, str) and item.strip() for item in food + act)
-            or sleep[2] < 0
-            or not 0 <= sleep[0] <= 24
+            or not 0 <= late_nights_last_week <= 7
+            or not 0 <= sleep_hours <= 24
         ):
             raise ValueError
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="Ungültige Checkup-Daten")
 
+    sleep_point = get_sleep_point(1) if late_nights_last_week else 0.0
+    sleep = [sleep_hours, min(sleep_point, 0.0), late_nights_last_week / 7]
     food = await resolve_checkup_entries("food", food)
     act = await resolve_checkup_entries("activity", act)
     result = all_check(health, sleep, food, act)
@@ -363,6 +467,108 @@ async def get_daily_checkup_status(request: Request):
     return {
         "daily": db_interaction.get_daily_feature_values(username),
         "sleep": db_interaction.get_daily_sleep_checkup(username),
+        "checkups": db_interaction.get_daily_food_activity_checkups(username),
+    }
+
+
+@app.get("/api/brain/summary")
+async def get_brain_summary(request: Request):
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    import data.user.db_interaction as db_interaction
+    return {
+        "sleep": db_interaction.get_daily_sleep_checkup(username),
+        "history": db_interaction.get_sleep_checkup_history(username),
+    }
+
+
+@app.get("/api/food/summary")
+async def get_food_summary(request: Request):
+    from datetime import date, timedelta
+
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    import data.user.db_interaction as db_interaction
+    from core.input_vector import get_impact
+
+    today = date.today()
+    first_day = today - timedelta(days=6)
+    checkups = db_interaction.get_daily_food_activity_checkups(username)
+    for checkup in checkups:
+        checkup["impact"] = get_impact("food", int(round(float(checkup["food_score"]))))
+
+    history_by_date = {
+        (first_day + timedelta(days=offset)).isoformat(): {
+            "impact": 0.0,
+            "has_checkups": False,
+        }
+        for offset in range(7)
+    }
+    for checkup in db_interaction.get_food_checkup_history(
+        username, first_day.isoformat(), today.isoformat()
+    ):
+        day = history_by_date[checkup["date"]]
+        day["impact"] += get_impact(
+            "food", int(round(float(checkup["food_score"])))
+        )
+        day["has_checkups"] = True
+
+    return {
+        "checkups": checkups,
+        "today_impact": sum(checkup["impact"] for checkup in checkups),
+        "history": [
+            {"date": checkup_date, **daily_impact}
+            for checkup_date, daily_impact in history_by_date.items()
+        ],
+    }
+
+
+@app.get("/api/activity/summary")
+async def get_activity_summary(request: Request):
+    from datetime import date, timedelta
+
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    import data.user.db_interaction as db_interaction
+    from core.input_vector import get_impact
+
+    today = date.today()
+    first_day = today - timedelta(days=6)
+    checkups = db_interaction.get_daily_food_activity_checkups(username)
+    for checkup in checkups:
+        checkup["impact"] = get_impact(
+            "act", int(round(float(checkup["activity_score"])))
+        )
+
+    history_by_date = {
+        (first_day + timedelta(days=offset)).isoformat(): {
+            "impact": 0.0,
+            "has_checkups": False,
+        }
+        for offset in range(7)
+    }
+    for checkup in db_interaction.get_activity_checkup_history(
+        username, first_day.isoformat(), today.isoformat()
+    ):
+        day = history_by_date[checkup["date"]]
+        day["impact"] += get_impact(
+            "act", int(round(float(checkup["activity_score"])))
+        )
+        day["has_checkups"] = True
+
+    return {
+        "checkups": checkups,
+        "today_impact": sum(checkup["impact"] for checkup in checkups),
+        "history": [
+            {"date": checkup_date, **daily_impact}
+            for checkup_date, daily_impact in history_by_date.items()
+        ],
     }
 
 
@@ -404,10 +610,20 @@ async def save_daily_checkup(request: Request):
         result[2],
         result[3],
         include_sleep=False,
+        daily_entries=(food, activity),
     )
     if not saved:
+        if len(db_interaction.get_daily_food_activity_checkups(username)) >= 5:
+            raise HTTPException(status_code=409, detail="Du hast heute bereits alle fünf Check-ins abgeschlossen.")
         raise HTTPException(status_code=500, detail="Checkup konnte nicht gespeichert werden.")
-    return {"ok": True, "food_score": result[2], "activity_score": result[3]}
+    checkups = db_interaction.get_daily_food_activity_checkups(username)
+    return {
+        "ok": True,
+        "food_score": result[2],
+        "activity_score": result[3],
+        "checkup_number": len(checkups),
+        "checkups_today": len(checkups),
+    }
 
 
 @app.get("/api/sleep-checkup")
@@ -423,6 +639,7 @@ async def get_sleep_checkup(request: Request):
 async def save_sleep_checkup(request: Request):
     import data.user.db_interaction as db_interaction
     from core.input_vector import get_sleep_point, sleep_clac
+    from datetime import time
 
     username = request.session.get("usr")
     if not username:
@@ -442,18 +659,29 @@ async def save_sleep_checkup(request: Request):
     try:
         sleep_hours = float(data.get("sleep_hours"))
         sleep_start_time = str(data.get("sleep_start_time") or "")
-        sleep_start_hour = int(sleep_start_time.split(":", 1)[0])
-        if not 0 <= sleep_hours <= 24 or not 0 <= sleep_start_hour <= 23:
+        start_time = time.fromisoformat(sleep_start_time)
+        if not 0 < sleep_hours <= 24:
             raise ValueError
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="Schlafstunden oder Einschlafzeit ungültig")
 
-    sleep_state = db_interaction.get_daily_sleep_checkup(username)
-    sleep_count = int(sleep_state["started_after_checkup"])
-    sleep_point = get_sleep_point(sleep_start_hour)
-    sleep_quality = sleep_clac(sleep_hours, sleep_point, sleep_count)
+    slept_after_midnight = time(0, 0) < start_time < time(12, 0)
+    late_nights_last_week = db_interaction.get_late_sleep_nights_last_week(
+        username,
+        current_slept_after_midnight=slept_after_midnight,
+    )
+    sleep_point = min(get_sleep_point(start_time.hour), 0.0) if slept_after_midnight else 0.0
+    if slept_after_midnight and sleep_point == 0:
+        sleep_point = min(get_sleep_point(1), 0.0)
+    late_nights_fraction = late_nights_last_week / 7
+    sleep_quality = sleep_clac(sleep_hours, sleep_point, late_nights_fraction)
     saved = db_interaction.save_daily_sleep_checkup(
-        username, sleep_hours, sleep_point, sleep_quality
+        username,
+        sleep_hours,
+        sleep_point,
+        sleep_quality,
+        late_nights_last_week,
+        slept_after_midnight,
     )
     if not saved:
         raise HTTPException(status_code=409, detail="Der Schlaf-Check-in ist heute bereits abgeschlossen.")
@@ -478,6 +706,50 @@ async def get_daily_features(request: Request):
 
     from data.user.db_interaction import get_daily_feature_values
     return get_daily_feature_values(username)
+
+
+@app.get("/api/dashboard/recommendation")
+async def get_dashboard_recommendation(request: Request):
+    import json
+    from datetime import date
+
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    from data.user.db_interaction import (
+        get_daily_feature_values,
+        get_daily_sleep_checkup,
+        get_index_intel,
+    )
+    from Kalender.date import get_date
+
+    today = date.today()
+    checkup_count, health_sum, health_curve = get_index_intel(username)
+    daily = get_daily_feature_values(username)
+    sleep = get_daily_sleep_checkup(username)
+    tasks = get_date(username, today.month, today.year)
+    upcoming_tasks = [
+        task for task in tasks if task.get("task_date", "") >= today.isoformat()
+    ][:5]
+    context = {
+        "health_average": health_sum / checkup_count if checkup_count else None,
+        "health_history": list(health_curve.items())[-7:] if isinstance(health_curve, dict) else [],
+        "daily_checkup": daily,
+        "sleep_checkin": sleep,
+        "upcoming_calendar_tasks": upcoming_tasks,
+    }
+
+    try:
+        recommendation = await get_llm_queue().submit(
+            content="Was ist ein sinnvoller, konkreter nächster Schritt für diesen User heute?",
+            request_type="system",
+            structured_context=json.dumps(context, ensure_ascii=False),
+            username=username,
+        )
+    except Exception as error:
+        raise HTTPException(status_code=503, detail="Empfehlung ist gerade nicht verfügbar") from error
+    return {"recommendation": recommendation}
 
 
 ####################################

@@ -1,23 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
     <head>
-        <title>My App</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Rebuild | Opty</title>
     </head>
-     <body data-feature="activity_score">
+    <body>
         <nav id="navbar">
             <a href="/home">Dashboard</a>
             <a href="/kalender">Kalender</a>
         </nav>
-        <figure>
-            <img src="/static/assets/body.svg" alt="Körperübersicht">
-            <img src="/static/assets/legs.svg" alt="Beine">
-        </figure>
         <main>
             <h1>Opty</h1>
-            <section id="gespräch">
-            </section>
-            <textarea id="text" placeholder="Beschreiben Sie Ihre Aktivität..."></textarea>
-            <button id="sendButton">Send</button>
+            <section id="gespräch" aria-live="polite" aria-label="Gespräch"></section>
+            <p id="status" role="status" aria-live="polite"></p>
+            <label for="text">Nachricht</label>
+            <textarea id="text" placeholder="Was ist dein nächster Schritt?"></textarea>
+            <button id="sendButton" type="button">Senden</button>
+            <button id="clearButton" type="button">Gespräch speichern und leeren</button>
         </main>
+        <script src="/llm-static/llm.js" defer></script>
     </body>
 </html>

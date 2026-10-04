@@ -1,9 +1,6 @@
 import asyncio
 import itertools
 import os
-import sqlite3
-from contextlib import closing
-from pathlib import Path
 
 import ollama
 import vectordb
@@ -19,11 +16,6 @@ REQUEST_PRIORITIES = {
     SYSTEM_REQUEST: 2,
 }
 
-DATABASE_PATH = Path(
-    os.getenv("USER_DATABASE_PATH", str(Path(__file__).with_name("user_context.sqlite3")))
-)
-
-
 class LlmRequest:
     def __init__(
         self,
@@ -31,98 +23,34 @@ class LlmRequest:
         request_type,
         conversation=None,
         structured_context="",
-        user_id="default",
+        username="default",
     ):
         self.content = content
         self.request_type = request_type
         self.conversation = conversation or []
         self.structured_context = structured_context
-        self.user_id = user_id
+        self.username = username
         self.result = None
 
 
-def save_problem(description, user_id="default", database_path=DATABASE_PATH):
-    """Save a problem so future user requests can use it as context."""
-    with closing(sqlite3.connect(database_path)) as connection:
-        with connection:
-            connection.execute(
-                """CREATE TABLE IF NOT EXISTS problem_history (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )"""
-            )
-            connection.execute(
-                "INSERT INTO problem_history (user_id, description) VALUES (?, ?)",
-                (user_id, description),
-            )
+def get_recent_problem_summaries(username, limit=2):
+    from data.user.db_interaction import get_recent_llm_summaries
+
+    return get_recent_llm_summaries(username, limit)
 
 
-def get_recent_problems(user_id="default", limit=5, database_path=DATABASE_PATH):
-    with closing(sqlite3.connect(database_path)) as connection:
-        with connection:
-            connection.execute(
-                """CREATE TABLE IF NOT EXISTS problem_history (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id TEXT NOT NULL,
-                    description TEXT NOT NULL,
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )"""
-            )
-            rows = connection.execute(
-                """SELECT created_at, description FROM problem_history
-                   WHERE user_id = ? ORDER BY id DESC LIMIT ?""",
-                (user_id, limit),
-            ).fetchall()
-    return [f"{created_at}: {description}" for created_at, description in rows]
+def save_problem_summary(username, summary):
+    from data.user.db_interaction import save_llm_problem_summary
 
-
-def get_user_memory(user_id="default", database_path=DATABASE_PATH):
-    with closing(sqlite3.connect(database_path)) as connection:
-        with connection:
-            connection.execute(
-                """CREATE TABLE IF NOT EXISTS user_memory (
-                    user_id TEXT PRIMARY KEY,
-                    summary TEXT NOT NULL,
-                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )"""
-            )
-            row = connection.execute(
-                "SELECT summary FROM user_memory WHERE user_id = ?", (user_id,)
-            ).fetchone()
-    return row[0] if row else ""
-
-
-def save_user_memory(summary, user_id="default", database_path=DATABASE_PATH):
-    summary = summary.strip()
-    if not summary:
-        return
-
-    with closing(sqlite3.connect(database_path)) as connection:
-        with connection:
-            connection.execute(
-                """CREATE TABLE IF NOT EXISTS user_memory (
-                    user_id TEXT PRIMARY KEY,
-                    summary TEXT NOT NULL,
-                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )"""
-            )
-            connection.execute(
-                """INSERT INTO user_memory (user_id, summary) VALUES (?, ?)
-                   ON CONFLICT(user_id) DO UPDATE SET
-                   summary = excluded.summary, updated_at = CURRENT_TIMESTAMP""",
-                (user_id, summary),
-            )
+    return save_llm_problem_summary(username, summary)
 
 
 class LlmRequestQueue:
-    def __init__(self, model="qwen2.5:1.5b", client=None, database_path=DATABASE_PATH):
+    def __init__(self, model="qwen2.5:1.5b", client=None):
         self.model = model
         self.client = client or ollama.AsyncClient(
             host=os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
         )
-        self.database_path = database_path
         self._requests = asyncio.PriorityQueue()
         self._sequence = itertools.count()
         self._worker = None
@@ -152,14 +80,14 @@ class LlmRequestQueue:
         request_type=USER_REQUEST,
         conversation=None,
         structured_context="",
-        user_id="default",
+        username="default",
     ):
         request = LlmRequest(
             content=content,
             request_type=request_type,
             conversation=conversation,
             structured_context=structured_context,
-            user_id=user_id,
+            username=username,
         )
         return await self.enqueue(request)
 
@@ -189,18 +117,16 @@ class LlmRequestQueue:
             return await self._summarize_and_store(request)
 
         vector_context = await asyncio.to_thread(vectordb.init_brain, request.content)
-        recent_problems = await asyncio.to_thread(
-            get_recent_problems, request.user_id, 5, self.database_path
-        )
-        user_memory = await asyncio.to_thread(
-            get_user_memory, request.user_id, self.database_path
-        )
-
         context_parts = [f"Relevanter Vektordatenbank-Kontext:\n{vector_context}"]
-        if recent_problems:
-            context_parts.append("Letzte Problemfälle aus SQLite:\n" + "\n".join(recent_problems))
-        if user_memory:
-            context_parts.append("Persönliches Langzeitgedächtnis aus SQLite:\n" + user_memory)
+        if request.request_type == USER_REQUEST:
+            recent_summaries = await asyncio.to_thread(
+                get_recent_problem_summaries, request.username, 2
+            )
+            if recent_summaries:
+                context_parts.append(
+                    "Letzte persönliche Problem-Zusammenfassungen aus User.db:\n"
+                    + "\n".join(recent_summaries)
+                )
 
         if request.request_type == SYSTEM_REQUEST and request.structured_context:
             context_parts.append("Strukturierter Systemkontext:\n" + request.structured_context)
@@ -222,13 +148,13 @@ class LlmRequestQueue:
         conversation = self._conversation_text(request.conversation)
         if not conversation:
             conversation = request.content
-        previous_memory = await asyncio.to_thread(
-            get_user_memory, request.user_id, self.database_path
+        previous_summaries = await asyncio.to_thread(
+            get_recent_problem_summaries, request.username, 2
         )
-        if previous_memory:
+        if previous_summaries:
             conversation = (
-                "Bisheriges persönliches Langzeitgedächtnis:\n"
-                + previous_memory
+                "Die letzten persönlichen Zusammenfassungen:\n"
+                + "\n".join(previous_summaries)
                 + "\n\nNeues Gespräch:\n"
                 + conversation
             )
@@ -244,9 +170,7 @@ class LlmRequestQueue:
             {"role": "user", "content": conversation},
         ]
         summary = await self._chat(messages)
-        await asyncio.to_thread(
-            save_user_memory, summary, request.user_id, self.database_path
-        )
+        await asyncio.to_thread(save_problem_summary, request.username, summary)
         return summary
 
     async def _chat(self, messages):
