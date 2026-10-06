@@ -1,21 +1,25 @@
 # ai_ipc.py
 import json
+import math
 import os
 import struct
 import subprocess
 import sqlite3
+from contextlib import closing
 from multiprocessing import shared_memory
+from pathlib import Path
 
-PATH_DB = "core/ai/weigths.db"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PATH_DB = PROJECT_ROOT / "core" / "ai" / "weigths.db"
 TABLE_FOOD = "food"
 TABLE_ACTIVITY = "act"
 
-DATA_HEALTH = "data/ai_algoritmus/health.db"
-HEALTH_TABLE_FOOD = "food_naehrwerte"  
-HEALTH_TABLE_ACTIVITY = "act_naehrwerte"
+DATA_HEALTH = PROJECT_ROOT / "data" / "ai_konstanten" / "health.db"
+HEALTH_TABLE_FOOD = "food_nährwerte"
+HEALTH_TABLE_ACTIVITY = "activity_werte"
 
 # complilierte C Data
-C_AI = "core/ai/ai"
+C_AI = PROJECT_ROOT / "core" / "ai" / "ai"
 
 INPUT_NEURONEN = 8
 HIDDEN_NEURONEN = 8
@@ -58,7 +62,80 @@ def unsimple_list(flat, rows, cols):
             
     return complex_list
 
+def _python_ai_auf(modus, W1, b1, W2, b2, W3, b3, input_vector, expected, lernrate):
+    W1, b1, W2, b2, W3, b3 = (
+        list(map(float, values)) for values in (W1, b1, W2, b2, W3, b3)
+    )
+    input_vector = list(map(float, input_vector))
+    if len(input_vector) != INPUT_NEURONEN:
+        raise ValueError(f"Eingabe muss genau {INPUT_NEURONEN} Werte enthalten")
+
+    def sigmoid(value):
+        if value >= 0:
+            return 1.0 / (1.0 + math.exp(-value))
+        exp_value = math.exp(value)
+        return exp_value / (1.0 + exp_value)
+
+    def forward():
+        h1 = [
+            sigmoid(sum(W1[i * INPUT_NEURONEN + k] * input_vector[k]
+                        for k in range(INPUT_NEURONEN)) + b1[i])
+            for i in range(HIDDEN_NEURONEN)
+        ]
+        h2 = [
+            sigmoid(sum(W2[i * HIDDEN_NEURONEN + k] * h1[k]
+                        for k in range(HIDDEN_NEURONEN)) + b2[i])
+            for i in range(HIDDEN_NEURONEN)
+        ]
+        output = [
+            sigmoid(sum(W3[i * HIDDEN_NEURONEN + k] * h2[k]
+                        for k in range(HIDDEN_NEURONEN)) + b3[i])
+            for i in range(OUTPUT_NEURONEN)
+        ]
+        return h1, h2, output
+
+    h1, h2, output = forward()
+    if modus > 0.5:
+        expected = list(map(float, expected))
+        delta_out = [
+            (output[i] - expected[i]) * output[i] * (1.0 - output[i])
+            for i in range(OUTPUT_NEURONEN)
+        ]
+        delta_h2 = [
+            sum(W3[i * HIDDEN_NEURONEN + k] * delta_out[i]
+                for i in range(OUTPUT_NEURONEN)) * h2[k] * (1.0 - h2[k])
+            for k in range(HIDDEN_NEURONEN)
+        ]
+        delta_h1 = [
+            sum(W2[i * HIDDEN_NEURONEN + k] * delta_h2[i]
+                for i in range(HIDDEN_NEURONEN)) * h1[k] * (1.0 - h1[k])
+            for k in range(HIDDEN_NEURONEN)
+        ]
+
+        for i in range(OUTPUT_NEURONEN):
+            for k in range(HIDDEN_NEURONEN):
+                W3[i * HIDDEN_NEURONEN + k] -= lernrate * delta_out[i] * h2[k]
+            b3[i] -= lernrate * delta_out[i]
+        for i in range(HIDDEN_NEURONEN):
+            for k in range(HIDDEN_NEURONEN):
+                W2[i * HIDDEN_NEURONEN + k] -= lernrate * delta_h2[i] * h1[k]
+            b2[i] -= lernrate * delta_h2[i]
+        for i in range(HIDDEN_NEURONEN):
+            for k in range(INPUT_NEURONEN):
+                W1[i * INPUT_NEURONEN + k] -= lernrate * delta_h1[i] * input_vector[k]
+            b1[i] -= lernrate * delta_h1[i]
+
+        _, _, output = forward()
+
+    return W1, b1, W2, b2, W3, b3, output
+
+
 def _rufe_ai_auf(modus, W1, b1, W2, b2, W3, b3, input_vector, expected, lernrate):
+    if os.name == "nt" or not C_AI.is_file():
+        return _python_ai_auf(
+            modus, W1, b1, W2, b2, W3, b3, input_vector, expected, lernrate,
+        )
+
     # Input Array ++
     in_floats = [float(modus)] + W1 + b1 + W2 + b2 + W3 + b3 + input_vector + expected + [float(lernrate)]
     assert len(in_floats) == IN_BUF_FLOATS, f"Input-Layout stimmt nicht: {len(in_floats)} != {IN_BUF_FLOATS}"
@@ -115,92 +192,94 @@ def _typ_name(type_int: int) -> str:
             raise ValueError(f"Unbekannter type: {type_int}")
 
 def load_data(type_int: int) -> dict | None:
-    conn = sqlite3.connect(PATH_DB)
-    cursor = conn.cursor()
     typ_data = _typ_name(type_int)
-    try:
-        cursor.execute(f"""
-            SELECT weight_matrix1, weight_matrix2, weight_vector1,
-                   vector_hl_1, vector_hl_2, base_vector1, base_vector2, base3
-            FROM {typ_data}
-            ORDER BY ROWID DESC LIMIT 1
-        """)
-        row = cursor.fetchone()
-        if row is None:
-            print(f"Keine Gewichte fuer '{typ_data}' gefunden.")
-            return None
-        return {
-            "weight_matrix1": json.loads(row[0]),
-            "weight_matrix2": json.loads(row[1]),
-            "weight_vector1": json.loads(row[2]),
-            "vector_hl_1": row[3],
-            "vector_hl_2": row[4],
-            "base_vector1": json.loads(row[5]),
-            "base_vector2": json.loads(row[6]),
-            "base3": row[7],
-        }
-    except Exception as e:
-        print(f"Fehler beim Laden: {e}")
+    PATH_DB.parent.mkdir(parents=True, exist_ok=True)
+    with closing(sqlite3.connect(PATH_DB)) as conn:
+        with conn:
+            conn.execute(f"""
+                CREATE TABLE IF NOT EXISTS {typ_data} (
+                    weight_matrix1 TEXT, weight_matrix2 TEXT, weight_vector1 TEXT,
+                    vector_hl_1 TEXT, vector_hl_2 TEXT, base_vector1 TEXT,
+                    base_vector2 TEXT, base3 REAL
+                )
+            """)
+            row = conn.execute(f"""
+                SELECT weight_matrix1, weight_matrix2, weight_vector1,
+                       vector_hl_1, vector_hl_2, base_vector1, base_vector2, base3
+                FROM {typ_data}
+                ORDER BY ROWID DESC LIMIT 1
+            """).fetchone()
+    if row is None:
+        print(f"Keine Gewichte fuer '{typ_data}' gefunden.")
         return None
-    finally:
-        conn.close()
+    return {
+        "weight_matrix1": json.loads(row[0]),
+        "weight_matrix2": json.loads(row[1]),
+        "weight_vector1": json.loads(row[2]),
+        "vector_hl_1": row[3],
+        "vector_hl_2": row[4],
+        "base_vector1": json.loads(row[5]),
+        "base_vector2": json.loads(row[6]),
+        "base3": row[7],
+    }
 
 def save_data(type_int: int, weight1, weight2, weight3, b1, b2, b3):
-    conn = sqlite3.connect(PATH_DB)
-    cursor = conn.cursor()
     typ_data = _typ_name(type_int)
-    cursor.execute(f"""
-        CREATE TABLE IF NOT EXISTS {typ_data} (
-            weight_matrix1 TEXT, weight_matrix2 TEXT, weight_vector1 TEXT,
-            vector_hl_1 TEXT, vector_hl_2 TEXT,
-            base_vector1 TEXT, base_vector2 TEXT, base3 REAL
-        )
-    """)
-    cursor.execute(f"""
-        INSERT INTO {typ_data}
-        (weight_matrix1, weight_matrix2, weight_vector1, base_vector1, base_vector2, base3)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (
-        json.dumps(weight1), json.dumps(weight2), json.dumps(weight3),
-        json.dumps(b1), json.dumps(b2), b3,
-    ))
-    conn.commit()
-    conn.close()
+    PATH_DB.parent.mkdir(parents=True, exist_ok=True)
+    with closing(sqlite3.connect(PATH_DB)) as conn:
+        with conn:
+            conn.execute(f"""
+                CREATE TABLE IF NOT EXISTS {typ_data} (
+                    weight_matrix1 TEXT, weight_matrix2 TEXT, weight_vector1 TEXT,
+                    vector_hl_1 TEXT, vector_hl_2 TEXT, base_vector1 TEXT,
+                    base_vector2 TEXT, base3 REAL
+                )
+            """)
+            conn.execute(f"""
+                INSERT INTO {typ_data}
+                (weight_matrix1, weight_matrix2, weight_vector1, base_vector1, base_vector2, base3)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                json.dumps(weight1), json.dumps(weight2), json.dumps(weight3),
+                json.dumps(b1), json.dumps(b2), b3,
+            ))
 
 def load_health(type_str: str):
-    conn = sqlite3.connect(DATA_HEALTH)
-    cursor = conn.cursor()
-    try:
-        match type_str:
-            case "food":
-                cursor.execute(f"""
-                    SELECT "Eiweiße (g)", "Fette (g)", "Zucker (g)", "Kohlenhydrate (g)",
-                           "Ballaststoffe (g)", "Wasser (g)", "Makronährstoffe (g)",
-                           "Mikronährstoffe (Score 0-10)", "Healthiness_Score (1-100)"
-                    FROM {HEALTH_TABLE_FOOD}
-                    ORDER BY ROWID DESC LIMIT 1
-                """)
-                row = cursor.fetchone()
-
-                if row is None:
-                    print("2 : No DB : food")
-                    return None, None
-
-                features = list(row[0:8]) # Format ist dann so [[row]...]
-                ziel_score = row[8] / 100.0 # umformatierung von formated auf SIgmurid formart
-                return features, ziel_score
+    samples = _load_health_samples(type_str)
+    return samples[-1] if samples else (None, None)
 
 
-            case "act":
-                print("2 : No DB : act")
-                return None, None
-            case _:
-                raise ValueError(f"Unbekannter type_str: {type_str}")
-    except Exception as e:
-        print(f"Fehler beim Laden: {e}")
-        return None, None
-    finally:
-        conn.close()
+def _load_health_samples(type_str: str) -> list[tuple[list[float], float]]:
+    match type_str:
+        case "food":
+            table = HEALTH_TABLE_FOOD
+            feature_columns = (
+                "Eiweiße (g)", "Fette (g)", "Zucker (g)", "Kohlenhydrate (g)",
+                "Ballaststoffe (g)", "Wasser (g)", "Makronährstoffe (g)",
+                "Mikronährstoffe (Score 0-10)",
+            )
+            score_column = "Healthiness_Score (1-100)"
+        case "act":
+            table = HEALTH_TABLE_ACTIVITY
+            feature_columns = (
+                "Energieverbrauch (kcal/30min)", "Cardio-Intensitaet",
+                "Kraft-/Muskelbeanspruchung ", "Beweglichkeit", "Koordination",
+                "Stressabbau", "Gelenkbelastung", "Verletzungsrisiko ",
+            )
+            score_column = "Healthiness_Score "
+        case _:
+            raise ValueError(f"Unbekannter type_str: {type_str}")
+
+    selected_columns = ", ".join(f'"{column}"' for column in (*feature_columns, score_column))
+    with closing(sqlite3.connect(DATA_HEALTH)) as conn:
+        rows = conn.execute(
+            f'SELECT {selected_columns} FROM "{table}" ORDER BY ROWID'
+        ).fetchall()
+    return [
+        ([float(value or 0) for value in row[:8]], float(row[8]) / 100.0)
+        for row in rows
+        if row[8] is not None
+    ]
 
 """
 execute Functions
@@ -215,10 +294,16 @@ def _weights_zu_simple_listen(gewichte: dict):
     return W1, b1, W2, b2, W3, b3
 
 def forwardpropagation(type_int: int, train=True, input_vector=None) -> int | None:
+    if not train and input_vector is None:
+        return None
+
     weight1 = load_data(type_int)
     if weight1 is None:
-        print(" 1 : Keine Gewichte vorhanden -> trainging needed")
-        return None
+        print("Keine gespeicherten Gewichte vorhanden; starte Initialtraining.")
+        backprpergation(type_int)
+        weight1 = load_data(type_int)
+        if weight1 is None:
+            return None
 
     health_need = "food" if type_int == 0 else "act"
 
@@ -257,6 +342,9 @@ def backprpergation(type_int: int, epochen: int = 1):
         weight2 = load_data(1)
         return
 
+    if epochen < 1:
+        raise ValueError("epochen muss mindestens 1 sein")
+
     weight1 = load_data(type_int)
     if weight1 is None:
         print("Keine Gewichte vorhanden - initialisiere zufaellig.")
@@ -269,19 +357,22 @@ def backprpergation(type_int: int, epochen: int = 1):
         W1, b1, W2, b2, W3, b3 = _weights_zu_simple_listen(weight1)
 
     health_need = "food" if type_int == 0 else "act"
-    data1, ziel_score = load_health(health_need)
-    if data1 is None:
-        return
-    data_vector = data1
-    expected = [ziel_score]
+    training_samples = _load_health_samples(health_need)
+    if not training_samples:
+        raise ValueError(f"Keine Trainingsdaten in {DATA_HEALTH} fuer '{health_need}' gefunden.")
 
     for epoche in range(epochen):
-        W1, b1, W2, b2, W3, b3, output = _rufe_ai_auf(
-            modus=1, W1=W1, b1=b1, W2=W2, b2=b2, W3=W3, b3=b3,
-            input_vector=data_vector, expected=expected, lernrate=LERNRATE,
-        )
+        for data_vector, ziel_score in training_samples:
+            expected = [ziel_score]
+            W1, b1, W2, b2, W3, b3, output = _rufe_ai_auf(
+                modus=1, W1=W1, b1=b1, W2=W2, b2=b2, W3=W3, b3=b3,
+                input_vector=data_vector, expected=expected, lernrate=LERNRATE,
+            )
         if epoche % max(1, epochen // 5) == 0 or epoche == epochen - 1:
-            print(f"Epoche {epoche:4d} | Vorhersage: {output[0]:.4f} | Ziel: {expected[0]:.4f}")
+            print(
+                f"Epoche {epoche:4d} | Vorhersage: {output[0]:.4f} "
+                f"| Ziel: {expected[0]:.4f}"
+            )
 
     save_data(
         type_int,

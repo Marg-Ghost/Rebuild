@@ -4,8 +4,6 @@
 // bei 0 modi _ nur forward
 //bei 1 modi _ backpropagation
 
-//   gcc -O2 -o core/ai/ai ai.c -lrt -lm
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

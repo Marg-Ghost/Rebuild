@@ -9,9 +9,9 @@
     <body>
         <main id="current_month">
             <section id="month_current" aria-label="Monatsansicht">
-                <button id="last" type="button" aria-label="Vorheriger Monat">&lt;</button>
+                <button id="last" type="button" aria-label="Vorheriger Monat" onclick="change_calendar_month(-1)">&lt;</button>
                 <h1 id="month_label"></h1>
-                <button id="next" type="button" aria-label="Nächster Monat">&gt;</button>
+                <button id="next" type="button" aria-label="Nächster Monat" onclick="change_calendar_month(1)">&gt;</button>
             </section>
             <section id="table">
                 <table id="show_month">
@@ -25,17 +25,17 @@
                 </table>
             </section>
             <div id="interaction">
-                <button id="toggle_add_button" type="button">Add Task</button>
+                <button id="toggle_add_button" type="button" onclick="toggle_add()">Add Task</button>
             </div>
         </main>
 
         <section id="add_date" hidden>
             <h2>Add to Agenda</h2>
-            <form id="task_form">
+            <form id="task_form" onsubmit="set_data(event)">
                 <label>Datum <input id="date" type="date" required></label>
                 <label>Uhrzeit <input id="time" type="time"></label>
                 <label>Wichtigkeit
-                    <input id="slider" type="range" min="1" max="4" step="1" value="1">
+                    <input id="slider" type="range" min="1" max="4" step="1" value="1" oninput="update_importance(this.value)">
                     <output id="sliderOutput">1</output>
                 </label>
                 <label>Typ

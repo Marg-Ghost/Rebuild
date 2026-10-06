@@ -3,8 +3,8 @@ const monthNames = [
     "Juli", "August", "September", "Oktober", "November", "Dezember"
 ];
 
-let selected_month;
-let selected_year;
+let selected_month = new Date().getMonth() + 1;
+let selected_year = new Date().getFullYear();
 
 function toggle_add() {
     const add_element = document.getElementById("add_date");
@@ -167,17 +167,25 @@ async function get_month_name() {
     return [now.getMonth() + 1, now.getFullYear()];
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-    document.getElementById("last").addEventListener("click", () => get_all_enties(selected_month - 1, selected_year));
-    document.getElementById("next").addEventListener("click", () => get_all_enties(selected_month + 1, selected_year));
-    document.getElementById("toggle_add_button").addEventListener("click", toggle_add);
-    document.getElementById("task_form").addEventListener("submit", set_data);
-    document.getElementById("slider").addEventListener("input", (event) => {
-        document.getElementById("sliderOutput").value = event.target.value;
-    });
+function change_calendar_month(offset) {
+    return get_all_enties(selected_month + offset, selected_year);
+}
+
+function update_importance(value) {
+    document.getElementById("sliderOutput").value = value;
+}
+
+async function initialize_calendar() {
     const [current_month, current_year] = await get_month_name();
     await get_all_enties(current_month, current_year);
-});
+}
+
+window.toggle_add = toggle_add;
+window.set_data = set_data;
+window.change_calendar_month = change_calendar_month;
+window.update_importance = update_importance;
+
+initialize_calendar();
 
 
 

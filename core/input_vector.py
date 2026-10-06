@@ -123,7 +123,7 @@ def all_check(health: float, sleep: list, food: list, act: list) -> list:
     health += food_impact
     health += act_impact
 
-    return [health,[sleep_score,point_score,count_score],return_val_f,return_val_a]
+    return [health, [sleep_score, point_score, late_nights_fraction], return_val_f, return_val_a]
 """ 
 def register_vector(sleep: list, food : list, act : list):
     global HEALTH_SLEEP
@@ -140,11 +140,7 @@ def register_vector(sleep: list, food : list, act : list):
 
     all_check([sleep_time, sleep_point, sleep_point_count], food, act)
 """
-def sleep_clac(
-    sleep_score: float,
-    point_score: float,
-    late_nights_fraction: float,
-) -> float:
+def sleep_clac(sleep_score: float,point_score: float,late_nights_fraction: float,) -> float:
     penalty_point = min(point_score, 0.0)
     erg = sleep_score + penalty_point * math.exp(late_nights_fraction)
     return erg
