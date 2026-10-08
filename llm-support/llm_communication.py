@@ -17,14 +17,8 @@ REQUEST_PRIORITIES = {
 }
 
 class LlmRequest:
-    def __init__(
-        self,
-        content,
-        request_type,
-        conversation=None,
-        structured_context="",
-        username="default",
-    ):
+    def __init__(self,content,request_type,conversation=None,
+        structured_context="",username="default",):
         self.content = content
         self.request_type = request_type
         self.conversation = conversation or []
@@ -68,6 +62,7 @@ class LlmRequestQueue:
         )
 
         if request.request_type == USER_REQUEST and self._active_type == SYSTEM_REQUEST:
+            # kein Richtiger abbruch ! frage ist diese option möglich zu implementieren?
             self._active_task.cancel()
 
         if self._worker is None or self._worker.done():

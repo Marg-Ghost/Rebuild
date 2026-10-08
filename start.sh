@@ -13,26 +13,32 @@ if ! docker compose version >/dev/null 2>&1; then
     exit 1
 fi
 
+if [[ ! -f ".env" ]]; then
+    if command -v openssl >/dev/null 2>&1; then
+        session_secret="$(openssl rand -hex 32)"
+    elif command -v od >/dev/null 2>&1; then
+        session_secret="$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
+    else
+        echo "Fehler: Kein Generator für den initialen Session-Schlüssel gefunden." >&2
+        exit 1
+    fi
+    printf 'SessionMiddlewareSecretKey=%s\nOLLAMA_MODEL=llama3:latest\n' \
+        "${session_secret}" > ".env"
+    echo "Lokale .env mit zufälligem Session-Schlüssel wurde angelegt."
+fi
+
+if ! grep -Eq '^SessionMiddlewareSecretKey=.+$' ".env"; then
+    echo "Fehler: SessionMiddlewareSecretKey ist in .env nicht gesetzt." >&2
+    exit 1
+fi
+
 if [[ -z "${OLLAMA_MODEL:-}" ]]; then
     OLLAMA_MODEL="llama3:latest"
 fi
 export OLLAMA_MODEL
-export OLLAMA_HOST="${OLLAMA_HOST:-http://localhost:11434}"
 
-if [[ -x ".venv/bin/python" ]]; then
-    PYTHON_BIN="${PWD}/.venv/bin/python"
-elif [[ -f ".venv/Scripts/python.exe" ]]; then
-    PYTHON_BIN="${PWD}/.venv/Scripts/python.exe"
-elif command -v python3 >/dev/null 2>&1; then
-    PYTHON_BIN="$(command -v python3)"
-elif command -v python >/dev/null 2>&1; then
-    PYTHON_BIN="$(command -v python)"
-else
-    echo "Fehler: Python 3 ist nicht installiert oder nicht im PATH." >&2
-    exit 1
-fi
-
-echo "Starte Ollama-Container ..."
+echo "Baue das App-Image und starte Ollama ..."
+docker compose build app
 docker compose up -d ollama
 
 echo "Warte auf Ollama ..."
@@ -51,14 +57,35 @@ if [[ "${ollama_ready}" != true ]]; then
     exit 1
 fi
 
-if docker compose exec -T ollama ollama list \
+installed_models="$(docker compose exec -T ollama ollama list)"
+if printf '%s\n' "${installed_models}" \
     | awk 'NR > 1 { print $1 }' \
-    | grep -Fxq -- "${OLLAMA_MODEL}"; then
+    | grep -Fx -- "${OLLAMA_MODEL}" >/dev/null; then
     echo "Modell ${OLLAMA_MODEL} ist bereits vorhanden."
 else
     echo "Modell ${OLLAMA_MODEL} fehlt; lade es jetzt herunter ..."
     docker compose exec -T ollama ollama pull "${OLLAMA_MODEL}"
 fi
 
-echo "Starte Rebuild-Server auf http://localhost:8000 ..."
-exec "${PYTHON_BIN}" server.py
+echo "Starte App-Container auf http://localhost:8000 ..."
+docker compose up -d app
+
+echo "Warte auf den Rebuild-Server ..."
+app_ready=false
+for _ in {1..30}; do
+    if docker compose exec -T app python -c \
+        "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=3)" \
+        >/dev/null 2>&1; then
+        app_ready=true
+        break
+    fi
+    sleep 2
+done
+
+if [[ "${app_ready}" != true ]]; then
+    echo "Fehler: Der App-Server ist nach 60 Sekunden nicht bereit." >&2
+    docker compose logs --tail=80 app >&2 || true
+    exit 1
+fi
+
+docker compose ps

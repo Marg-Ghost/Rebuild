@@ -21,9 +21,16 @@ app.mount("/kalender-static", StaticFiles(directory=KALENDER_WEB_DIR), name="kal
 from dotenv import load_dotenv
 load_dotenv()
 
+session_secret = (
+    os.getenv("SessionMiddlewareSecretKey")
+    or os.getenv("SessionMiddlewareSecreteKey")
+)
+if not session_secret:
+    raise RuntimeError("SessionMiddlewareSecretKey muss konfiguriert sein.")
+
 app.add_middleware(
     SessionMiddleware,
-    secret_key=os.getenv("SessionMiddlewareSecreteKey"),
+    secret_key=session_secret,
     max_age=60 * 60 * 24,
 )
 
