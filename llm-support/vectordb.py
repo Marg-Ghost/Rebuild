@@ -12,8 +12,8 @@ db = chromadb.PersistentClient(path="./chroma_data")
 collection = db.get_or_create_collection(name="Ghost")
 
 
-client = ollama.Client(host=os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434"))
-current_model = "qwen2.5:1.5b"
+client = ollama.Client(host=os.getenv("OLLAMA_HOST", "http://localhost:11434"))
+current_model = os.getenv("OLLAMA_MODEL", "llama3:latest")
 
 
 # Datenbanken

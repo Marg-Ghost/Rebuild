@@ -25,6 +25,10 @@ INPUT_NEURONEN = 8
 HIDDEN_NEURONEN = 8
 OUTPUT_NEURONEN = 1
 LERNRATE = 0.05
+INPUT_SCALES = {
+    0: (50.0, 100.0, 100.0, 100.0, 50.0, 100.0, 100.0, 10.0),
+    1: (400.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0),
+}
 
 W1_SIZE = HIDDEN_NEURONEN * INPUT_NEURONEN    # 64 für 8x8 Matrix
 B1_SIZE = HIDDEN_NEURONEN                      # 8
@@ -61,6 +65,19 @@ def unsimple_list(flat, rows, cols):
         complex_list.append(part[0])  
             
     return complex_list
+
+
+def _normalize_input(type_int: int, input_vector: list[float]) -> list[float]:
+    try:
+        scales = INPUT_SCALES[type_int]
+    except KeyError as error:
+        raise ValueError(f"Unbekannter type: {type_int}") from error
+
+    values = list(map(float, input_vector))
+    if len(values) != INPUT_NEURONEN:
+        raise ValueError(f"Eingabe muss genau {INPUT_NEURONEN} Werte enthalten")
+    return [value / scale for value, scale in zip(values, scales)]
+
 
 def _python_ai_auf(modus, W1, b1, W2, b2, W3, b3, input_vector, expected, lernrate):
     W1, b1, W2, b2, W3, b3 = (
@@ -317,6 +334,7 @@ def forwardpropagation(type_int: int, train=True, input_vector=None) -> int | No
         if input_vector is None:
             return None
         data_vector = input_vector
+    data_vector = _normalize_input(type_int, data_vector)
     
     W1, b1, W2, b2, W3, b3 = _weights_zu_simple_listen(weight1)
 
@@ -335,17 +353,18 @@ def forwardpropagation(type_int: int, train=True, input_vector=None) -> int | No
 """
 training Functions
 """
-def backprpergation(type_int: int, epochen: int = 1):
+def backprpergation(type_int: int, epochen: int = 1, reset_weights: bool = False):
     if type_int == 2:
         # SKip for now!
         weight1 = load_data(0)
         weight2 = load_data(1)
         return
 
+    _typ_name(type_int)
     if epochen < 1:
         raise ValueError("epochen muss mindestens 1 sein")
 
-    weight1 = load_data(type_int)
+    weight1 = None if reset_weights else load_data(type_int)
     if weight1 is None:
         print("Keine Gewichte vorhanden - initialisiere zufaellig.")
         import random
@@ -366,12 +385,21 @@ def backprpergation(type_int: int, epochen: int = 1):
             expected = [ziel_score]
             W1, b1, W2, b2, W3, b3, output = _rufe_ai_auf(
                 modus=1, W1=W1, b1=b1, W2=W2, b2=b2, W3=W3, b3=b3,
-                input_vector=data_vector, expected=expected, lernrate=LERNRATE,
+                input_vector=_normalize_input(type_int, data_vector),
+                expected=expected, lernrate=LERNRATE,
             )
         if epoche % max(1, epochen // 5) == 0 or epoche == epochen - 1:
+            squared_error = 0.0
+            for data_vector, ziel_score in training_samples:
+                _, _, _, _, _, _, prediction = _rufe_ai_auf(
+                    modus=0, W1=W1, b1=b1, W2=W2, b2=b2, W3=W3, b3=b3,
+                    input_vector=_normalize_input(type_int, data_vector),
+                    expected=[0.0], lernrate=0.0,
+                )
+                squared_error += (prediction[0] - ziel_score) ** 2
+            mean_squared_error = squared_error / len(training_samples)
             print(
-                f"Epoche {epoche:4d} | Vorhersage: {output[0]:.4f} "
-                f"| Ziel: {expected[0]:.4f}"
+                f"Epoche {epoche + 1:4d} | MSE: {mean_squared_error:.6f}"
             )
 
     save_data(
@@ -383,4 +411,13 @@ def backprpergation(type_int: int, epochen: int = 1):
     )
     print(f"Training fertig, Gewichte gespeichert (type={type_int}).")
 
-    
+
+def ztrain():
+    print("Training food weights")
+    backprpergation(0, epochen=2000, reset_weights=True)
+    print("Training activity weights")
+    backprpergation(1, epochen=2000, reset_weights=True)
+
+
+if __name__ == "__main__":
+    ztrain()

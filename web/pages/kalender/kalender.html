@@ -1,54 +1,102 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Kalender</title>
-        <link rel="stylesheet" href="/static/styles/calendar.css">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#FFFAED">
+        <title>Kalender | Rebuild</title>
+        <link rel="stylesheet" href="/static/styles/main.css?v=20261004-five-checkups">
+        <link rel="stylesheet" href="/static/styles/calendar.css?v=20261008-v1">
     </head>
-    <body>
-        <main id="current_month">
-            <section id="month_current" aria-label="Monatsansicht">
-                <button id="last" type="button" aria-label="Vorheriger Monat" onclick="change_calendar_month(-1)">&lt;</button>
-                <h1 id="month_label"></h1>
-                <button id="next" type="button" aria-label="Nächster Monat" onclick="change_calendar_month(1)">&gt;</button>
-            </section>
-            <section id="table">
-                <table id="show_month">
-                    <thead>
-                        <tr>
-                            <th>Mo</th><th>Di</th><th>Mi</th><th>Do</th>
-                            <th>Fr</th><th>Sa</th><th>So</th>
-                        </tr>
-                    </thead>
-                    <tbody id="calendar_days"></tbody>
-                </table>
-            </section>
-            <div id="interaction">
-                <button id="toggle_add_button" type="button" onclick="toggle_add()">Add Task</button>
+    <body class="dashboard-page calendar-page">
+        <header class="dashboard-topbar">
+            <a class="brand" href="/home" aria-label="Rebuild Übersicht">
+                <span class="brand-mark">R</span>
+                <span>Rebuild</span>
+            </a>
+            <nav class="top-navigation" aria-label="Hauptnavigation">
+                <a href="/home">Übersicht</a>
+                <a href="/llm">KI-Assistent</a>
+                <a class="active" href="/kalender" aria-current="page">Kalender</a>
+            </nav>
+            <div class="user-chip" aria-label="Angemeldeter Benutzer">
+                <span class="user-avatar" aria-hidden="true">R</span>
+                <span id="dashboard-username">Dein Bereich</span>
             </div>
-        </main>
+        </header>
 
-        <section id="add_date" hidden>
-            <h2>Add to Agenda</h2>
-            <form id="task_form" onsubmit="set_data(event)">
-                <label>Datum <input id="date" type="date" required></label>
-                <label>Uhrzeit <input id="time" type="time"></label>
-                <label>Wichtigkeit
-                    <input id="slider" type="range" min="1" max="4" step="1" value="1" oninput="update_importance(this.value)">
-                    <output id="sliderOutput">1</output>
-                </label>
-                <label>Typ
-                    <select id="type_select">
-                        <option value="work">Work</option>
-                        <option value="private">Private</option>
-                    </select>
-                </label>
-                <label>Inhalt <input id="content" type="text" placeholder="Task..."></label>
-                <button type="submit">Hinzufügen</button>
-            </form>
-        </section>
-        <p id="calendar_status" role="status" aria-live="polite"></p>
-        <script src="/kalender-static/kalender.js"></script>
+        <main class="calendar-shell">
+            <section class="calendar-intro" aria-labelledby="calendar-title">
+                <p class="eyebrow">DEIN ÜBERBLICK</p>
+                <h1 id="calendar-title">Kalender</h1>
+                <p>Behalte deine Termine und nächsten Schritte im Blick.</p>
+            </section>
+
+            <section class="calendar-card" aria-label="Monatskalender">
+                <div class="calendar-toolbar">
+                    <div class="calendar-month-navigation" aria-label="Monat wechseln">
+                        <button id="last" type="button" aria-label="Vorheriger Monat" onclick="change_calendar_month(-1)">&larr;</button>
+                        <h2 id="month_label" aria-live="polite"></h2>
+                        <button id="next" type="button" aria-label="Nächster Monat" onclick="change_calendar_month(1)">&rarr;</button>
+                        <button id="today_button" class="calendar-today-button" type="button" onclick="show_current_month()">Heute</button>
+                    </div>
+                    <button id="toggle_add_button" class="calendar-add-button" type="button" aria-controls="add_date" aria-expanded="false" onclick="toggle_add()">Task hinzufügen</button>
+                </div>
+
+                <div class="calendar-table-wrap">
+                    <table id="show_month" aria-label="Termine in der Monatsansicht">
+                        <thead>
+                            <tr>
+                                <th scope="col"><span class="calendar-weekday-full">Montag</span><span class="calendar-weekday-short" aria-hidden="true">Mo</span></th>
+                                <th scope="col"><span class="calendar-weekday-full">Dienstag</span><span class="calendar-weekday-short" aria-hidden="true">Di</span></th>
+                                <th scope="col"><span class="calendar-weekday-full">Mittwoch</span><span class="calendar-weekday-short" aria-hidden="true">Mi</span></th>
+                                <th scope="col"><span class="calendar-weekday-full">Donnerstag</span><span class="calendar-weekday-short" aria-hidden="true">Do</span></th>
+                                <th scope="col"><span class="calendar-weekday-full">Freitag</span><span class="calendar-weekday-short" aria-hidden="true">Fr</span></th>
+                                <th scope="col"><span class="calendar-weekday-full">Samstag</span><span class="calendar-weekday-short" aria-hidden="true">Sa</span></th>
+                                <th scope="col"><span class="calendar-weekday-full">Sonntag</span><span class="calendar-weekday-short" aria-hidden="true">So</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="calendar_days"></tbody>
+                    </table>
+                </div>
+
+                <section id="add_date" class="calendar-form-panel" aria-labelledby="task-form-title" hidden>
+                    <div class="calendar-form-heading">
+                        <p class="eyebrow">NEUER EINTRAG</p>
+                        <h2 id="task-form-title">Task zum Kalender hinzufügen</h2>
+                    </div>
+                    <form id="task_form" class="calendar-form" onsubmit="set_data(event)">
+                        <label for="date">Datum
+                            <input id="date" type="date" required>
+                        </label>
+                        <label for="time">Uhrzeit
+                            <input id="time" type="time">
+                        </label>
+                        <label class="calendar-range-field" for="slider">Wichtigkeit
+                            <span class="calendar-range-control">
+                                <input id="slider" type="range" min="1" max="4" step="1" value="1" oninput="update_importance(this.value)">
+                                <output id="sliderOutput" for="slider">1</output>
+                            </span>
+                        </label>
+                        <label for="type_select">Typ
+                            <select id="type_select">
+                                <option value="work">Arbeit</option>
+                                <option value="private">Privat</option>
+                            </select>
+                        </label>
+                        <label for="content">Inhalt
+                            <input id="content" type="text" placeholder="Was steht an?">
+                        </label>
+                        <div class="calendar-form-actions">
+                            <button class="calendar-cancel-button" type="button" onclick="toggle_add(false)">Abbrechen</button>
+                            <button type="submit">Task hinzufügen <span aria-hidden="true">→</span></button>
+                        </div>
+                    </form>
+                </section>
+            </section>
+            <p id="calendar_status" class="calendar-status" role="status" aria-live="polite"></p>
+        </main>
+        <script src="/static/feature-nav.js?v=20261004-v1"></script>
+        <script src="/kalender-static/kalender.js?v=20261008-v1"></script>
     </body>
 </html>

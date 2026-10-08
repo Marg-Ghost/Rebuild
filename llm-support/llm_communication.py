@@ -46,10 +46,10 @@ def save_problem_summary(username, summary):
 
 
 class LlmRequestQueue:
-    def __init__(self, model="qwen2.5:1.5b", client=None):
-        self.model = model
+    def __init__(self, model=None, client=None):
+        self.model = model or os.getenv("OLLAMA_MODEL", "llama3:latest")
         self.client = client or ollama.AsyncClient(
-            host=os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")
+            host=os.getenv("OLLAMA_HOST", "http://localhost:11434")
         )
         self._requests = asyncio.PriorityQueue()
         self._sequence = itertools.count()
@@ -198,4 +198,3 @@ class LlmRequestQueue:
             f"{message['role']}: {message['content']}"
             for message in cls._conversation_messages(conversation)
         )
-

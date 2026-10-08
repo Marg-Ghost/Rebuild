@@ -5,7 +5,7 @@ import ollama
 
 
 def match_catalog_entry(kind: str, query: str, candidates: list[str]) -> str | None:
-    model = os.getenv("OLLAMA_MODEL", "llama3.2")
+    model = os.getenv("OLLAMA_MODEL", "llama3:latest")
     response_schema = {
         "type": "object",
         "properties": {

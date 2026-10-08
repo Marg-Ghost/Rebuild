@@ -3,6 +3,9 @@ let gespräch = [];
 
 function displayGespräch(messages = gespräch) {
     const gesprächDiv = document.getElementById("gespräch");
+    const emptyState = document.getElementById("assistant-empty");
+    emptyState.hidden = messages.length > 0;
+    gesprächDiv.hidden = messages.length === 0;
     gesprächDiv.replaceChildren();
     messages.forEach((message) => {
         const messageDiv = document.createElement("p");
@@ -11,6 +14,7 @@ function displayGespräch(messages = gespräch) {
         gesprächDiv.appendChild(messageDiv);
     });
     gesprächDiv.scrollTop = gesprächDiv.scrollHeight;
+    document.getElementById("clearButton").disabled = messages.length === 0;
 }
 
 async function request() {
@@ -47,6 +51,7 @@ async function request() {
         displayGespräch();
     } finally {
         sendButton.disabled = false;
+        document.getElementById("clearButton").disabled = gespräch.length === 0;
         textInput.focus();
     }
 }
@@ -75,7 +80,7 @@ async function clearConversation() {
         status.textContent = error.message;
     } finally {
         sendButton.disabled = false;
-        clearButton.disabled = false;
+        clearButton.disabled = gespräch.length === 0;
     }
 }
 
@@ -84,6 +89,12 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("clearButton").addEventListener("click", clearConversation);
     document.getElementById("text").addEventListener("keydown", (event) => {
         if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) request();
+    });
+    document.querySelectorAll("[data-prompt]").forEach((button) => {
+        button.addEventListener("click", () => {
+            document.getElementById("text").value = button.dataset.prompt;
+            request();
+        });
     });
 
     const url = new URL(window.location.href);
