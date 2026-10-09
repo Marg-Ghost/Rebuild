@@ -8,8 +8,8 @@ if ss -ltnH 'sport = :11434' | grep -q .; then
     echo "Port 11434 ist belegt"
 	
     sudo systemctl stop ollama
-    sudo docker stop hackathon_test_rebuild-ollama-1
-    sudo docker rm hackathon_test_rebuild-ollama-1
+    sudo docker stop hackathon-ollama-1
+    sudo docker rm hackathon-ollama-1
     # Warten, bis der Port tatsächlich frei ist
     for i in {1..10}; do
         if ! ss -ltnH 'sport = :11434' | grep -q .; then
@@ -57,17 +57,10 @@ if [[ ! -f ".env" ]]; then
     echo "Lokale .env mit zufälligem Session-Schlüssel wurde angelegt."
 fi
 
-<<<<<<< HEAD
-if [ -z "$(grep '^SessionMiddlewareSecretKey=.+$' ".env")" ]; then
-    echo "Fehler: SessionMiddlewareSecretKey ist in .env nicht gesetzt." >&2
-    exit 1
-fi
-=======
 #if ! grep -Eq '^SessionMiddlewareSecretKey=.+$' ".env"; then
 #    echo "Fehler: SessionMiddlewareSecretKey ist in .env nicht gesetzt." >&2
 #    exit 1
 #fi
->>>>>>> serverfix
 
 if [[ -z "${OLLAMA_MODEL:-}" ]]; then
     OLLAMA_MODEL="llama3.1:8b"
