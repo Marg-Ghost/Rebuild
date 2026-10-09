@@ -32,9 +32,9 @@ Compose stellt die App unter `http://localhost:8000` bereit. Ollama ist für lok
 
 ## Anmeldung und Konto
 
-Die Login- und Registrierungsoberfläche wird aus `web/pages/login/` ausgeliefert. Der Browser sendet Login- oder Registrierungsdaten an `server.py`; bei erfolgreicher Anmeldung wird der Nutzer in der Session gespeichert. Geschützte Seiten und Endpunkte verwenden diese Session.
+Die Login- und Registrierungsoberfläche wird aus `web/pages/login/` ausgeliefert. Der Browser sendet Login- oder Registrierungsdaten an `server.py`; bei erfolgreicher Anmeldung wird der Nutzer in einem signierten Session-Cookie gespeichert. Geschützte Seiten und Endpunkte verwenden diese Session; ein JWT oder `localStorage` wird dafür nicht benötigt. Benutzernamen sind per eindeutigem SQLite-Index abgesichert; Trigger blockieren neue doppelte E-Mail-Adressen und Telefonnummern. Bereits vorhandene Mehrfachzuordnungen bleiben erhalten und sind für den Login per E-Mail/Telefon mehrdeutig; in diesem Fall muss der Benutzername verwendet werden.
 
-Beim Registrieren werden Profilangaben und der erste Checkup schrittweise erfasst. Der Profil-Endpunkt speichert unter anderem Alter, Hobbys, Beruf und ausgewählte Erkrankungen. Die konkrete Speicherung liegt in `data/user/db_interaction.py`.
+Beim Registrieren werden Profilangaben und der erste Checkup schrittweise erfasst. Der Profil-Endpunkt speichert unter anderem Alter, Hobbys, Beruf, ausgewählte Erkrankungen, aktuelle Probleme und primäre Sorgen/Ängste. Die konkrete Speicherung liegt in `data/user/db_interaction.py`.
 
 ### Problems
 -> Noch muss eine Abfrage der korrekten syntax von email handy etc.
@@ -46,6 +46,10 @@ Beim Registrieren werden Profilangaben und der erste Checkup schrittweise erfass
 Die Startseite `/home` lädt Tageswerte, Check-in-Status und Verlaufsdaten und stellt sie als Health-Verlauf, Fortschrittsanzeige und nächste Aufgaben dar. Die Browserlogik befindet sich in `web/index.js`.
 
 Die Übersicht zeigt außerdem eine Opty-Empfehlung. Dafür fasst der Server Check-in-, Schlaf-, Health- und Kalenderdaten in einem Kontext zusammen und sendet eine priorisierte Systemanfrage an die LLM-Queue. Ist Ollama nicht erreichbar, kann die Empfehlung nicht erstellt werden; der API-Endpunkt meldet dann einen Fehler.
+
+Der angezeigte Tageswert ist ein interner Rechenwert, kein medizinisch validierter Health-Score: Jeder Check-in startet bei 1.000 Punkten; Schlaf- sowie Essens- und Bewegungs-Impacts verändern ihn. Angezeigt wird der Mittelwert der heutigen Check-ins. Schlaf wird beim ersten Check-in berücksichtigt, bei späteren nicht; zusätzliche Check-ins können den Mittelwert deshalb verschieben. Das Registrierungsprofil fließt derzeit nicht in diese Zahl ein. Der Hinweis am Wert zeigt den Abstand zur Rechenbasis und zum letzten gespeicherten Verlaufstag, aber keine medizinische Einstufung.
+
+Davon getrennt gibt es einen täglichen Belastungs-/Erholungswert von 0 bis 100. Er kombiniert Schlaf (40 %), Stress-Selbsteinschätzung (30 %) und Workload-Selbsteinschätzung (30 %). Stress und Workload werden jeweils von 0 bis 10 eingegeben; Schlaf stammt aus dem Schlaf-Check-in. 80–100 bedeutet niedriges, 50–79 moderates und 0–49 hohes Burnout-Risiko. Dies ist ein transparenter Orientierungswert, kein validierter Test und keine Diagnose. Die Eingaben und Ergebnisse werden nutzerbezogen in `efficiency_scores` gespeichert.
 
 ## Check-ins
 
@@ -81,7 +85,9 @@ Die Aktivitäten werden über den Referenzkatalog in Merkmale übersetzt und vom
 
 Die Seite `/llm` bietet einen Chat mit Opty. `llm-support/llm.js` hält den Gesprächsverlauf während der geöffneten Seite im Browser und sendet neue Nachrichten an `/api/llm/chat`.
 
-Der Server reiht Anfragen in `LlmRequestQueue` ein. Nutzernachrichten haben Vorrang vor automatisch erzeugten Systemempfehlungen. Die Queue ergänzt passende Chroma-Kontexte und persönliche gespeicherte Zusammenfassungen, bevor sie den Chat-Aufruf an Ollama sendet.
+Der Server reiht Anfragen in `LlmRequestQueue` ein. Nutzernachrichten haben Vorrang vor automatisch erzeugten Systemempfehlungen. `build_rag_context` bündelt für jeden Request das Profil (einschließlich aktueller Probleme und Sorgen), Health-/Check-in-Daten, die letzten Belastungswerte, heutige Kalenderaufgaben und Termine, persönliche Zusammenfassungen sowie passende Chroma-Kontexte, bevor der System-Prompt an Ollama gesendet wird.
+
+Die Chroma-Collection `GhostReferenceV1` wird aus der versionierten allgemeinen Referenzdatei befüllt; die bisherige `Ghost`-Collection wird nicht mehr abgefragt. Persönliche Zusammenfassungen werden in `llm_problem_memory` mit Nutzerkennung gespeichert und nur für dieselbe Kennung geladen; die Health-, Profil- und Kalenderdaten werden ebenfalls anhand des angemeldeten Nutzers abgefragt.
 
 „Gespräch speichern und leeren“ sendet den aktuellen Verlauf an `/api/llm/conversation/clear`. Die Queue erstellt daraus eine Zusammenfassung und speichert sie als persönliches Memory; anschließend wird der sichtbare Gesprächsverlauf geleert. Der Verlauf selbst wird nicht durch diesen Browsercode dauerhaft wiederhergestellt.
 

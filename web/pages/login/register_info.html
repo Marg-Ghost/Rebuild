@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Über dich | Rebuild</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/styles/main.css">
+    <link rel="stylesheet" href="/static/styles/checkup.css?v=20261009-survey">
 </head>
 <body class="checkup-page">
     <main class="checkup-shell">
@@ -14,7 +15,7 @@
                 <h1>Ein paar Angaben zu dir</h1>
                 <p class="intro">Diese Informationen helfen Rebuild, deine späteren Empfehlungen besser einzuordnen.</p>
             </div>
-            <span class="step-count">Profil 01 / 02</span>
+            <span class="step-count">Dein Profil · 01 / 02</span>
         </header>
 
         <form class="checkup-form">
@@ -40,6 +41,16 @@
                 <label><input type="checkbox" name="sickness" value="cardiovascular"> Herz-Kreislauf-Erkrankung</label>
                 <label><input type="checkbox" name="sickness" value="chronic_pain"> Chronische Schmerzen</label>
                 <label><input type="checkbox" name="sickness" value="other"> Andere Erkrankung</label>
+            </section>
+
+            <section class="checkup-card">
+                <h2>Was dich gerade beschäftigt</h2>
+                <label for="current_problems_input">Aktuelle Probleme <span>(optional)</span></label>
+                <textarea id="current_problems_input" maxlength="2000" rows="4" placeholder="Was belastet dich im Moment?"></textarea>
+
+                <label for="primary_fears_input">Sorgen oder Ängste <span>(optional)</span></label>
+                <textarea id="primary_fears_input" maxlength="2000" rows="4" placeholder="Gibt es etwas, vor dem du dir besonders Sorgen machst?"></textarea>
+                <p class="question-help">Diese Angaben werden vertraulich gespeichert und können Opty helfen, Antworten besser einzuordnen.</p>
             </section>
 
             <button class="submit-button" type="button" onclick="saveProfile()">Weiter zum Checkup</button>

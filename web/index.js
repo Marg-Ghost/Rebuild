@@ -160,23 +160,121 @@ function renderCheckup(status) {
     }
 }
 
+function renderEfficiencyScore(result) {
+    const target = byId('wellbeing-result');
+    if (!result) {
+        target.textContent = 'Noch kein Wert gespeichert. Schließe zuerst deinen Schlaf-Check-in ab und bewerte danach Stress und Workload.';
+        delete target.dataset.risk;
+        return;
+    }
+    const labels = {
+        low: 'Niedriges Risiko',
+        moderate: 'Moderates Risiko',
+        high: 'Hohes Burnout-Risiko',
+    };
+    target.textContent = `${Math.round(Number(result.score))}/100 – ${result.label || labels[result.burnout_risk_level] || result.burnout_risk_level}. ${result.explanation || ''}`;
+    target.dataset.risk = result.burnout_risk_level;
+}
+
+async function submitEfficiencyAssessment(event) {
+    event.preventDefault();
+    const target = byId('wellbeing-result');
+    const button = event.currentTarget.querySelector('button[type="submit"]');
+    button.disabled = true;
+    target.textContent = 'Wert wird berechnet ...';
+    try {
+        const response = await fetch('/api/efficiency-score', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                stress_level: Number(byId('stress-level').value),
+                workload_level: Number(byId('workload-level').value),
+            }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.detail || 'Wert konnte nicht gespeichert werden.');
+        renderEfficiencyScore(data);
+    } catch (error) {
+        target.textContent = error.message;
+        delete target.dataset.risk;
+    } finally {
+        button.disabled = false;
+    }
+}
+
+function renderHealthExplanation(currentScore, history, isToday) {
+    const assessment = byId('health-assessment');
+    const baselineMarker = byId('health-scale-baseline');
+    const currentMarker = byId('health-scale-current');
+    const historyValues = Object.entries(history || {})
+        .map(([date, score]) => ({ date, score: Number(score) }))
+        .filter((entry) => Number.isFinite(entry.score))
+        .sort((left, right) => left.date.localeCompare(right.date));
+
+    if (!Number.isFinite(currentScore)) {
+        assessment.textContent = 'Noch kein Tageswert vorhanden. Die interne Rechenbasis liegt bei 1.000 Punkten.';
+        return;
+    }
+
+    const baseline = 1000;
+    const now = new Date();
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const currentHistoryEntry = historyValues.filter((entry) => entry.date <= todayKey).at(-1);
+    const scoreDate = isToday ? todayKey : currentHistoryEntry?.date;
+    const scoreDifference = Math.round(currentScore - baseline);
+    const comparison = scoreDifference === 0
+        ? 'entspricht der internen Rechenbasis von 1.000 Punkten.'
+        : `${Math.abs(scoreDifference).toLocaleString('de-DE')} Punkte ${scoreDifference < 0 ? 'unter' : 'über'} der internen Rechenbasis von 1.000.`;
+    const previousDay = scoreDate
+        ? historyValues.filter((entry) => entry.date < scoreDate).at(-1)
+        : undefined;
+    const dailyChange = previousDay
+        ? Math.round(currentScore - previousDay.score)
+        : null;
+    const dailyComparison = dailyChange === null
+        ? ''
+        : ` Gegenüber dem letzten gespeicherten Verlaufstag (${new Date(`${previousDay.date}T00:00:00`).toLocaleDateString('de-DE')}) sind es ${Math.abs(dailyChange).toLocaleString('de-DE')} Punkte ${dailyChange < 0 ? 'weniger' : 'mehr'}.`;
+    const scoreLabel = isToday
+        ? 'Heute'
+        : `Letzter gespeicherter Tageswert${scoreDate ? ` (${new Date(`${scoreDate}T00:00:00`).toLocaleDateString('de-DE')})` : ''}`;
+    assessment.textContent = `${scoreLabel}: ${Math.round(currentScore).toLocaleString('de-DE')} Punkte; ${comparison}${dailyComparison} Das ist ein App-Modellwert, kein medizinischer Befund.`;
+
+    const values = [...historyValues.map((entry) => entry.score), currentScore, baseline];
+    const low = Math.min(...values);
+    const high = Math.max(...values);
+    const padding = Math.max((high - low) * 0.12, 25);
+    const scaleLow = low - padding;
+    const scaleHigh = high + padding;
+    const position = (score) => `${((score - scaleLow) / (scaleHigh - scaleLow)) * 100}%`;
+    baselineMarker.parentElement.style.setProperty('--baseline-position', position(baseline));
+    currentMarker.parentElement.style.setProperty('--current-position', position(currentScore));
+}
+
 async function loadRecommendation() {
     const target = byId('recommendation-text');
     const discussLink = byId('discuss-recommendation');
+    const retryButton = byId('retry-recommendation');
     try {
         const data = await fetchJson('/api/dashboard/recommendation');
         const recommendation = typeof data.recommendation === 'string'
             ? data.recommendation.trim()
             : '';
         target.textContent = recommendation || 'Heute gibt es noch keine Empfehlung.';
+        retryButton.hidden = true;
         if (recommendation) {
             const message = `Helfe mir diese Entscheidung nachzuvollziehn : ${recommendation}`;
             discussLink.href = `/llm?ask=${encodeURIComponent(message)}`;
             discussLink.hidden = false;
+        } else {
+            discussLink.hidden = true;
         }
     } catch (error) {
-        target.textContent = 'Deine Empfehlung ist gerade nicht verfügbar.';
+        target.textContent = error instanceof Error
+            ? `Opty konnte die Empfehlung nicht laden: ${error.message}`
+            : 'Opty konnte die Empfehlung nicht laden.';
         discussLink.hidden = true;
+        retryButton.hidden = false;
     }
 }
 
@@ -188,11 +286,12 @@ async function loadDashboard() {
     }).toUpperCase();
 
     try {
-        const [health, checkup, calendar, user] = await Promise.all([
+        const [health, checkup, calendar, user, efficiency] = await Promise.all([
             fetchJson('/api/get_health_data/index'),
             fetchJson('/api/daily-checkup/status'),
             fetchJson(`/api/kalender/get?month=${now.getMonth() + 1}&year=${now.getFullYear()}`),
             fetchJson('/api/me'),
+            fetchJson('/api/efficiency-score'),
         ]);
 
         byId('dashboard-username').textContent = user.usr || 'Dein Bereich';
@@ -202,8 +301,10 @@ async function loadDashboard() {
         const lastHistoryValue = Object.values(history).map(Number).filter(Number.isFinite).at(-1);
         const healthToday = count ? Math.round(healthTotal / count) : lastHistoryValue;
         byId('health_count').textContent = healthToday === undefined ? '--' : Math.round(healthToday).toLocaleString('de-DE');
+        renderHealthExplanation(healthToday, history, count > 0);
         renderHealthChart(history);
         renderCheckup(checkup);
+        renderEfficiencyScore(efficiency.latest);
         renderTasks(calendar.entries || []);
         status.textContent = '';
         void loadRecommendation();
@@ -211,5 +312,22 @@ async function loadDashboard() {
         status.textContent = error.message;
     }
 }
+
+byId('retry-recommendation').addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    button.hidden = true;
+    byId('recommendation-text').textContent = 'Opty versucht es erneut ...';
+    await loadRecommendation();
+    button.disabled = false;
+});
+
+byId('stress-level').addEventListener('input', (event) => {
+    byId('stress-level-value').value = event.currentTarget.value;
+});
+byId('workload-level').addEventListener('input', (event) => {
+    byId('workload-level-value').value = event.currentTarget.value;
+});
+byId('wellbeing-form').addEventListener('submit', submitEfficiencyAssessment);
 
 window.addEventListener('DOMContentLoaded', loadDashboard);

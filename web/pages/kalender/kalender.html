@@ -40,7 +40,10 @@
                         <button id="next" type="button" aria-label="Nächster Monat" onclick="change_calendar_month(1)">&rarr;</button>
                         <button id="today_button" class="calendar-today-button" type="button" onclick="show_current_month()">Heute</button>
                     </div>
-                    <button id="toggle_add_button" class="calendar-add-button" type="button" aria-controls="add_date" aria-expanded="false" onclick="toggle_add()">Task hinzufügen</button>
+                    <div class="calendar-toolbar-actions">
+                        <button id="connect_google_button" class="calendar-google-button" type="button" onclick="open_google_calendar_dialog()">Google Kalender verbinden</button>
+                        <button id="toggle_add_button" class="calendar-add-button" type="button" aria-controls="add_date" aria-expanded="false" onclick="toggle_add()">Task hinzufügen</button>
+                    </div>
                 </div>
 
                 <div class="calendar-table-wrap">
@@ -74,7 +77,7 @@
                         </label>
                         <label class="calendar-range-field" for="slider">Wichtigkeit
                             <span class="calendar-range-control">
-                                <input id="slider" type="range" min="1" max="4" step="1" value="1" oninput="update_importance(this.value)">
+                                <input id="slider" type="range" min="1" max="5" step="1" value="1" oninput="update_importance(this.value)">
                                 <output id="sliderOutput" for="slider">1</output>
                             </span>
                         </label>
@@ -96,7 +99,23 @@
             </section>
             <p id="calendar_status" class="calendar-status" role="status" aria-live="polite"></p>
         </main>
+        <dialog id="google_calendar_dialog" class="calendar-dialog" aria-labelledby="google-calendar-title">
+            <form id="google_calendar_form" class="calendar-dialog-content">
+                <button class="calendar-dialog-close" type="button" aria-label="Dialog schließen" onclick="close_google_calendar_dialog()">&times;</button>
+                <p class="eyebrow">KALENDER VERKNÜPFEN</p>
+                <h2 id="google-calendar-title">Google Kalender verbinden</h2>
+                <p>Öffne in Google Kalender <strong>Einstellungen → Kalender integrieren</strong> und kopiere die <strong>Privatadresse im iCal-Format</strong>. Behandle diesen Link wie ein Passwort: Jeder mit dem Link kann deine Termine lesen.</p>
+                <label for="google_ics_url">Private iCal-Adresse</label>
+                <input id="google_ics_url" name="ics_url" type="url" maxlength="2048" autocomplete="off" placeholder="https://calendar.google.com/calendar/ical/…" required>
+                <p class="calendar-dialog-note">Es werden Termintitel und Zeiten importiert. Ollama ordnet Kategorie und Wichtigkeit zu. Der private Link wird für spätere Synchronisierungen auf diesem Server gespeichert.</p>
+                <p id="google_calendar_status" class="calendar-status" role="status" aria-live="polite"></p>
+                <div class="calendar-dialog-actions">
+                    <button class="calendar-cancel-button" type="button" onclick="close_google_calendar_dialog()">Abbrechen</button>
+                    <button id="google_calendar_submit" type="submit">Verbinden &amp; synchronisieren</button>
+                </div>
+            </form>
+        </dialog>
         <script src="/static/feature-nav.js?v=20261004-v1"></script>
-        <script src="/kalender-static/kalender.js?v=20261008-v1"></script>
+        <script src="/kalender-static/kalender.js?v=20261009-google-ical"></script>
     </body>
 </html>

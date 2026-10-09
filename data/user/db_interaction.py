@@ -10,10 +10,6 @@ DB_PATH = Path(__file__).resolve().with_name("user.db")
 def init_db() -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("DROP TABLE IF EXISTS checkup")
-        conn.execute("DROP INDEX IF EXISTS users_email_idx")
-        conn.execute("DROP INDEX IF EXISTS users_phone_idx")
-        conn.execute("DROP INDEX IF EXISTS users_username_idx")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS login (
@@ -34,8 +30,107 @@ def init_db() -> None:
                 "health_curve" TEXT,
                 "sleep_curve" TEXT,
                 "food_curve" TEXT,
-                "act_curve" TEXT
+                "act_curve" TEXT,
+                "current_problems" TEXT,
+                "primary_fears" TEXT
             )
+            """
+        )
+        profile_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(profile)")
+        }
+        for column in ("current_problems", "primary_fears"):
+            if column not in profile_columns:
+                conn.execute(f'ALTER TABLE profile ADD COLUMN "{column}" TEXT')
+
+        duplicate_username = conn.execute(
+            """
+            SELECT 1 FROM login
+            WHERE username IS NOT NULL
+            GROUP BY username COLLATE NOCASE
+            HAVING COUNT(*) > 1
+            LIMIT 1
+            """
+        ).fetchone()
+        if duplicate_username:
+            raise RuntimeError(
+                "Die Nutzerdatenbank enthält doppelte Benutzernamen. "
+                "Diese Konten müssen vor dem Start manuell geklärt werden."
+            )
+        conn.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS login_username_unique_idx
+            ON login(username COLLATE NOCASE)
+            WHERE username IS NOT NULL
+            """
+        )
+        conn.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS login_username_fk_idx
+            ON login(username)
+            """
+        )
+        conn.executescript(
+            """
+            CREATE TRIGGER IF NOT EXISTS login_email_unique_insert
+            BEFORE INSERT ON login
+            WHEN NEW.email IS NOT NULL AND EXISTS (
+                SELECT 1 FROM login WHERE email = NEW.email COLLATE NOCASE
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'User existiert bereits');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS login_email_unique_update
+            BEFORE UPDATE OF email ON login
+            WHEN NEW.email IS NOT NULL AND EXISTS (
+                SELECT 1 FROM login
+                WHERE rowid <> OLD.rowid AND email = NEW.email COLLATE NOCASE
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'User existiert bereits');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS login_phone_unique_insert
+            BEFORE INSERT ON login
+            WHEN NEW.phone IS NOT NULL AND NEW.phone <> '' AND EXISTS (
+                SELECT 1 FROM login WHERE phone = NEW.phone
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'User existiert bereits');
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS login_phone_unique_update
+            BEFORE UPDATE OF phone ON login
+            WHEN NEW.phone IS NOT NULL AND NEW.phone <> '' AND EXISTS (
+                SELECT 1 FROM login
+                WHERE rowid <> OLD.rowid AND phone = NEW.phone
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'User existiert bereits');
+            END;
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS efficiency_scores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                score REAL NOT NULL CHECK (score BETWEEN 0 AND 100),
+                burnout_risk_level TEXT NOT NULL
+                    CHECK (burnout_risk_level IN ('low', 'moderate', 'high')),
+                sleep_hours REAL NOT NULL CHECK (sleep_hours BETWEEN 0 AND 24),
+                stress_level INTEGER NOT NULL CHECK (stress_level BETWEEN 0 AND 10),
+                workload_level INTEGER NOT NULL CHECK (workload_level BETWEEN 0 AND 10),
+                timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES login(username)
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS efficiency_scores_user_timestamp_idx
+            ON efficiency_scores(user_id, timestamp DESC)
             """
         )
         conn.execute(
@@ -210,12 +305,14 @@ def login_user(identifier: str, password: str, method: str) -> int:
         return 1
 
     with sqlite3.connect(DB_PATH) as conn:
-        user = conn.execute(
-            f"SELECT id FROM login WHERE {column}=? AND password=?",
-            (identifier, password),
-        ).fetchone()
+        users = conn.execute(
+            f"SELECT id, password FROM login WHERE {column}=? COLLATE NOCASE",
+            (identifier,),
+        ).fetchall()
 
-    return 0 if user else 1
+    if len(users) > 1:
+        return 2
+    return 0 if users and users[0][1] == password else 1
 
 
 def register_user(
@@ -224,19 +321,16 @@ def register_user(
     phone: str | None = None,
     username: str | None = None,
 ) -> int:
-    try:
-        with sqlite3.connect(DB_PATH) as conn:
-            profile_username = username or email
-            conn.execute(
-                "INSERT INTO login (id, username, email, phone, password) VALUES (?, ?, ?, ?, ?)",
-                (profile_username, username or None, email, phone or None, password),
-            )
-            conn.execute(
-                "INSERT INTO profile (username) VALUES (?)",
-                (profile_username,),
-            )
-    except sqlite3.IntegrityError:
-        return 1
+    profile_username = username or email
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "INSERT INTO login (id, username, email, phone, password) VALUES (?, ?, ?, ?, ?)",
+            (profile_username, profile_username, email, phone or None, password),
+        )
+        conn.execute(
+            "INSERT INTO profile (username) VALUES (?)",
+            (profile_username,),
+        )
 
     return 0
 
@@ -279,7 +373,7 @@ def get_username(identifier: str, method: str) -> str | None:
 
     with sqlite3.connect(DB_PATH) as conn:
         user = conn.execute(
-            f"SELECT username FROM login WHERE {column}=?",
+            f"SELECT username FROM login WHERE {column}=? COLLATE NOCASE",
             (identifier,),
         ).fetchone()
     return user[0] if user and user[0] else None
@@ -314,7 +408,34 @@ def has_profile_for_user(username: str) -> bool:
     return profile is not None
 
 
-def save_profile_for_user(username: str, age: int, hobbies: str | None, job: str | None, sickness: list[str]) -> bool:
+def get_profile_for_user(username: str) -> dict | None:
+    with sqlite3.connect(DB_PATH) as conn:
+        row = conn.execute(
+            "SELECT gen_profile, current_problems, primary_fears FROM profile WHERE username=?",
+            (username,),
+        ).fetchone()
+    if not row or not row[0]:
+        if not row:
+            return None
+        profile = {}
+    else:
+        profile = json.loads(row[0])
+        if not isinstance(profile, dict):
+            raise ValueError("Gespeichertes Nutzerprofil ist ungültig")
+    profile["current_problems"] = row[1]
+    profile["primary_fears"] = row[2]
+    return profile
+
+
+def save_profile_for_user(
+    username: str,
+    age: int,
+    hobbies: str | None,
+    job: str | None,
+    sickness: list[str],
+    current_problems: str | None = None,
+    primary_fears: str | None = None,
+) -> bool:
     import json
 
     with sqlite3.connect(DB_PATH) as conn:
@@ -329,15 +450,69 @@ def save_profile_for_user(username: str, age: int, hobbies: str | None, job: str
         )
 
         updated = conn.execute(
-            "UPDATE profile SET gen_profile=? WHERE username=?",
-            (profile_data, username),
+            """
+            UPDATE profile
+            SET gen_profile=?, current_problems=?, primary_fears=?
+            WHERE username=?
+            """,
+            (profile_data, current_problems, primary_fears, username),
         )
         if updated.rowcount == 0:
             conn.execute(
-                "INSERT INTO profile (username, gen_profile) VALUES (?, ?)",
-                (username, profile_data),
+                """
+                INSERT INTO profile
+                    (username, gen_profile, current_problems, primary_fears)
+                VALUES (?, ?, ?, ?)
+                """,
+                (username, profile_data, current_problems, primary_fears),
             )
     return True
+
+
+def save_efficiency_score(
+    username: str,
+    score: float,
+    burnout_risk_level: str,
+    sleep_hours: float,
+    stress_level: int,
+    workload_level: int,
+) -> int:
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.execute(
+            """
+            INSERT INTO efficiency_scores
+                (user_id, score, burnout_risk_level, sleep_hours, stress_level, workload_level)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                username,
+                score,
+                burnout_risk_level,
+                sleep_hours,
+                stress_level,
+                workload_level,
+            ),
+        )
+    return cursor.lastrowid
+
+
+def get_recent_efficiency_scores(username: str, limit: int = 7) -> list[dict]:
+    if limit <= 0:
+        return []
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """
+            SELECT score, burnout_risk_level, sleep_hours, stress_level,
+                   workload_level, timestamp
+            FROM efficiency_scores
+            WHERE user_id=?
+            ORDER BY timestamp DESC, id DESC
+            LIMIT ?
+            """,
+            (username, limit),
+        ).fetchall()
+    return [dict(row) for row in rows]
 
 def has_checkup(username: str) -> bool:
     return has_checkup_for_user(username)

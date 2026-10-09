@@ -39,6 +39,18 @@ function show_status(message) {
     document.getElementById("calendar_status").textContent = message;
 }
 
+function task_type_label(task_type) {
+    const labels = {
+        work: "Arbeit",
+        leisure: "Freizeit",
+        health: "Gesundheit",
+        personal: "Privat",
+        other: "Sonstiges",
+        private: "Privat"
+    };
+    return labels[task_type] || "Sonstiges";
+}
+
 async function show_data(month, year) {
     try {
         const response = await fetch(`/api/kalender/get?month=${month}&year=${year}`, {
@@ -57,6 +69,7 @@ async function show_data(month, year) {
 
             const item = document.createElement("div");
             item.className = `entry importance-${entry.importance}`;
+            if (entry.is_google_event) item.classList.add("entry-google-event");
             const importance = document.createElement("span");
             importance.className = "importance";
             importance.textContent = `!${entry.importance}`;
@@ -65,13 +78,25 @@ async function show_data(month, year) {
             content.textContent = entry.content || "Task";
             const type = document.createElement("span");
             type.className = "task-type";
-            type.textContent = entry.task_type === "work" ? "Arbeit" : "Privat";
+            type.textContent = task_type_label(entry.task_type);
             item.append(importance, content, type);
             if (entry.task_time) {
                 const time = document.createElement("span");
                 time.className = "task-time";
-                time.textContent = entry.task_time;
+                const endTime = entry.task_end_at
+                    && entry.task_end_at.slice(0, 10) === entry.task_date
+                    ? entry.task_end_at.slice(11, 16)
+                    : "";
+                time.textContent = endTime
+                    ? `${entry.task_time}–${endTime}`
+                    : entry.task_time;
                 item.append(time);
+            }
+            if (entry.is_google_event) {
+                const source = document.createElement("span");
+                source.className = "entry-source";
+                source.textContent = "Google";
+                item.append(source);
             }
             let list = table_cell.querySelector(".calendar-entry-list");
             if (!list) {
@@ -84,6 +109,51 @@ async function show_data(month, year) {
         show_status("");
     } catch (error) {
         show_status(error.message || "Kalenderdaten konnten nicht geladen werden.");
+    }
+}
+
+function open_google_calendar_dialog() {
+    const dialog = document.getElementById("google_calendar_dialog");
+    document.getElementById("google_calendar_status").textContent = "";
+    dialog.showModal();
+    document.getElementById("google_ics_url").focus();
+}
+
+function close_google_calendar_dialog() {
+    document.getElementById("google_calendar_dialog").close();
+}
+
+async function connect_google_calendar(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const submitButton = document.getElementById("google_calendar_submit");
+    const status = document.getElementById("google_calendar_status");
+    submitButton.disabled = true;
+    status.textContent = "Feed wird abgerufen, Termine werden eingeordnet ...";
+    try {
+        const response = await fetch("/api/calendar/connect-google", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+                ics_url: document.getElementById("google_ics_url").value.trim()
+            })
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.detail || "Google Kalender konnte nicht verbunden werden.");
+        }
+
+        close_google_calendar_dialog();
+        form.reset();
+        await get_all_enties(selected_month, selected_year);
+        show_status(`${result.imported_count} Google-Termine synchronisiert.`);
+    } catch (error) {
+        status.textContent = error instanceof Error
+            ? error.message
+            : "Google Kalender konnte nicht verbunden werden.";
+    } finally {
+        submitButton.disabled = false;
     }
 }
 
@@ -246,9 +316,22 @@ window.set_data = set_data;
 window.change_calendar_month = change_calendar_month;
 window.show_current_month = show_current_month;
 window.update_importance = update_importance;
+window.open_google_calendar_dialog = open_google_calendar_dialog;
+window.close_google_calendar_dialog = close_google_calendar_dialog;
 
 document.getElementById("task_form").addEventListener("keydown", (event) => {
     if (event.key === "Escape") toggle_add(false);
+});
+
+document.getElementById("google_calendar_form").addEventListener(
+    "submit",
+    connect_google_calendar
+);
+document.getElementById("google_calendar_dialog").addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) close_google_calendar_dialog();
+});
+document.getElementById("google_calendar_dialog").addEventListener("cancel", () => {
+    document.getElementById("google_calendar_status").textContent = "";
 });
 
 initialize_calendar();

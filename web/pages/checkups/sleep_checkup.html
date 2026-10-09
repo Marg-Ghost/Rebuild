@@ -3,24 +3,40 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Erster Tages-Check-in</title>
+        <title>Schlaf-Check-in | Rebuild</title>
         <link rel="stylesheet" href="/static/styles/main.css">
+        <link rel="stylesheet" href="/static/styles/checkup.css?v=20261009-survey">
     </head>
-    <body>
-        <main>
-            <h1>Erster Check-in des Tages</h1>
-            <p>Der Tages-Checkup startet mit deinem Schlaf. Wenn du noch nicht geschlafen hast, bleibt dieser Check-in offen.</p>
-            <p id="sleep_week_summary" aria-live="polite">Lade deine späten Nächte der letzten 7 Tage ...</p>
-            <section>
+    <body class="checkup-page">
+        <main class="checkup-shell">
+            <header class="checkup-header">
+                <div>
+                    <p class="eyebrow">Rebuild / Dein Tag</p>
+                    <h1>Wie hast du geschlafen?</h1>
+                    <p class="intro">Dein Schlaf-Check-in startet den Tag. Wenn du noch nicht geschlafen hast, kannst du den Eintrag später ergänzen.</p>
+                </div>
+                <span class="step-count">Tagesstart · 01 / 02</span>
+            </header>
+            <p class="checkup-summary" id="sleep_week_summary" aria-live="polite">Lade deine späten Nächte der letzten 7 Tage ...</p>
+            <section class="checkup-card" aria-labelledby="sleep-checkup-heading">
+                <h2 id="sleep-checkup-heading">Deine letzte Nacht</h2>
+                <p class="question-help">Schätze deine Schlafdauer und ungefähre Einschlafzeit ein.</p>
                 <label for="sleep_hours">Geschlafene Stunden</label>
+                <div class="sleep-control">
                 <input id="sleep_hours" type="number" min="0.5" max="24" step="0.5" placeholder="z. B. 7.5">
+                    <span class="unit">Stunden</span>
+                </div>
                 <label for="sleep_start_time">Ungefähre Einschlafzeit</label>
                 <input id="sleep_start_time" type="time">
-                <button type="button" onclick="submitSleepCheckup('slept')">Schlaf eintragen</button>
+                <div class="checkup-actions">
+                    <button class="checkup-primary-action" type="button" onclick="submitSleepCheckup('slept')">Schlaf eintragen</button>
+                    <button class="checkup-secondary-action" type="button" onclick="submitSleepCheckup('not_slept')">Noch nicht geschlafen</button>
+                </div>
             </section>
-            <button type="button" onclick="submitSleepCheckup('not_slept')">Noch nicht geschlafen</button>
             <p id="sleep_checkup_status" role="status" aria-live="polite"></p>
-            <a href="/home">Zurück zum Dashboard</a>
+            <div class="checkup-actions">
+                <a href="/home">← Zurück zum Überblick</a>
+            </div>
         </main>
         <script src="/static/main.js?v=20261004-sleep-week"></script>
     </body>

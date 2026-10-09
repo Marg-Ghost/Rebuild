@@ -1,20 +1,34 @@
+import logging
 import os
+import sqlite3
 from pathlib import Path
 from importlib import import_module
 import sys
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
 
 app = FastAPI()
+logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
 WEB_DIR = BASE_DIR / "web"
 KALENDER_WEB_DIR = BASE_DIR / "Kalender" / "web"
 LLM_SUPPORT_DIR = BASE_DIR / "llm-support"
 _llm_queue = None
+
+
+class EfficiencyAssessment(BaseModel):
+    stress_level: int = Field(ge=0, le=10)
+    workload_level: int = Field(ge=0, le=10)
+
+
+class GoogleCalendarConnectRequest(BaseModel):
+    ics_url: str = Field(min_length=1, max_length=2048)
+
 
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 app.mount("/kalender-static", StaticFiles(directory=KALENDER_WEB_DIR), name="kalender-static")
@@ -143,12 +157,19 @@ async def register_info(request: Request):
     if not isinstance(sickness, list) or not all(isinstance(item, str) for item in sickness):
         raise HTTPException(status_code=400, detail="Ungültige Erkrankungen")
 
+    current_problems = str(data.get("current_problems") or "").strip()
+    primary_fears = str(data.get("primary_fears") or "").strip()
+    if len(current_problems) > 2000 or len(primary_fears) > 2000:
+        raise HTTPException(status_code=400, detail="Profilangaben sind zu lang")
+
     saved = db_interaction.save_profile_for_user(
         username,
         age,
         str(data.get("hobbies") or "").strip(),
         str(data.get("job") or "").strip(),
         sickness,
+        current_problems or None,
+        primary_fears or None,
     )
     if not saved:
         raise HTTPException(status_code=404, detail="User nicht gefunden")
@@ -186,14 +207,20 @@ async def login(request: Request):
         raise HTTPException(status_code=400, detail="Identifikator fehlt")
 
     import data.user.db_interaction as db_interaction
-    result = db_interaction.login_user(identifier, password, method)
-    if result != 0:
+    login_status = db_interaction.login_user(identifier, password, method)
+    if login_status == 2:
+        raise HTTPException(
+            status_code=409,
+            detail="Diese E-Mail oder Telefonnummer gehört zu mehreren Konten. Bitte melde dich mit deinem Benutzernamen an.",
+        )
+    if login_status != 0:
         raise HTTPException(status_code=401, detail="Login-Daten sind falsch")
 
     username = db_interaction.get_username(identifier, method)
     if not username:
         raise HTTPException(status_code=400, detail="User braucht einen Benutzernamen")
 
+    request.session.clear()
     request.session["usr"] = username
     return {"ok": True, "usr": username}
 
@@ -213,11 +240,12 @@ async def register(request: Request):
         raise HTTPException(status_code=400, detail="Passwort fehlt")
 
     import data.user.db_interaction as db_interaction
-    result = db_interaction.register_user(email, password, phone or None, username or None)
-    if result != 0:
-        raise HTTPException(status_code=400, detail="E-Mail, Telefonnummer oder Benutzername ist bereits registriert")
+    try:
+        db_interaction.register_user(email, password, phone or None, username)
+    except sqlite3.IntegrityError as error:
+        raise HTTPException(status_code=400, detail="User existiert bereits") from error
 
-    return {"ok": True, "username": username or None, "email": email, "phone": phone or None}
+    return {"ok": True, "username": username, "email": email, "phone": phone or None}
 
 # register checkup data
 app.get("/checkup_register")
@@ -306,6 +334,8 @@ async def llm_chat(request: Request):
     conversation = validate_llm_conversation(data.get("conversation", []))
 
     try:
+        import json
+
         answer = await get_llm_queue().submit(
             content=message.strip(),
             request_type="user",
@@ -313,6 +343,7 @@ async def llm_chat(request: Request):
             username=username,
         )
     except Exception as error:
+        logger.exception("LLM-Anfrage fehlgeschlagen")
         raise HTTPException(status_code=503, detail="LLM-Anfrage fehlgeschlagen") from error
     return {"ok": True, "answer": answer}
 
@@ -715,46 +746,70 @@ async def get_daily_features(request: Request):
     return get_daily_feature_values(username)
 
 
-@app.get("/api/dashboard/recommendation")
-async def get_dashboard_recommendation(request: Request):
-    import json
-    from datetime import date
+@app.get("/api/efficiency-score")
+async def get_efficiency_score(request: Request):
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
 
+    from data.user.db_interaction import get_recent_efficiency_scores
+    scores = get_recent_efficiency_scores(username, 7)
+    return {"latest": scores[0] if scores else None, "history": scores}
+
+
+@app.post("/api/efficiency-score")
+async def save_efficiency_score(
+    assessment: EfficiencyAssessment,
+    request: Request,
+):
     username = request.session.get("usr")
     if not username:
         raise HTTPException(status_code=401, detail="nicht eingeloggt")
 
     from data.user.db_interaction import (
-        get_daily_feature_values,
         get_daily_sleep_checkup,
-        get_index_intel,
+        save_efficiency_score as save_score,
     )
-    from Kalender.date import get_date
+    from data.user.health_score import calculate_burnout_score
 
-    today = date.today()
-    checkup_count, health_sum, health_curve = get_index_intel(username)
-    daily = get_daily_feature_values(username)
-    sleep = get_daily_sleep_checkup(username)
-    tasks = get_date(username, today.month, today.year)
-    upcoming_tasks = [
-        task for task in tasks if task.get("task_date", "") >= today.isoformat()
-    ][:5]
-    context = {
-        "health_average": health_sum / checkup_count if checkup_count else None,
-        "health_history": list(health_curve.items())[-7:] if isinstance(health_curve, dict) else [],
-        "daily_checkup": daily,
-        "sleep_checkin": sleep,
-        "upcoming_calendar_tasks": upcoming_tasks,
-    }
+    sleep_checkin = get_daily_sleep_checkup(username)
+    sleep_hours = sleep_checkin.get("sleep_hours")
+    if sleep_checkin.get("status") != "complete" or sleep_hours is None:
+        raise HTTPException(
+            status_code=409,
+            detail="Bitte zuerst den Schlaf-Check-in für heute abschließen.",
+        )
+
+    result = calculate_burnout_score(
+        float(sleep_hours),
+        assessment.stress_level,
+        assessment.workload_level,
+    )
+    save_score(
+        username,
+        result["score"],
+        result["burnout_risk_level"],
+        float(sleep_hours),
+        assessment.stress_level,
+        assessment.workload_level,
+    )
+    return result
+
+
+@app.get("/api/dashboard/recommendation")
+async def get_dashboard_recommendation(request: Request):
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
 
     try:
         recommendation = await get_llm_queue().submit(
             content="Was ist ein sinnvoller, konkreter nächster Schritt für diesen User heute?",
             request_type="system",
-            structured_context=json.dumps(context, ensure_ascii=False),
             username=username,
         )
     except Exception as error:
+        logger.exception("Dashboard-Empfehlung fehlgeschlagen")
         raise HTTPException(status_code=503, detail="Empfehlung ist gerade nicht verfügbar") from error
     return {"recommendation": recommendation}
 
@@ -785,6 +840,50 @@ async def add_kalender_entry(request: Request):
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     return {"ok": True, "id": event_id}
+
+
+@app.post("/api/calendar/connect-google")
+async def connect_google_calendar(
+    data: GoogleCalendarConnectRequest,
+    request: Request,
+):
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    from Kalender.google_calendar import (
+        GoogleCalendarError,
+        connect_google_calendar as sync_calendar,
+    )
+    try:
+        imported_count = await run_in_threadpool(
+            sync_calendar, username, data.ics_url.strip()
+        )
+    except GoogleCalendarError as error:
+        raise HTTPException(status_code=error.status_code, detail=str(error)) from error
+    except sqlite3.Error as error:
+        logger.exception("Google-Kalender-Datenbankoperation fehlgeschlagen")
+        raise HTTPException(
+            status_code=503,
+            detail="Google-Kalender-Termine konnten nicht gespeichert werden.",
+        ) from error
+    return {"ok": True, "imported_count": imported_count}
+
+
+@app.get("/api/calendar/google/status")
+async def google_calendar_status(request: Request):
+    username = request.session.get("usr")
+    if not username:
+        raise HTTPException(status_code=401, detail="nicht eingeloggt")
+
+    from Kalender.data.database import get_google_calendar_source
+
+    source = await run_in_threadpool(get_google_calendar_source, username)
+    return {
+        "connected": source is not None,
+        "last_synced": source["last_synced"] if source else None,
+    }
+
 
 @app.get("/api/kalender/get")
 async def get_kalender_entries(request: Request, month: int, year: int | None = None):

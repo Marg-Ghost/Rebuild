@@ -279,7 +279,9 @@ async function saveProfile() {
                 age: document.getElementById('age_input').value,
                 hobbies: document.getElementById('hobbies_input').value,
                 job: document.getElementById('job_input').value,
-                sickness
+                sickness,
+                current_problems: document.getElementById('current_problems_input').value,
+                primary_fears: document.getElementById('primary_fears_input').value
             })
         });
         const result = await response.json();

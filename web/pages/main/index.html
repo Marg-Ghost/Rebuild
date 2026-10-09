@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#f2f4f1">
         <title>Übersicht | Rebuild</title>
-        <link rel="stylesheet" href="/static/styles/main.css?v=20261004-five-checkups">
+        <link rel="stylesheet" href="/static/styles/main.css?v=20260629-health-opty-context">
     </head>
     <body class="dashboard-page">
         <header class="dashboard-topbar">
@@ -83,9 +83,26 @@
                                 <p class="eyebrow">DEIN VERLAUF</p>
                                 <h2 id="health-title">Health heute</h2>
                             </div>
-                            <div class="health-value">
-                                <strong id="health_count">--</strong>
-                                <span>Health-Punkte</span>
+                            <div class="health-explainer" tabindex="0" role="group" aria-describedby="health-tooltip">
+                                <div class="health-value">
+                                    <strong id="health_count">--</strong>
+                                    <span>Rebuild-Punkte <span class="health-info-icon" aria-hidden="true">i</span></span>
+                                </div>
+                                <div class="health-tooltip" id="health-tooltip" role="tooltip">
+                                    <strong>Was bedeutet dieser Wert?</strong>
+                                    <p>Ein interner Modellwert: jeder Check-in startet bei 1.000 Punkten; Schlaf sowie die berechneten Essens- und Bewegungs-Impacts verändern ihn. Angezeigt wird der Mittelwert deiner heutigen Check-ins. Schlaf fließt nur beim ersten Check-in ein; spätere Check-ins werden ohne Schlaf-Impact gemittelt. Dein Registrierungsprofil fließt in diese Zahl derzeit nicht ein.</p>
+                                    <p id="health-assessment">Die Bewertung wird geladen ...</p>
+                                    <div class="health-scale" aria-hidden="true">
+                                        <span class="health-scale-baseline" id="health-scale-baseline"></span>
+                                        <span class="health-scale-current" id="health-scale-current"></span>
+                                    </div>
+                                    <div class="health-scale-labels" aria-hidden="true">
+                                        <span>Niedriger</span>
+                                        <span>Basis 1.000</span>
+                                        <span>Höher</span>
+                                    </div>
+                                    <small>Keine medizinische Bewertung oder Diagnose.</small>
+                                </div>
                             </div>
                         </div>
                         <div class="chart-wrap">
@@ -108,6 +125,7 @@
                             </div>
                             <p id="recommendation-text" class="recommendation-text">Deine Empfehlung wird vorbereitet ...</p>
                             <a class="text-link" id="discuss-recommendation" href="/llm" hidden>Empfehlung besprechen <span aria-hidden="true">→</span></a>
+                            <button class="text-link recommendation-retry" id="retry-recommendation" type="button" hidden>Erneut versuchen ↻</button>
                         </section>
 
                         <section class="agenda-panel" aria-labelledby="agenda-title">
@@ -139,10 +157,27 @@
                             </div>
                         </section>
                     </div>
+
+                    <section class="wellbeing-panel" aria-labelledby="wellbeing-title">
+                        <div>
+                            <p class="eyebrow">DEIN TÄGLICHER ORIENTIERUNGSWERT</p>
+                            <h2 id="wellbeing-title">Belastung &amp; Erholung</h2>
+                            <p>Bewerte Stress und Workload jeweils von 0 (niedrig) bis 10 (sehr hoch). Schlaf wird aus deinem heutigen Schlaf-Check-in übernommen.</p>
+                        </div>
+                        <form id="wellbeing-form">
+                            <label for="stress-level">Stress: <output id="stress-level-value">5</output>/10</label>
+                            <input id="stress-level" name="stress_level" type="range" min="0" max="10" value="5">
+                            <label for="workload-level">Workload: <output id="workload-level-value">5</output>/10</label>
+                            <input id="workload-level" name="workload_level" type="range" min="0" max="10" value="5">
+                            <button class="text-link" type="submit">Wert berechnen</button>
+                        </form>
+                        <p id="wellbeing-result" role="status" aria-live="polite">Noch kein Wert für heute gespeichert.</p>
+                        <small>Der Wert ist eine Orientierung aus deinen Selbsteinschätzungen, keine medizinische Bewertung oder Diagnose. 80–100: niedriges, 50–79: moderates, 0–49: hohes Burnout-Risiko.</small>
+                    </section>
                 </div>
             </div>
             <p id="dashboard-status" class="dashboard-status" role="status" aria-live="polite"></p>
         </main>
-        <script src="/static/index.js?v=20261004-five-checkups" defer></script>
+        <script src="/static/index.js?v=20260629-health-opty-context" defer></script>
     </body>
 </html>

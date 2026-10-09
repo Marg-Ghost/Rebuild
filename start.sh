@@ -27,7 +27,7 @@ if [[ ! -f ".env" ]]; then
     echo "Lokale .env mit zufälligem Session-Schlüssel wurde angelegt."
 fi
 
-if ! grep -Eq '^SessionMiddlewareSecretKey=.+$' ".env"; then
+if [ -z "$(grep '^SessionMiddlewareSecretKey=.+$' ".env")" ]; then
     echo "Fehler: SessionMiddlewareSecretKey ist in .env nicht gesetzt." >&2
     exit 1
 fi

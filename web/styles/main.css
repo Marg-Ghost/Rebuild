@@ -337,7 +337,8 @@
 .health-panel,
 .recommendation-panel,
 .agenda-panel,
-.progress-panel {
+.progress-panel,
+.wellbeing-panel {
   min-width: 0;
   border: 1px solid rgb(32 41 37 / 8%);
   border-radius: 7px;
@@ -348,7 +349,8 @@
 .checkin-panel,
 .recommendation-panel,
 .agenda-panel,
-.progress-panel {
+.progress-panel,
+.wellbeing-panel {
   padding: 20px;
 }
 
@@ -484,6 +486,118 @@
   gap: 2px;
 }
 
+.health-explainer {
+  position: relative;
+  border-radius: 4px;
+  cursor: help;
+  outline: none;
+}
+
+.health-explainer:focus-visible {
+  outline: 2px solid var(--forest);
+  outline-offset: 5px;
+}
+
+.health-info-icon {
+  display: inline-grid;
+  width: 15px;
+  height: 15px;
+  margin-left: 3px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.health-tooltip {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(320px, 78vw);
+  padding: 15px;
+  border: 1px solid rgb(32 41 37 / 12%);
+  border-radius: 6px;
+  background: var(--panel);
+  box-shadow: 0 12px 30px rgb(31 48 39 / 14%);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+  visibility: hidden;
+}
+
+.health-explainer:hover .health-tooltip,
+.health-explainer:focus .health-tooltip,
+.health-explainer:focus-within .health-tooltip {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+  visibility: visible;
+}
+
+.health-tooltip > strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.health-tooltip p {
+  margin: 7px 0;
+}
+
+.health-tooltip small {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.health-scale {
+  position: relative;
+  height: 8px;
+  margin: 14px 3px 4px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #d99078, #dfd3a3 50%, #82a786);
+}
+
+.health-scale-baseline,
+.health-scale-current {
+  position: absolute;
+  top: 50%;
+  width: 2px;
+  height: 15px;
+  background: var(--ink);
+  transform: translate(-50%, -50%);
+}
+
+.health-scale-baseline {
+  left: var(--baseline-position, 50%);
+  opacity: 0.55;
+}
+
+.health-scale-current {
+  left: var(--current-position, 50%);
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--panel);
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+
+.health-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 9px;
+}
+
 .health-value strong {
   font-family: Georgia, "Times New Roman", serif;
   font-size: 44px;
@@ -555,6 +669,25 @@
   gap: 14px;
 }
 
+.wellbeing-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.8fr);
+  gap: 14px 24px;
+  margin-top: 14px;
+  padding: 20px;
+}
+
+.wellbeing-panel h2 { margin: 0 0 8px; }
+.wellbeing-panel p { margin: 0; color: var(--muted); }
+.wellbeing-panel form { display: grid; gap: 7px; }
+.wellbeing-panel form label { font-size: 13px; font-weight: 600; }
+.wellbeing-panel input[type="range"] { width: 100%; accent-color: var(--forest); }
+.wellbeing-panel button { justify-self: start; }
+.wellbeing-panel small { grid-column: 1 / -1; color: var(--muted); line-height: 1.5; }
+#wellbeing-result[data-risk="low"] { color: #23613e; }
+#wellbeing-result[data-risk="moderate"] { color: #8a6410; }
+#wellbeing-result[data-risk="high"] { color: #9b3434; }
+
 .recommendation-panel {
   display: flex;
   min-height: 220px;
@@ -592,6 +725,14 @@
 }
 
 .recommendation-panel .text-link { margin-top: auto; color: var(--lime); }
+.recommendation-retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
 
 .agenda-panel,
 .progress-panel {
@@ -702,6 +843,7 @@
   .dashboard-grid { grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.5fr); }
   .insight-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .recommendation-panel { grid-column: 1 / -1; min-height: 190px; }
+  .wellbeing-panel { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 700px) {
@@ -731,6 +873,7 @@
   .health-panel { padding: 17px; }
   .chart-wrap { height: 142px; }
   .insight-grid { grid-template-columns: minmax(0, 1fr); }
+  .wellbeing-panel { margin-top: 12px; padding: 17px; }
   .recommendation-panel { grid-column: auto; }
   .agenda-panel, .progress-panel, .recommendation-panel { min-height: auto; }
   .progress-panel { padding-bottom: 22px; }
