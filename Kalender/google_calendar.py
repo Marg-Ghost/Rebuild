@@ -202,7 +202,7 @@ def _classify_events(events: list[dict]) -> None:
         batch = events[offset:offset + CLASSIFICATION_BATCH_SIZE]
         try:
             response = client.chat(
-                model=os.getenv("OLLAMA_MODEL", "llama3:latest"),
+                model=os.getenv("OLLAMA_MODEL", "llama3.1:8b"),
                 messages=[
                     {
                         "role": "system",

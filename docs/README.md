@@ -91,7 +91,7 @@ Die Chroma-Collection `GhostReferenceV1` wird aus der versionierten allgemeinen 
 
 „Gespräch speichern und leeren“ sendet den aktuellen Verlauf an `/api/llm/conversation/clear`. Die Queue erstellt daraus eine Zusammenfassung und speichert sie als persönliches Memory; anschließend wird der sichtbare Gesprächsverlauf geleert. Der Verlauf selbst wird nicht durch diesen Browsercode dauerhaft wiederhergestellt.
 
-Ollama-Modell und Serveradresse werden über `OLLAMA_MODEL` und `OLLAMA_HOST` konfiguriert. Das Startskript `start.sh` startet Ollama und die App als Docker-Container, prüft das Modell und lädt es bei Bedarf herunter.
+Ollama-Modell und Serveradresse werden über `OLLAMA_MODEL` und `OLLAMA_HOST` konfiguriert. Standardmäßig wird `llama3.1:8b` verwendet, ein Llama-3.x-Modell mit 8B Parametern. Das Startskript `start.sh` startet Ollama und die App als Docker-Container, prüft das Modell und lädt es bei Bedarf herunter.
 
 ## Kalender
 

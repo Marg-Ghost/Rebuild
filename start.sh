@@ -52,7 +52,7 @@ if [[ ! -f ".env" ]]; then
         echo "Fehler: Kein Generator für den initialen Session-Schlüssel gefunden." >&2
         exit 1
     fi
-    printf 'SessionMiddlewareSecretKey=%s\nOLLAMA_MODEL=llama3:latest\n' \
+    printf 'SessionMiddlewareSecretKey=%s\nOLLAMA_MODEL=llama3.1:8b\n' \
         "${session_secret}" > ".env"
     echo "Lokale .env mit zufälligem Session-Schlüssel wurde angelegt."
 fi
@@ -70,7 +70,7 @@ fi
 >>>>>>> serverfix
 
 if [[ -z "${OLLAMA_MODEL:-}" ]]; then
-    OLLAMA_MODEL="llama3:latest"
+    OLLAMA_MODEL="llama3.1:8b"
 fi
 export OLLAMA_MODEL
 

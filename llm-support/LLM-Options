@@ -8,4 +8,4 @@ Based on a ollama model:
 | größere Modelle |  20B+ |           hoch | ⭐⭐⭐⭐⭐    | ⭐⭐⭐⭐⭐                   | ⭐⭐              | 🔴 lokal schwierig |
 
 
-=> wir benutzten erst ein Qwen 8B dass hat sich in alten Projekten schon als recht handlebar gezeigt
+=> Als Standard ist `llama3.1:8b` ausgewählt (Ollama-Tag für Llama 3.x mit 8B).

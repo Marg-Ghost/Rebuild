@@ -39,7 +39,7 @@ def save_problem_summary(username, summary):
 
 class LlmRequestQueue:
     def __init__(self, model=None, client=None):
-        self.model = model or os.getenv("OLLAMA_MODEL", "llama3:latest")
+        self.model = model or os.getenv("OLLAMA_MODEL", "llama3.1:8b")
         self.client = client or ollama.AsyncClient(
             host=os.getenv("OLLAMA_HOST", "http://localhost:11434")
         )
