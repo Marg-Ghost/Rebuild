@@ -27,7 +27,7 @@ services:
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3:latest}
       SessionMiddlewareSecretKey: ${SessionMiddlewareSecretKey:-}
     ports:
-      - "127.0.0.1:8000:8000"
+      - "0.0.0.0:8000:8000"
     volumes:
       - ./data/user:/app/data/user
       - ./data/ai_konstanten:/app/data/ai_konstanten
@@ -41,7 +41,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=3)",
+          "import urllib.request; urllib.request.urlopen('http://0.0.0.0:8000/', timeout=3)",
         ]
       interval: 10s
       timeout: 5s
