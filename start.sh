@@ -3,6 +3,36 @@ set -Eeuo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
+
+if ss -ltnH 'sport = :11434' | grep -q .; then
+    echo "Port 11434 ist belegt"
+	
+    sudo systemctl stop ollama
+    sudo docker stop hackathon_test_rebuild-ollama-1
+    sudo docker rm hackathon_test_rebuild-ollama-1
+    # Warten, bis der Port tatsächlich frei ist
+    for i in {1..10}; do
+        if ! ss -ltnH 'sport = :11434' | grep -q .; then
+            break
+        fi
+        sleep 1
+    done
+fi
+
+if ss -ltnH 'sport = :11434' | grep -q .; then
+    echo "FEHLER: Port 11434 ist weiterhin belegt:"
+    ss -ltnpH 'sport = :11434'
+    exit 1
+fi
+
+echo "Port 11434 ist frei"
+
+if ss -ltn | grep -q ":8000"; then
+	echo "Port 8000 belegt"
+	sudo docker stop hackathon-app-1
+	sudo docker rm hackathon-app-1
+fi	
+
 if ! command -v docker >/dev/null 2>&1; then
     echo "Fehler: Docker ist nicht installiert oder nicht im PATH." >&2
     exit 1
@@ -27,10 +57,17 @@ if [[ ! -f ".env" ]]; then
     echo "Lokale .env mit zufälligem Session-Schlüssel wurde angelegt."
 fi
 
+<<<<<<< HEAD
 if [ -z "$(grep '^SessionMiddlewareSecretKey=.+$' ".env")" ]; then
     echo "Fehler: SessionMiddlewareSecretKey ist in .env nicht gesetzt." >&2
     exit 1
 fi
+=======
+#if ! grep -Eq '^SessionMiddlewareSecretKey=.+$' ".env"; then
+#    echo "Fehler: SessionMiddlewareSecretKey ist in .env nicht gesetzt." >&2
+#    exit 1
+#fi
+>>>>>>> serverfix
 
 if [[ -z "${OLLAMA_MODEL:-}" ]]; then
     OLLAMA_MODEL="llama3:latest"
@@ -67,14 +104,14 @@ else
     docker compose exec -T ollama ollama pull "${OLLAMA_MODEL}"
 fi
 
-echo "Starte App-Container auf http://localhost:8000 ..."
+echo "Starte App-Container auf http://0.0.0.0:8000 ..."
 docker compose up -d app
 
 echo "Warte auf den Rebuild-Server ..."
 app_ready=false
 for _ in {1..30}; do
     if docker compose exec -T app python -c \
-        "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=3)" \
+        "import urllib.request; urllib.request.urlopen('http://0.0.0.0:8000/', timeout=3)" \
         >/dev/null 2>&1; then
         app_ready=true
         break
