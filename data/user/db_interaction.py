@@ -418,14 +418,18 @@ def get_username(identifier: str, method: str) -> str | None:
 def has_checkup_for_user(username: str) -> bool:
     with sqlite3.connect(DB_PATH) as conn:
         checkup = conn.execute(
-                        """
-                        SELECT health_float
-                        FROM profile
-                        WHERE username=?
-                            AND health_float IS NOT NULL
-                            AND health_float <> ''
-                        """,
-            (username,),
+            """
+            SELECT 1 FROM profile
+            WHERE username=? AND health_float IS NOT NULL AND health_float <> ''
+            UNION ALL
+            SELECT 1 FROM daily_checkup
+            WHERE username=? AND checkup_count > 0
+            UNION ALL
+            SELECT 1 FROM daily_sleep_checkup
+            WHERE username=? AND completed=1
+            LIMIT 1
+            """,
+            (username, username, username),
         ).fetchone()
     return checkup is not None
 

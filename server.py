@@ -199,6 +199,7 @@ async def register_checkup(request: Request):
     return {
         "profile": "complete" if db_interaction.has_profile_for_user(username) else "empty",
         "db": "complete" if db_interaction.has_checkup_for_user(username) else "empty",
+        "sleep_status": db_interaction.get_daily_sleep_checkup(username)["status"],
     }
 
 # user spesific api reqests
@@ -913,6 +914,8 @@ async def save_efficiency_score(
         float(sleep_hours),
         assessment.stress_level,
         assessment.workload_level,
+        float(sleep_checkin["sleep_quality"])
+        if sleep_checkin.get("sleep_quality") is not None else None,
     )
     save_score(
         username,

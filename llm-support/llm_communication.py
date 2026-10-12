@@ -4,6 +4,7 @@ import os
 
 import ollama
 import vectordb
+from llm.ollama_config import select_ollama_model
 
 # da RAG Pipline system eine que die requests unterschiedlich priorisiert
 USER_REQUEST = "user"
@@ -41,7 +42,7 @@ def save_problem_summary(username, summary):
 
 class LlmRequestQueue:
     def __init__(self, model=None, client=None):
-        self.model = model or os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+        self.model = model or os.getenv("OLLAMA_MODEL") or select_ollama_model()
         self.client = client or ollama.AsyncClient(
             host=os.getenv("OLLAMA_HOST", "http://localhost:11434")
         )
@@ -62,10 +63,6 @@ class LlmRequestQueue:
         self._requests.put_nowait(
             (REQUEST_PRIORITIES[request.request_type], next(self._sequence), request)
         )
-
-        if request.request_type == USER_REQUEST and self._active_type == SYSTEM_REQUEST:
-            # kein Richtiger abbruch ! frage ist diese option möglich zu implementieren?
-            self._active_task.cancel()
 
         if self._worker is None or self._worker.done():
             self._worker = asyncio.create_task(self._run())

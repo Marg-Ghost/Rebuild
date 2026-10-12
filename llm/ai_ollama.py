@@ -3,9 +3,11 @@ import os
 
 import ollama
 
+from llm.ollama_config import select_ollama_model
+
 
 def match_catalog_entry(kind: str, query: str, candidates: list[str]) -> str | None:
-    model = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+    model = os.getenv("OLLAMA_MODEL") or select_ollama_model()
     response_schema = {
         "type": "object",
         "properties": {

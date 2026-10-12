@@ -3,6 +3,7 @@ import os
 
 import chromadb
 import ollama
+from llm.ollama_config import select_ollama_model
 
 import data.load_data as load_data
 
@@ -10,7 +11,7 @@ db = chromadb.PersistentClient(path="./chroma_data")
 collection = db.get_or_create_collection(name="GhostReferenceV1")
 
 client = ollama.Client(host=os.getenv("OLLAMA_HOST", "http://localhost:11434"))
-current_model = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+current_model = os.getenv("OLLAMA_MODEL") or select_ollama_model()
 
 # The shared collection contains only the app's generic reference corpus.
 documents, ids = load_data.load_txt()

@@ -252,6 +252,8 @@ async function loginUser() {
             window.location.href = '/register_info';
         } else if (checkupResult.db === 'empty') {
             window.location.href = '/checkup_first';
+        } else if (checkupResult.sleep_status !== 'complete') {
+            window.location.href = '/sleep-checkup';
         } else {
             window.location.href = '/home';
         }

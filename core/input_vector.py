@@ -168,7 +168,12 @@ def sleep_clac(sleep_score: float,point_score: float,late_nights_fraction: float
     penalty_point = min(point_score, 0.0)
     if not 0 <= late_nights_fraction <= 1:
         raise ValueError("late_nights_fraction muss zwischen 0 und 1 liegen")
-    erg = sleep_score + penalty_point * late_nights_fraction
+    # A logarithmic exposure curve prevents one or two late nights from
+    # applying the full linear penalty; even a full week is capped below it.
+    late_sleep_weight = math.log1p(7 * late_nights_fraction) / math.log(8)
+    # sleep_point is stored on a roughly 100-point scale; convert it to hours
+    # before applying the normalized logarithmic weekly frequency.
+    erg = sleep_score + (penalty_point / 100.0) * late_sleep_weight
     return erg
     
 def create_food_vector(type: str, vec: list) -> list:

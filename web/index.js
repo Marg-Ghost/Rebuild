@@ -38,10 +38,10 @@ function renderHealthChart(history) {
 
     const min = Math.min(...values.map(([, value]) => value));
     const max = Math.max(...values.map(([, value]) => value));
-    const spread = max - min || Math.max(Math.abs(max) * 0.08, 1);
+    const spread = max - min;
     const points = values.map(([, value], index) => {
         const x = values.length === 1 ? 360 : 20 + index * 680 / (values.length - 1);
-        const y = 165 - ((value - min) / spread) * 125;
+        const y = spread === 0 ? 102 : 165 - ((value - min) / spread) * 125;
         return [x, y];
     });
 
@@ -303,9 +303,14 @@ async function loadDashboard() {
         const history = health[2] && typeof health[2] === 'object' ? health[2] : {};
         const lastHistoryValue = Object.values(history).map(Number).filter(Number.isFinite).at(-1);
         const healthToday = count ? Math.round(healthTotal / count) : lastHistoryValue;
+        const chartHistory = { ...history };
+        if (count > 0 && Number.isFinite(healthToday)) {
+            const todayKey = checkup.daily?.date || [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+            chartHistory[todayKey] = healthToday;
+        }
         byId('health_count').textContent = checkup.processing ? 'In Berechnung...' : (healthToday === undefined ? '--' : Math.round(healthToday).toLocaleString('de-DE'));
         renderHealthExplanation(healthToday, history, count > 0);
-        renderHealthChart(history);
+        renderHealthChart(chartHistory);
         renderCheckup(checkup);
         renderEfficiencyScore(efficiency.latest);
         renderTasks(calendar.entries || []);
