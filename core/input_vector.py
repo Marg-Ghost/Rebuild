@@ -2,6 +2,7 @@ import sqlite3
 import math
 import ollama
 from pathlib import Path
+from core.vector_config import INPUT_VECTOR_SIZE
 
 HEALTH_SLEEP = [18, 19, 20, 22, 23]
 
@@ -41,10 +42,6 @@ CATALOGS = {
     },
 }
 
-conn = sqlite3.connect(HEALTH_DB_PATH)
-cursor = conn.cursor() 
-
-
 def get_catalog_items(kind: str) -> list[dict]:
     catalog = CATALOGS.get(kind)
     if catalog is None:
@@ -62,8 +59,8 @@ def get_catalog_items(kind: str) -> list[dict]:
         {
             "name": str(row[0]),
             "category": str(row[1] or ""),
-            "vector": [float(value or 0) for value in row[2:10]],
-            "score": float(row[10] or 0),
+            "vector": [float(value or 0) for value in row[2:2 + INPUT_VECTOR_SIZE]],
+            "score": float(row[2 + INPUT_VECTOR_SIZE] or 0),
         }
         for row in rows
     ]
@@ -102,28 +99,55 @@ def all_check(health: float, sleep: list, food: list, act: list) -> list:
 
     # food section
     from core.ai.ai import forwardpropagation
-    input_vec_f = create_food_vector("food", food)
-    return_val_f = forwardpropagation(0, train=False, input_vector=input_vec_f)
-    if return_val_f is None:
-        food_scores = [get_catalog_item("food", name)["score"] for name in food]
-        return_val_f = round(sum(food_scores) / len(food_scores)) if food_scores else 0
-    # act section
-    input_vec_a = create_food_vector("act", act)
-    return_val_a = forwardpropagation(1, train=False, input_vector=input_vec_a)
-    if return_val_a is None:
-        activity_scores = [get_catalog_item("activity", name)["score"] for name in act]
-        return_val_a = round(sum(activity_scores) / len(activity_scores)) if activity_scores else 0
+    # Catalog labels are the training units: score each food individually and
+    # average scores, rather than feeding a summed meal vector to the network.
+    food_scores = []
+    for item in food:
+        input_vector = create_food_vector("food", [item])
+        predicted = forwardpropagation(0, train=False, input_vector=input_vector)
+        if predicted is None:
+            catalog_item = get_catalog_item("food", item)
+            predicted = round(catalog_item["score"]) if catalog_item else 0
+        food_scores.append(float(predicted))
+    return_val_f = round(sum(food_scores) / len(food_scores)) if food_scores else 0
+    food_impact = get_impact("food", return_val_f) if food_scores else 0.0
 
-    # get return -> impact val
-    food_impact = get_impact("food", return_val_f)
-    act_impact = get_impact("act", return_val_a)
+    # Evaluate each activity on its own vector. Durations are minutes, and
+    # their contribution uses the agreed logarithmic 30-minute reference.
+    weighted_activity_scores = []
+    act_impact = 0.0
+    for entry in act:
+        if isinstance(entry, str):
+            name, duration_minutes = entry, 30.0
+        elif isinstance(entry, dict):
+            name = str(entry.get("name", ""))
+            duration_minutes = float(entry.get("duration_minutes", 30.0))
+        else:
+            raise ValueError("Aktivität muss Name und Dauer enthalten")
+        if not name or not math.isfinite(duration_minutes) or duration_minutes <= 0:
+            raise ValueError("Aktivität oder Dauer ungültig")
+        input_vector = create_food_vector("act", [name])
+        predicted = forwardpropagation(1, train=False, input_vector=input_vector)
+        if predicted is None:
+            catalog_item = get_catalog_item("activity", name)
+            predicted = round(catalog_item["score"]) if catalog_item else 0
+        predicted = float(predicted)
+        weight = math.log1p(duration_minutes / 30.0) / math.log(2.0)
+        weighted_activity_scores.append((predicted, weight))
+        act_impact += get_impact("act", int(round(predicted))) * weight
+    return_val_a = (
+        round(sum(score * weight for score, weight in weighted_activity_scores)
+              / sum(weight for _, weight in weighted_activity_scores))
+        if weighted_activity_scores else 0
+    )
 
     # helath calc mit impact
     health += sleep_impact
     health += food_impact
     health += act_impact
 
-    return [health, [sleep_score, point_score, late_nights_fraction], return_val_f, return_val_a]
+    return [health, [sleep_score, point_score, late_nights_fraction],
+            return_val_f, return_val_a, act_impact]
 """ 
 def register_vector(sleep: list, food : list, act : list):
     global HEALTH_SLEEP
@@ -142,13 +166,15 @@ def register_vector(sleep: list, food : list, act : list):
 """
 def sleep_clac(sleep_score: float,point_score: float,late_nights_fraction: float,) -> float:
     penalty_point = min(point_score, 0.0)
-    erg = sleep_score + penalty_point * math.exp(late_nights_fraction)
+    if not 0 <= late_nights_fraction <= 1:
+        raise ValueError("late_nights_fraction muss zwischen 0 und 1 liegen")
+    erg = sleep_score + penalty_point * late_nights_fraction
     return erg
     
 def create_food_vector(type: str, vec: list) -> list:
     database = sqlite3.connect(HEALTH_DB_PATH)
     database_cursor = database.cursor()
-    input_vector = [0.0] * 8
+    input_vector = [0.0] * INPUT_VECTOR_SIZE
 
     if type == "food":
         catalog = CATALOGS["food"]
@@ -169,7 +195,7 @@ def create_food_vector(type: str, vec: list) -> list:
             return_array = database_cursor.fetchone()
             if return_array is None:
                 raise ValueError(f"Unbekannter Referenzeintrag: {element}")
-            for index in range(8):
+            for index in range(INPUT_VECTOR_SIZE):
                 input_vector[index] += float(return_array[index] or 0)
 
         if type == "act" and vec:
@@ -191,8 +217,15 @@ def get_impact(type : str, number : int) -> int:
     if number is None:
         return 0.0
 
-    cursor.execute(f'SELECT "return" FROM "{table_name}" WHERE "Score "=?', (number,))
-    return_val = cursor.fetchone()
+    with sqlite3.connect(HEALTH_DB_PATH) as database:
+        return_val = database.execute(
+            f'SELECT "return" FROM "{table_name}" WHERE "Score "=?',
+            (number,),
+        ).fetchone()
 
-    return float(return_val[0]) if return_val else 0.0
-        
+    if not return_val:
+        return 0.0
+    magnitude = abs(float(return_val[0]))
+    # The legacy tables store magnitudes only: sub-neutral scores are harmful,
+    # neutral scores map to zero, and scores above 70 are beneficial.
+    return magnitude if number > 70 else -magnitude if number < 70 else 0.0

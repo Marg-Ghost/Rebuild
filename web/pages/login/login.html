@@ -23,14 +23,9 @@
                             <input type="radio" name="login_method" value="email" onchange="updateLoginFields()" />
                             E-Mail
                         </label>
-                        <label>
-                            <input type="radio" name="login_method" value="phone" onchange="updateLoginFields()" />
-                            Telefonnummer
-                        </label>
                     </fieldset>
                     <input type="text" id="username_input" placeholder="Benutzername" required />
                     <input type="email" id="email_input" placeholder="E-Mail-Adresse" hidden />
-                    <input type="tel" id="phone_input" placeholder="Telefonnummer" hidden />
                     <input type="password" id="pwd_input" placeholder="Passwort" required />
                     <button onclick="loginUser()">Login</button>
                     <p id="login_status" aria-live="polite"></p>

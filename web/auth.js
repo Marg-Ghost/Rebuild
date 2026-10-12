@@ -4,7 +4,6 @@ function updateLoginIdentifierLabel() {
     const fields = {
         username: ['username_input', 'Username'],
         email: ['email_input', 'E-Mail'],
-        phone: ['phone_input', 'Telefonnummer']
     };
 
     [identifierLabel.htmlFor, identifierLabel.textContent] = fields[method];

@@ -21,7 +21,9 @@ HEALTH_TABLE_ACTIVITY = "activity_werte"
 # complilierte C Data
 C_AI = PROJECT_ROOT / "core" / "ai" / "ai"
 
-INPUT_NEURONEN = 8
+from core.vector_config import INPUT_VECTOR_SIZE
+
+INPUT_NEURONEN = INPUT_VECTOR_SIZE
 HIDDEN_NEURONEN = 8
 OUTPUT_NEURONEN = 1
 LERNRATE = 0.05

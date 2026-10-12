@@ -46,6 +46,9 @@
                             <input class="act_input" type="text" data-kind="activity" aria-label="Aktivität" aria-autocomplete="list" aria-expanded="false" placeholder="Aktivität auswählen" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
                             <div class="catalog-options" role="listbox" hidden></div>
                         </div>
+                        <label class="activity-duration">Dauer (Minuten)
+                            <input type="number" data-activity-duration min="1" max="1440" value="30" inputmode="numeric">
+                        </label>
                         <button type="button" onclick="remove_note(this)" aria-label="Eintrag entfernen">&times;</button>
                         <output class="reference-preview" aria-live="polite"></output>
                     </div>

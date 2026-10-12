@@ -17,14 +17,12 @@
                         <legend>Anmelden mit</legend>
                         <label><input type="radio" name="login_method" value="username" checked onchange="updateLoginFields(); updateLoginIdentifierLabel()"> Benutzername</label>
                         <label><input type="radio" name="login_method" value="email" onchange="updateLoginFields(); updateLoginIdentifierLabel()"> E-Mail</label>
-                        <label><input type="radio" name="login_method" value="phone" onchange="updateLoginFields(); updateLoginIdentifierLabel()"> Telefon</label>
                     </fieldset>
 
                     <div class="auth-field">
                         <label id="login-identifier-label" for="username_input">Username</label>
                         <input type="text" id="username_input" autocomplete="username" required>
                         <input type="email" id="email_input" autocomplete="email" hidden>
-                        <input type="tel" id="phone_input" autocomplete="tel" hidden>
                     </div>
                     <div class="auth-field">
                         <label for="pwd_input">Password</label>
@@ -46,8 +44,10 @@
                         <input type="email" id="email_input_reg" autocomplete="email" required>
                     </div>
                     <div class="auth-field">
-                        <label for="phone_input_reg">Telefon <span>(optional)</span></label>
+                        <label for="phone_input_reg">Telefon (optional)</label>
                         <input type="tel" id="phone_input_reg" autocomplete="tel">
+                    </div>
+                    <div class="auth-field">
                     </div>
                     <div class="auth-field">
                         <label for="pwd_input_reg">Password</label>

@@ -36,6 +36,7 @@ function add_note(node_type) {
                 <input type="text" data-kind="${node_type}" aria-label="${label}" aria-autocomplete="list" aria-expanded="false" placeholder="${placeholder}" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
                 <div class="catalog-options" role="listbox" hidden></div>
             </div>
+            ${node_type === 'activity' ? '<label class="activity-duration">Dauer (Minuten)<input type="number" data-activity-duration min="1" max="1440" value="30" inputmode="numeric"></label>' : ''}
             <button class="icon-button" type="button" aria-label="Eintrag entfernen" onclick="remove_note(this)">&times;</button>
             <output class="reference-preview" aria-live="polite"></output>
         </div>`);
@@ -60,20 +61,17 @@ function updateLoginFields() {
     const method = document.querySelector('input[name="login_method"]:checked').value;
     const usernameInput = document.getElementById('username_input');
     const emailInput = document.getElementById('email_input');
-    const phoneInput = document.getElementById('phone_input');
 
     usernameInput.hidden = method !== 'username';
     emailInput.hidden = method !== 'email';
-    phoneInput.hidden = method !== 'phone';
     usernameInput.required = method === 'username';
     emailInput.required = method === 'email';
-    phoneInput.required = method === 'phone';
 }
 
 async function registerUser() {
     const username = document.getElementById('usr_input_reg').value.trim();
     const email = document.getElementById('email_input_reg').value.trim();
-    const phone = document.getElementById('phone_input_reg').value.trim();
+    const phone = document.getElementById('phone_input_reg')?.value.trim() || '';
     const password = document.getElementById('pwd_input_reg').value;
 
     if (!email) {
@@ -191,7 +189,7 @@ async function send_data() {
         }
 
         if (status) status.textContent = 'Gespeichert. Willkommen bei Rebuild.';
-        window.setTimeout(() => { window.location.href = '/home'; }, 500);
+        window.location.href = '/index.html';
     } catch (error) {
         if (status) status.textContent = error.message;
         submitButton.disabled = false;
@@ -216,8 +214,7 @@ async function loginUser() {
     const method = document.querySelector('input[name="login_method"]:checked').value;
     const usernameInput = document.getElementById('username_input');
     const emailInput = document.getElementById('email_input');
-    const phoneInput = document.getElementById('phone_input');
-    const identifierInput = method === 'username' ? usernameInput : method === 'email' ? emailInput : phoneInput;
+    const identifierInput = method === 'username' ? usernameInput : emailInput;
     const identifier = identifierInput.value.trim();
 
     if (!identifier) {
@@ -430,11 +427,9 @@ function updateReferenceValue(input) {
 }
 
 function showReferenceValue(input, item, source) {
-    const labels = catalogVectorLabels[input.dataset.kind];
-    const values = item.vector.map((value, index) => `${labels[index]}: ${Number(value).toLocaleString('de-DE')}`);
     const prefix = source === 'ollama' ? `Ollama-Zuordnung: ${item.name}. ` : '';
     input.closest('.entry-row').querySelector('.reference-preview').textContent =
-        `${prefix}DB (${item.category}) | ${values.join(' | ')} | Score: ${item.score}`;
+        `${prefix}DB (${item.category}) | Score: ${Number(item.score).toLocaleString('de-DE')}`;
 }
 
 async function resolveReferenceValue(input) {
@@ -523,13 +518,21 @@ async function send_daily_checkup() {
     if (status) status.textContent = 'Pruefe Food- und Activity-Eintraege ...';
 
     try {
-        await resolveAllReferenceInputs();
         const food = Array.from(document.querySelectorAll('#food_current input[data-kind="food"]'))
-            .map((input) => input.dataset.catalogName)
+            .map((input) => input.dataset.catalogName || input.value.trim())
             .filter(Boolean);
         const activity = Array.from(document.querySelectorAll('#activity_current input[data-kind="activity"]'))
-            .map((input) => input.dataset.catalogName)
-            .filter(Boolean);
+            .filter((input) => input.dataset.catalogName || input.value.trim())
+            .map((input) => {
+                const duration = Number(input.closest('.entry-row').querySelector('[data-activity-duration]')?.value);
+                if (!Number.isInteger(duration) || duration < 1 || duration > 1440) {
+                    throw new Error('Bitte gib für jede Aktivität eine Dauer zwischen 1 und 1.440 Minuten an.');
+                }
+                return { name: input.dataset.catalogName || input.value.trim(), duration_minutes: duration };
+            });
+        if (activity.reduce((sum, item) => sum + item.duration_minutes, 0) > 1440) {
+            throw new Error('Die gesamte Aktivitätsdauer darf 1.440 Minuten nicht überschreiten.');
+        }
         const response = await fetch('/api/daily-checkup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -539,8 +542,8 @@ async function send_daily_checkup() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.detail || 'Checkup konnte nicht gespeichert werden');
 
-        if (status) status.textContent = `Check-in ${data.checkup_number} von 5 gespeichert.`;
-        window.setTimeout(() => { window.location.href = '/home'; }, 400);
+        if (status) status.textContent = `Check-in ${data.checkup_number} von 5 wird ausgewertet.`;
+        window.location.href = '/index.html';
     } catch (error) {
         if (status) status.textContent = error.message;
         submitButton.disabled = false;

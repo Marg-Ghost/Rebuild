@@ -142,7 +142,10 @@ function renderCheckup(status) {
 
     const statusText = byId('sleep_checkup_today');
     const startLink = byId('start-checkup');
-    if (sleep.status !== 'complete') {
+    if (status.processing) {
+        statusText.textContent = 'Dein Check-in wird im Hintergrund ausgewertet.';
+        startLink.hidden = true;
+    } else if (sleep.status !== 'complete') {
         statusText.textContent = 'Erfasse zuerst deinen Schlaf-Check-in. Danach kannst du fünfmal Essen und Bewegung seit dem letzten Check-in eintragen.';
         startLink.href = '/sleep-checkup';
         startLink.textContent = sleep.status === 'pending'
@@ -300,14 +303,18 @@ async function loadDashboard() {
         const history = health[2] && typeof health[2] === 'object' ? health[2] : {};
         const lastHistoryValue = Object.values(history).map(Number).filter(Number.isFinite).at(-1);
         const healthToday = count ? Math.round(healthTotal / count) : lastHistoryValue;
-        byId('health_count').textContent = healthToday === undefined ? '--' : Math.round(healthToday).toLocaleString('de-DE');
+        byId('health_count').textContent = checkup.processing ? 'In Berechnung...' : (healthToday === undefined ? '--' : Math.round(healthToday).toLocaleString('de-DE'));
         renderHealthExplanation(healthToday, history, count > 0);
         renderHealthChart(history);
         renderCheckup(checkup);
         renderEfficiencyScore(efficiency.latest);
         renderTasks(calendar.entries || []);
         status.textContent = '';
-        void loadRecommendation();
+        if (checkup.processing) {
+            window.setTimeout(() => { void loadDashboard(); }, 3000);
+        } else {
+            void loadRecommendation();
+        }
     } catch (error) {
         status.textContent = error.message;
     }

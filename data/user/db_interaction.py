@@ -21,6 +21,20 @@ def init_db() -> None:
             )
             """
         )
+        login_columns = {row[1] for row in conn.execute("PRAGMA table_info(login)")}
+        if "phone" not in login_columns:
+            conn.execute("ALTER TABLE login ADD COLUMN phone TEXT")
+        # Upgrade legacy plaintext credentials in place before the app serves logins.
+        import re
+        from sec_protocols.hash_encryption import hash_password
+        for rowid, stored_password in conn.execute(
+            "SELECT rowid, password FROM login WHERE password IS NOT NULL"
+        ).fetchall():
+            if not re.fullmatch(r"[0-9a-f]{32}\$[0-9a-f]{64}", str(stored_password)):
+                conn.execute(
+                    "UPDATE login SET password=? WHERE rowid=?",
+                    (hash_password(str(stored_password)), rowid),
+                )
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS profile (
@@ -109,6 +123,7 @@ def init_db() -> None:
             BEGIN
                 SELECT RAISE(ABORT, 'User existiert bereits');
             END;
+
             """
         )
         conn.execute(
@@ -149,6 +164,18 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute("""CREATE TABLE IF NOT EXISTS checkup_jobs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            status TEXT NOT NULL DEFAULT 'processing',
+            activity_minutes INTEGER NOT NULL DEFAULT 0
+        )""")
+        job_columns = {row[1] for row in conn.execute("PRAGMA table_info(checkup_jobs)")}
+        if "activity_minutes" not in job_columns:
+            conn.execute(
+                "ALTER TABLE checkup_jobs ADD COLUMN activity_minutes INTEGER NOT NULL DEFAULT 0"
+            )
         daily_columns = {
             row[1] for row in conn.execute("PRAGMA table_info(daily_checkup)")
         }
@@ -203,6 +230,14 @@ def init_db() -> None:
             )
             """
         )
+        checkup_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(daily_food_activity_checkups)")
+        }
+        if "activity_impact" not in checkup_columns:
+            conn.execute(
+                "ALTER TABLE daily_food_activity_checkups "
+                "ADD COLUMN activity_impact REAL NOT NULL DEFAULT 0"
+            )
         conn.execute(
             """
             CREATE INDEX IF NOT EXISTS daily_food_activity_checkups_user_date_idx
@@ -300,7 +335,7 @@ def save_llm_problem_summary(username: str, summary: str) -> str | None:
 
 # login logic
 def login_user(identifier: str, password: str, method: str) -> int:
-    column = {"username": "username", "email": "email", "phone": "phone"}.get(method)
+    column = {"username": "username", "email": "email"}.get(method)
     if column is None:
         return 1
 
@@ -312,7 +347,11 @@ def login_user(identifier: str, password: str, method: str) -> int:
 
     if len(users) > 1:
         return 2
-    return 0 if users and users[0][1] == password else 1
+    from sec_protocols.hash_encryption import try_password
+    try:
+        return 0 if users and try_password(password, users[0][1]) else 1
+    except (ValueError, TypeError, AttributeError):
+        return 1
 
 
 def register_user(
@@ -321,11 +360,13 @@ def register_user(
     phone: str | None = None,
     username: str | None = None,
 ) -> int:
+    from sec_protocols.hash_encryption import hash_password
     profile_username = username or email
+    password_hash = hash_password(password)
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute(
             "INSERT INTO login (id, username, email, phone, password) VALUES (?, ?, ?, ?, ?)",
-            (profile_username, profile_username, email, phone or None, password),
+            (profile_username, profile_username, email, phone or None, password_hash),
         )
         conn.execute(
             "INSERT INTO profile (username) VALUES (?)",
@@ -342,7 +383,7 @@ def get_all_user() -> list:
 
 def get_user_id(identifier: str, method: str | None = None) -> str | None:
     with sqlite3.connect(DB_PATH) as conn:
-        column = {"username": "username", "email": "email", "phone": "phone"}.get(method)
+        column = {"username": "username", "email": "email"}.get(method)
         if column is not None:
             user = conn.execute(
                 f"SELECT id FROM login WHERE {column}=?",
@@ -351,11 +392,6 @@ def get_user_id(identifier: str, method: str | None = None) -> str | None:
         elif "@" in identifier:
             user = conn.execute(
                 "SELECT id FROM login WHERE email=?",
-                (identifier,),
-            ).fetchone()
-        elif "+" in identifier or identifier.isdigit():
-            user = conn.execute(
-                "SELECT id FROM login WHERE phone=?",
                 (identifier,),
             ).fetchone()
         else:
@@ -367,7 +403,7 @@ def get_user_id(identifier: str, method: str | None = None) -> str | None:
 
 
 def get_username(identifier: str, method: str) -> str | None:
-    column = {"username": "username", "email": "email", "phone": "phone"}.get(method)
+    column = {"username": "username", "email": "email"}.get(method)
     if column is None:
         return None
 
@@ -392,6 +428,53 @@ def has_checkup_for_user(username: str) -> bool:
             (username,),
         ).fetchone()
     return checkup is not None
+
+
+def add_pending_checkup(username: str, activity_minutes: int = 0) -> int:
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.execute(
+            "INSERT INTO checkup_jobs (username, status, activity_minutes) VALUES (?, 'processing', ?)",
+            (username, activity_minutes),
+        )
+        return int(cursor.lastrowid)
+
+
+def finish_pending_checkup(job_id: int) -> None:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("DELETE FROM checkup_jobs WHERE id=?", (job_id,))
+
+
+def has_pending_checkup(username: str) -> bool:
+    with sqlite3.connect(DB_PATH) as conn:
+        return conn.execute(
+            "SELECT 1 FROM checkup_jobs WHERE username=? LIMIT 1", (username,)
+        ).fetchone() is not None
+
+
+def get_activity_minutes_today(username: str) -> int:
+    import datetime
+    import json
+
+    today = datetime.date.today().isoformat()
+    with sqlite3.connect(DB_PATH) as conn:
+        rows = conn.execute(
+            "SELECT activity_entries FROM daily_food_activity_checkups WHERE username=? AND checkup_date=?",
+            (username, today),
+        ).fetchall()
+        pending = conn.execute(
+            "SELECT COALESCE(SUM(activity_minutes), 0) FROM checkup_jobs "
+            "WHERE username=? AND substr(created_at, 1, 10)=?",
+            (username, today),
+        ).fetchone()[0]
+    recorded = 0
+    for (entries_json,) in rows:
+        try:
+            entries = json.loads(entries_json)
+        except (TypeError, json.JSONDecodeError):
+            continue
+        for entry in entries:
+            recorded += int(entry.get("duration_minutes", 30)) if isinstance(entry, dict) else 30
+    return recorded + int(pending)
 
 
 def has_profile_for_user(username: str) -> bool:
@@ -563,7 +646,8 @@ def save_checkup_entrie(
     include_sleep=True,
     include_food=True,
     include_activity=True,
-    daily_entries: tuple[list[str], list[str]] | None = None,
+    daily_entries: tuple[list, list] | None = None,
+    activity_impact: float | None = None,
 ):
     import json
     import datetime
@@ -688,8 +772,8 @@ def save_checkup_entrie(
                 """
                 INSERT INTO daily_food_activity_checkups
                     (username, checkup_date, checkup_number, food_entries,
-                     activity_entries, food_score, activity_score)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                     activity_entries, food_score, activity_score, activity_impact)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     user,
@@ -699,6 +783,7 @@ def save_checkup_entrie(
                     json.dumps(activity_entries, ensure_ascii=False),
                     food,
                     act,
+                    float(activity_impact if activity_impact is not None else 0.0),
                 ),
             )
     return True
@@ -994,7 +1079,7 @@ def get_daily_food_activity_checkups(user: str) -> list[dict]:
         rows = conn.execute(
             """
             SELECT checkup_number, created_at, food_entries, activity_entries,
-                   food_score, activity_score
+                   food_score, activity_score, activity_impact
             FROM daily_food_activity_checkups
             WHERE username=? AND checkup_date=?
             ORDER BY checkup_number
@@ -1010,6 +1095,7 @@ def get_daily_food_activity_checkups(user: str) -> list[dict]:
             "activity": json.loads(row[3]),
             "food_score": row[4],
             "activity_score": row[5],
+            "activity_impact": row[6],
         }
         for row in rows
     ]
@@ -1054,7 +1140,8 @@ def get_activity_checkup_history(
     with sqlite3.connect(DB_PATH) as conn:
         rows = conn.execute(
             """
-            SELECT checkup_date, checkup_number, activity_entries, activity_score
+            SELECT checkup_date, checkup_number, activity_entries, activity_score,
+                   activity_impact
             FROM daily_food_activity_checkups
             WHERE username=? AND checkup_date BETWEEN ? AND ?
             ORDER BY checkup_date, checkup_number
@@ -1068,6 +1155,7 @@ def get_activity_checkup_history(
             "number": row[1],
             "activity": json.loads(row[2]),
             "activity_score": row[3],
+            "activity_impact": row[4],
         }
         for row in rows
     ]
@@ -1118,4 +1206,3 @@ def delete_calendar_event(username: str, event_id: int) -> bool:
             (event_id, username),
         )
     return deleted.rowcount > 0
-    

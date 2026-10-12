@@ -4,6 +4,7 @@ import sqlite3
 from pathlib import Path
 from importlib import import_module
 import sys
+import re
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,6 +14,13 @@ from starlette.middleware.sessions import SessionMiddleware
 
 app = FastAPI()
 logger = logging.getLogger(__name__)
+EMAIL_RE = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+
+
+def validate_auth_inputs(*values: str) -> None:
+    from sec_protocols.check_sql import is_safe_input
+    if any(not is_safe_input(value) for value in values):
+        raise HTTPException(status_code=400, detail="Ungültige Eingabe")
 
 BASE_DIR = Path(__file__).resolve().parent
 WEB_DIR = BASE_DIR / "web"
@@ -70,6 +78,11 @@ async def load_home():
         return FileResponse(str(WEB_DIR / "pages" / "main" / "index.html"))
     except Exception as e:
         raise HTTPException(status_code=404, detail="custom. Page not found")
+
+
+@app.get("/index.html")
+async def load_index_alias():
+    return FileResponse(str(WEB_DIR / "pages" / "main" / "index.html"))
 
 @app.get("/brain")
 async def load_brain():
@@ -200,19 +213,17 @@ async def login(request: Request):
     identifier = str(data.get("identifier") or "").strip()
     password = str(data.get("password") or "")
 
-    if method not in {"username", "email", "phone"}:
-        raise HTTPException(status_code=400, detail="method muss username, email oder phone sein")
+    if method not in {"username", "email"}:
+        raise HTTPException(status_code=400, detail="method muss username oder email sein")
 
     if not identifier:
         raise HTTPException(status_code=400, detail="Identifikator fehlt")
+    validate_auth_inputs(identifier, password)
+    if method == "email" and not EMAIL_RE.fullmatch(identifier):
+        raise HTTPException(status_code=400, detail="Ungültige E-Mail-Adresse")
 
     import data.user.db_interaction as db_interaction
     login_status = db_interaction.login_user(identifier, password, method)
-    if login_status == 2:
-        raise HTTPException(
-            status_code=409,
-            detail="Diese E-Mail oder Telefonnummer gehört zu mehreren Konten. Bitte melde dich mit deinem Benutzernamen an.",
-        )
     if login_status != 0:
         raise HTTPException(status_code=401, detail="Login-Daten sind falsch")
 
@@ -238,6 +249,9 @@ async def register(request: Request):
         raise HTTPException(status_code=400, detail="E-Mail fehlt")
     if not password:
         raise HTTPException(status_code=400, detail="Passwort fehlt")
+    validate_auth_inputs(username, email, password, phone)
+    if not EMAIL_RE.fullmatch(email):
+        raise HTTPException(status_code=400, detail="Ungültige E-Mail-Adresse")
 
     import data.user.db_interaction as db_interaction
     try:
@@ -409,10 +423,41 @@ async def resolve_checkup_entries(kind: str, values: list[str]) -> list[str]:
     return resolved
 
 
+def normalize_activity_entries(values: list) -> list[dict]:
+    """Normalize activity names and per-entry durations (minutes)."""
+    merged = {}
+    total_duration = 0
+    for value in values:
+        if isinstance(value, str):
+            name, duration = value.strip(), 30
+        elif isinstance(value, dict):
+            name = value.get("name")
+            duration = value.get("duration_minutes", 30)
+            if not isinstance(name, str) or not isinstance(duration, int) or isinstance(duration, bool):
+                raise ValueError("Aktivität und Dauer müssen gültig sein")
+            name = name.strip()
+        else:
+            raise ValueError("Ungültiger Aktivitätseintrag")
+        if not name or not 1 <= duration <= 1440:
+            raise ValueError("Dauer muss zwischen 1 und 1.440 Minuten liegen")
+        total_duration += duration
+        if total_duration > 1440:
+            raise ValueError("Die Gesamtdauer darf 1.440 Minuten nicht überschreiten")
+        merged[name.casefold()] = (
+            name,
+            merged.get(name.casefold(), (name, 0))[1] + duration,
+        )
+    return [
+        {"name": name, "duration_minutes": duration}
+        for name, duration in merged.values()
+    ]
+
+
 @app.post("/api/checkup_data")
 async def save_checkup_data(request: Request):
+    import asyncio
     import data.user.db_interaction as db_interaction
-    from core.input_vector import all_check, get_sleep_point
+    from core.input_vector import get_sleep_point
     usr = request.session.get("usr")
 
     if not usr:
@@ -428,13 +473,13 @@ async def save_checkup_data(request: Request):
             raise ValueError
         late_nights_last_week = int(late_nights_value)
         food = data.get("food", [])
-        act = data.get("activity", [])
+        activity_input = data.get("activity", [])
         if (
             not isinstance(food, list)
-            or not isinstance(act, list)
+            or not isinstance(activity_input, list)
             or len(food) > 50
-            or len(act) > 50
-            or not all(isinstance(item, str) and item.strip() for item in food + act)
+            or len(activity_input) > 50
+            or not all(isinstance(item, str) and item.strip() for item in food)
             or not 0 <= late_nights_last_week <= 7
             or not 0 <= sleep_hours <= 24
         ):
@@ -442,30 +487,67 @@ async def save_checkup_data(request: Request):
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="Ungültige Checkup-Daten")
 
+    try:
+        activity_entries = normalize_activity_entries(activity_input)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+    activity_minutes = sum(entry["duration_minutes"] for entry in activity_entries)
+    if db_interaction.get_activity_minutes_today(usr) + activity_minutes > 1440:
+        raise HTTPException(status_code=400, detail="Die gesamte Aktivitätsdauer pro Tag darf 1.440 Minuten nicht überschreiten")
+
     sleep_point = get_sleep_point(1) if late_nights_last_week else 0.0
     sleep = [sleep_hours, min(sleep_point, 0.0), late_nights_last_week / 7]
-    food = await resolve_checkup_entries("food", food)
-    act = await resolve_checkup_entries("activity", act)
-    result = all_check(health, sleep, food, act)
-    if result[2] is None or result[3] is None:
-        raise HTTPException(status_code=503, detail="KI-Auswertung fehlgeschlagen; Checkup wurde nicht gespeichert.")
-    db_interaction.save_checkup_entrie(
-        usr,
-        result[0],
-        result[1],
-        result[2],
-        result[3],
-        first=True
-    )
+    # Persist the submission without waiting for catalog matching or Ollama.
+    job_id = db_interaction.add_pending_checkup(usr, activity_minutes)
+    async def finish_checkup():
+        job_saved = False
+        try:
+            get_llm_queue()
+            queue_module = import_module("llm_communication")
+            task = get_llm_queue().enqueue(
+                queue_module.LlmRequest(
+                    content=("Bewerte diesen Checkup. Verwende die Angaben sachlich und knapp; "
+                             "keine Diagnose. Daten: " + str({"sleep_hours": sleep_hours,
+                             "late_nights_last_week": late_nights_last_week,
+                             "food": food, "activity": activity_entries})),
+                    request_type="checkup", username=usr,
+                )
+            )
+            from core.input_vector import all_check
+            resolved_food = await resolve_checkup_entries("food", food)
+            resolved_names = await resolve_checkup_entries(
+                "activity", [item["name"] for item in activity_entries]
+            )
+            resolved_act = [
+                {**item, "name": resolved_name}
+                for item, resolved_name in zip(activity_entries, resolved_names)
+            ]
+            result = all_check(health, sleep, resolved_food, resolved_act)
+            # The priority-2 model job is awaited only inside this background task.
+            await task
+            db_interaction.save_checkup_entrie(
+                usr, result[0], result[1], result[2], result[3],
+                first=True, daily_entries=(resolved_food, resolved_act),
+                activity_impact=result[4],
+            )
+            job_saved = True
+        except Exception:
+            logger.exception("Checkup-Hintergrundverarbeitung fehlgeschlagen")
+            if not job_saved:
+                try:
+                    db_interaction.save_checkup_entrie(
+                        usr, health, sleep, 50.0, 50.0,
+                        first=True, daily_entries=(food, activity_entries),
+                    )
+                except Exception:
+                    logger.exception("Sicherer Checkup-Standardwert konnte nicht gespeichert werden")
+        finally:
+            db_interaction.finish_pending_checkup(job_id)
 
-    return {
-        "ok": True,
-        "usr": usr,
-        "received": data,
-        "health": result[0],
-        "food_score": result[2],
-        "activity_score": result[3],
-    }
+    asyncio.create_task(finish_checkup())
+    return {"ok": True, "status": "processing", "health": None,
+            "message": "Checkup wird ausgewertet."}
 
 
 @app.get("/api/checkup/catalog")
@@ -506,6 +588,7 @@ async def get_daily_checkup_status(request: Request):
         "daily": db_interaction.get_daily_feature_values(username),
         "sleep": db_interaction.get_daily_sleep_checkup(username),
         "checkups": db_interaction.get_daily_food_activity_checkups(username),
+        "processing": db_interaction.has_pending_checkup(username),
     }
 
 
@@ -580,7 +663,7 @@ async def get_activity_summary(request: Request):
     first_day = today - timedelta(days=6)
     checkups = db_interaction.get_daily_food_activity_checkups(username)
     for checkup in checkups:
-        checkup["impact"] = get_impact(
+        checkup["impact"] = checkup.get("activity_impact") or get_impact(
             "act", int(round(float(checkup["activity_score"])))
         )
 
@@ -595,7 +678,7 @@ async def get_activity_summary(request: Request):
         username, first_day.isoformat(), today.isoformat()
     ):
         day = history_by_date[checkup["date"]]
-        day["impact"] += get_impact(
+        day["impact"] += checkup.get("activity_impact") or get_impact(
             "act", int(round(float(checkup["activity_score"])))
         )
         day["has_checkups"] = True
@@ -612,6 +695,7 @@ async def get_activity_summary(request: Request):
 
 @app.post("/api/daily-checkup")
 async def save_daily_checkup(request: Request):
+    import asyncio
     import data.user.db_interaction as db_interaction
     from core.input_vector import all_check
 
@@ -625,44 +709,89 @@ async def save_daily_checkup(request: Request):
     if not isinstance(data, dict):
         raise HTTPException(status_code=400, detail="Ungültige Checkup-Daten")
     food = data.get("food", [])
-    activity = data.get("activity", [])
+    activity_input = data.get("activity", [])
     if (
         not isinstance(food, list)
-        or not isinstance(activity, list)
+        or not isinstance(activity_input, list)
         or len(food) > 50
-        or len(activity) > 50
-        or not all(isinstance(item, str) and item.strip() for item in food + activity)
+        or len(activity_input) > 50
+        or not all(isinstance(item, str) and item.strip() for item in food)
     ):
         raise HTTPException(status_code=400, detail="Ungültige Food- oder Activity-Einträge")
+    try:
+        activity_input = normalize_activity_entries(activity_input)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    activity_minutes = sum(entry["duration_minutes"] for entry in activity_input)
+    if db_interaction.get_activity_minutes_today(username) + activity_minutes > 1440:
+        raise HTTPException(status_code=400, detail="Die gesamte Aktivitätsdauer pro Tag darf 1.440 Minuten nicht überschreiten")
 
-    food = await resolve_checkup_entries("food", food)
-    activity = await resolve_checkup_entries("activity", activity)
-    result = all_check(1000.0, [0.0, 0.0, 0], food, activity)
-    if result[2] is None or result[3] is None:
-        raise HTTPException(status_code=503, detail="KI-Gewichte fehlen; Checkup wurde nicht gespeichert.")
-
-    saved = db_interaction.save_checkup_entrie(
-        username,
-        result[0],
-        [0.0, 0.0, 0],
-        result[2],
-        result[3],
-        include_sleep=False,
-        daily_entries=(food, activity),
-    )
-    if not saved:
-        if len(db_interaction.get_daily_food_activity_checkups(username)) >= 5:
-            raise HTTPException(status_code=409, detail="Du hast heute bereits alle fünf Check-ins abgeschlossen.")
-        raise HTTPException(status_code=500, detail="Checkup konnte nicht gespeichert werden.")
     checkups = db_interaction.get_daily_food_activity_checkups(username)
+    if len(checkups) >= 5:
+        raise HTTPException(status_code=409, detail="Du hast heute bereits alle fünf Check-ins abgeschlossen.")
+    job_id = db_interaction.add_pending_checkup(username, activity_minutes)
+
+    async def process_daily_checkup():
+        try:
+            get_llm_queue()
+            queue_module = import_module("llm_communication")
+            task = get_llm_queue().enqueue(
+                queue_module.LlmRequest(
+                    content=("Bewerte den Check-in knapp und ohne Diagnose. "
+                             f"Daten: {dict(food=food, activity=activity_input)}"),
+                    request_type="checkup",
+                    username=username,
+                )
+            )
+            resolved_food = await resolve_checkup_entries("food", food)
+            resolved_names = await resolve_checkup_entries(
+                "activity", [item["name"] for item in activity_input]
+            )
+            activities = [
+                {**item, "name": name}
+                for item, name in zip(activity_input, resolved_names)
+            ]
+            result = await asyncio.to_thread(
+                all_check, 1000.0, [0.0, 0.0, 0], resolved_food, activities
+            )
+            await task
+            saved = db_interaction.save_checkup_entrie(
+                username,
+                result[0],
+                [0.0, 0.0, 0],
+                result[2],
+                result[3],
+                include_sleep=False,
+                daily_entries=(resolved_food, activities),
+                activity_impact=result[4],
+            )
+            if not saved:
+                logger.warning("Checkup konnte nicht gespeichert werden: %s", username)
+        except Exception:
+            logger.exception("Checkup-Hintergrundverarbeitung fehlgeschlagen")
+            try:
+                db_interaction.save_checkup_entrie(
+                    username,
+                    1000.0,
+                    [0.0, 0.0, 0],
+                    50.0,
+                    50.0,
+                    include_sleep=False,
+                    daily_entries=(food, activity_input),
+                    activity_impact=0.0,
+                )
+            except Exception:
+                logger.exception("Sicherer Standardwert konnte nicht gespeichert werden")
+        finally:
+            db_interaction.finish_pending_checkup(job_id)
+
+    asyncio.create_task(process_daily_checkup())
     return {
         "ok": True,
-        "food_score": result[2],
-        "activity_score": result[3],
-        "checkup_number": len(checkups),
+        "status": "processing",
+        "checkup_number": len(checkups) + 1,
         "checkups_today": len(checkups),
     }
-
 
 @app.get("/api/sleep-checkup")
 async def get_sleep_checkup(request: Request):

@@ -65,7 +65,9 @@ function renderActivityEntries(checkups) {
         const names = document.createElement('span');
         names.className = 'food-entry-names';
         names.textContent = Array.isArray(checkup.activity) && checkup.activity.length
-            ? checkup.activity.join(', ')
+            ? checkup.activity.map((entry) => typeof entry === 'string'
+                ? entry
+                : `${entry.name} (${entry.duration_minutes} min)`).join(', ')
             : 'Keine Activity-Einträge';
 
         const checkupLabel = document.createElement('span');
