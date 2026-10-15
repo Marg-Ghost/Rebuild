@@ -968,6 +968,7 @@ async def add_kalender_entry(request: Request):
             str(data.get("task_type") or "").strip(),
             int(data.get("importance")),
             str(data.get("content") or "").strip(),
+            str(data.get("end_time") or "").strip() or None,
         )
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error

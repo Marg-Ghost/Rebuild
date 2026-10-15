@@ -216,22 +216,22 @@
 
 .calendar-entry-list {
   display: grid;
-  gap: 5px;
-  margin-top: 6px;
+  gap: 3px;
+  margin-top: 3px;
 }
 
 .entry {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 2px 6px;
-  padding: 5px 6px;
+  gap: 1px 6px;
+  padding: 3px 5px;
   border-left: 3px solid var(--forest);
   border-radius: 3px;
   background: #edf3ec;
   color: var(--ink);
-  font-size: 10px;
-  line-height: 1.35;
+  font-size: 9px;
+  line-height: 1.2;
 }
 
 .entry.importance-2 {
@@ -255,27 +255,38 @@
 }
 
 .entry .importance {
-  grid-row: span 2;
+  display: none;
   color: var(--forest);
   font-size: 9px;
   font-weight: 800;
 }
 
 .entry .entry-content {
+  grid-row: 2;
+  grid-column: 1;
   overflow: hidden;
   font-weight: 650;
   overflow-wrap: anywhere;
 }
 
 .entry .task-type,
-.entry .task-time,
 .entry .entry-source {
-  color: var(--muted);
-  font-size: 9px;
+  display: none;
 }
 
 .entry .task-time {
-  grid-column: 2;
+  grid-row: 1;
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+}
+
+.calendar-more-entries {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
 }
 
 .entry .entry-source {

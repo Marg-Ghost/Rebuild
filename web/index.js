@@ -74,46 +74,7 @@ function renderHealthChart(history) {
         : `${firstDate.toLocaleDateString('de-DE')} bis ${lastDate.toLocaleDateString('de-DE')}`;
 }
 
-function renderTasks(tasks) {
-    const today = new Date().toISOString().slice(0, 10);
-    const upcoming = (tasks || [])
-        .filter((task) => task.task_date >= today)
-        .sort((a, b) => `${a.task_date} ${a.task_time || ''}`.localeCompare(`${b.task_date} ${b.task_time || ''}`))
-        .slice(0, 3);
-    byId('task-count').textContent = String(upcoming.length);
-    const list = byId('task-list');
-    list.replaceChildren();
-
-    if (!upcoming.length) {
-        const empty = document.createElement('li');
-        empty.className = 'empty-state';
-        empty.textContent = 'Keine anstehenden Termine';
-        list.appendChild(empty);
-        return;
-    }
-
-    upcoming.forEach((task) => {
-        const item = document.createElement('li');
-        item.className = 'task-item';
-        const time = document.createElement('span');
-        time.className = 'task-time';
-        time.textContent = task.task_time || 'Ganztägig';
-        const details = document.createElement('span');
-        details.className = 'task-details';
-        const title = document.createElement('strong');
-        title.textContent = task.content || task.task_type || 'Termin';
-        const date = document.createElement('small');
-        date.textContent = new Date(`${task.task_date}T00:00:00`).toLocaleDateString('de-DE', {
-            weekday: 'short', day: 'numeric', month: 'short',
-        });
-        details.append(title, date);
-        item.append(time, details);
-        list.appendChild(item);
-    });
-}
-
 function renderCheckup(status) {
-    const daily = status.daily || {};
     const sleep = status.sleep || {};
     const checkups = Array.isArray(status.checkups) ? status.checkups : [];
     const done = Math.min(checkups.length, 5);
@@ -121,25 +82,12 @@ function renderCheckup(status) {
     byId('checkupwert_today').textContent = `${done}/5`;
     byId('checkup-status-label').textContent = done === 5 ? 'Abgeschlossen' : 'In Arbeit';
     setProgressRing(byId('checkup-ring'), percent);
-    setProgressRing(byId('efficiency-ring'), percent);
-    byId('efficiency-value').textContent = `${percent}%`;
-    byId('efficiency-caption').textContent = `${done} von 5 Check-ins abgeschlossen`;
 
     document.querySelectorAll('#checkin-segments [data-checkup-slot]').forEach((slot) => {
         const complete = Number(slot.dataset.checkupSlot) <= done;
         slot.classList.toggle('complete', complete);
         slot.setAttribute('aria-label', `Check-in ${slot.dataset.checkupSlot}${complete ? ', abgeschlossen' : ', offen'}`);
     });
-    document.querySelector('[data-marker="brain"]').classList.toggle('complete', sleep.status === 'complete');
-    document.querySelector('[data-marker="stomach"]').classList.toggle(
-        'complete',
-        daily.food_score !== null && daily.food_score !== undefined
-    );
-    document.querySelector('[data-marker="feet"]').classList.toggle(
-        'complete',
-        daily.activity_score !== null && daily.activity_score !== undefined
-    );
-
     const statusText = byId('sleep_checkup_today');
     const startLink = byId('start-checkup');
     if (status.processing) {
@@ -166,17 +114,18 @@ function renderCheckup(status) {
 function renderEfficiencyScore(result) {
     const target = byId('wellbeing-result');
     if (!result) {
-        target.textContent = 'Noch kein Wert gespeichert. Schließe zuerst deinen Schlaf-Check-in ab und bewerte danach Stress und Workload.';
-        delete target.dataset.risk;
+        target.textContent = 'Noch keine Einschätzung für heute gespeichert.';
         return;
     }
-    const labels = {
-        low: 'Niedriges Risiko',
-        moderate: 'Moderates Risiko',
-        high: 'Hohes Burnout-Risiko',
-    };
-    target.textContent = `${Math.round(Number(result.score))}/100 – ${result.label || labels[result.burnout_risk_level] || result.burnout_risk_level}. ${result.explanation || ''}`;
-    target.dataset.risk = result.burnout_risk_level;
+    target.textContent = `${Math.round(Number(result.score))}/100 · Orientierungswert aus deinen Angaben.`;
+    if (Number.isFinite(Number(result.stress_level))) {
+        byId('stress-level').value = result.stress_level;
+        byId('stress-level-value').value = result.stress_level;
+    }
+    if (Number.isFinite(Number(result.workload_level))) {
+        byId('workload-level').value = result.workload_level;
+        byId('workload-level-value').value = result.workload_level;
+    }
 }
 
 async function submitEfficiencyAssessment(event) {
@@ -200,7 +149,6 @@ async function submitEfficiencyAssessment(event) {
         renderEfficiencyScore(data);
     } catch (error) {
         target.textContent = error.message;
-        delete target.dataset.risk;
     } finally {
         button.disabled = false;
     }
@@ -289,10 +237,9 @@ async function loadDashboard() {
     }).toUpperCase();
 
     try {
-        const [health, checkup, calendar, user, efficiency] = await Promise.all([
+        const [health, checkup, user, efficiency] = await Promise.all([
             fetchJson('/api/get_health_data/index'),
             fetchJson('/api/daily-checkup/status'),
-            fetchJson(`/api/kalender/get?month=${now.getMonth() + 1}&year=${now.getFullYear()}`),
             fetchJson('/api/me'),
             fetchJson('/api/efficiency-score'),
         ]);
@@ -313,7 +260,6 @@ async function loadDashboard() {
         renderHealthChart(chartHistory);
         renderCheckup(checkup);
         renderEfficiencyScore(efficiency.latest);
-        renderTasks(calendar.entries || []);
         status.textContent = '';
         if (checkup.processing) {
             window.setTimeout(() => { void loadDashboard(); }, 3000);

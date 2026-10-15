@@ -5,11 +5,11 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#f2f4f1">
         <title>Übersicht | Rebuild</title>
-        <link rel="stylesheet" href="/static/styles/main.css?v=20260629-health-opty-context">
+        <link rel="stylesheet" href="/static/styles/main.css?v=20261016-home-three-panels">
     </head>
-    <body class="dashboard-page">
+    <body class="dashboard-page home-dashboard">
         <header class="dashboard-topbar">
-            <a class="brand" href="/home" aria-label="Opty Übersicht">
+            <a class="brand" href="/home" aria-label="Rebuild Übersicht">
                 <span class="brand-mark">R</span>
                 <span>Rebuild</span>
             </a>
@@ -24,160 +24,97 @@
             </div>
         </header>
 
-        <main class="dashboard-shell">
-            <section class="welcome-row" aria-labelledby="welcome-title">
-                <div>
-                    <p class="eyebrow" id="today-date">DEIN TAG AUF EINEN BLICK</p>
-                    <h1 id="welcome-title">Hallo, schön dass du da bist.</h1>
-                    <p class="welcome-copy">Ein ruhiger Überblick über deinen heutigen Rhythmus.</p>
-                </div>
+        <main class="dashboard-shell home-shell">
+            <section class="home-welcome" aria-labelledby="welcome-title">
+                <p class="eyebrow" id="today-date">DEIN TAG AUF EINEN BLICK</p>
+                <h1 id="welcome-title">Wie geht es dir in deinem Alltag?</h1>
+                <p>Schule, Arbeit und Erholung gehören zusammen.</p>
             </section>
 
-            <div class="dashboard-grid">
-                <aside class="body-column" aria-label="Körper und Check-in">
-                    <figure class="body-map">
-                        <div class="body-orbit" aria-hidden="true"></div>
-                        <div class="body-art">
-                            <img src="/static/assets/body.svg" alt="Körpersilhouette" class="body-silhouette">
-                            <a class="body-marker marker-brain" data-marker="brain" href="/brain" aria-label="Brain öffnen" title="Brain"></a>
-                            <a class="body-marker marker-stomach" data-marker="stomach" href="/stomach" aria-label="Stomach öffnen" title="Stomach"></a>
-                            <a class="body-marker marker-feet" data-marker="feet" href="/activity" aria-label="Feet öffnen" title="Feet"></a>
-                        </div>
-                        <figcaption>
-                            <span class="eyebrow">KÖRPER &amp; ALLTAG</span>
-                            <span>Signale sammeln, Balance finden.</span>
-                        </figcaption>
-                    </figure>
-
-                    <section class="checkin-panel" aria-labelledby="checkin-title">
-                        <div class="section-heading">
-                            <div>
-                                <p class="eyebrow">5 CHECK-INS PRO TAG</p>
-                                <h2 id="checkin-title">Dein Check-in</h2>
-                            </div>
-                            <span id="checkup-status-label" class="status-pill">Wird geladen</span>
-                        </div>
-                        <div class="checkin-content">
-                            <div class="progress-ring checkup-ring" id="checkup-ring" role="img" aria-label="Check-in Fortschritt">
-                                <span><strong id="checkupwert_today">0/5</strong><small>Check-ins</small></span>
-                            </div>
-                            <div class="checkin-copy">
-                                <p id="sleep_checkup_today">Check-in wird geladen ...</p>
-                                <a class="text-link" id="start-checkup" href="/sleep-checkup">Check-in öffnen <span aria-hidden="true">→</span></a>
-                            </div>
-                        </div>
-                        <div class="checkin-segments daily-checkup-slots" id="checkin-segments" aria-label="Fünf tägliche Check-ins">
-                            <span data-checkup-slot="1" aria-label="Check-in 1">1</span>
-                            <span data-checkup-slot="2" aria-label="Check-in 2">2</span>
-                            <span data-checkup-slot="3" aria-label="Check-in 3">3</span>
-                            <span data-checkup-slot="4" aria-label="Check-in 4">4</span>
-                            <span data-checkup-slot="5" aria-label="Check-in 5">5</span>
-                        </div>
-                    </section>
-                </aside>
-
-                <div class="dashboard-content">
-                    <section class="health-panel" aria-labelledby="health-title">
-                        <div class="health-heading">
-                            <div>
-                                <p class="eyebrow">DEIN VERLAUF</p>
-                                <h2 id="health-title">Health heute</h2>
-                            </div>
-                            <div class="health-explainer" tabindex="0" role="group" aria-describedby="health-tooltip">
-                                <div class="health-value">
-                                    <strong id="health_count">--</strong>
-                                    <span>Rebuild-Punkte <span class="health-info-icon" aria-hidden="true">i</span></span>
-                                </div>
-                                <div class="health-tooltip" id="health-tooltip" role="tooltip">
-                                    <strong>Was bedeutet dieser Wert?</strong>
-                                    <p>Ein interner Modellwert: jeder Check-in startet bei 1.000 Punkten; Schlaf sowie die berechneten Essens- und Bewegungs-Impacts verändern ihn. Angezeigt wird der Mittelwert deiner heutigen Check-ins. Schlaf fließt nur beim ersten Check-in ein; spätere Check-ins werden ohne Schlaf-Impact gemittelt. Dein Registrierungsprofil fließt in diese Zahl derzeit nicht ein.</p>
-                                    <p id="health-assessment">Die Bewertung wird geladen ...</p>
-                                    <div class="health-scale" aria-hidden="true">
-                                        <span class="health-scale-baseline" id="health-scale-baseline"></span>
-                                        <span class="health-scale-current" id="health-scale-current"></span>
-                                    </div>
-                                    <div class="health-scale-labels" aria-hidden="true">
-                                        <span>Niedriger</span>
-                                        <span>Basis 1.000</span>
-                                        <span>Höher</span>
-                                    </div>
-                                    <small>Keine medizinische Bewertung oder Diagnose.</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="chart-wrap">
-                            <svg id="health-chart" role="img" aria-label="Health-Verlauf der letzten Tage" viewBox="0 0 720 190" preserveAspectRatio="none"></svg>
-                        </div>
-                        <div class="chart-footer">
-                            <span id="health-chart-caption">Dein Verlauf erscheint nach den ersten Check-ins.</span>
-                            <span class="chart-legend"><i aria-hidden="true"></i> Health</span>
-                        </div>
-                    </section>
-
-                    <div class="insight-grid">
-                        <section class="recommendation-panel" aria-labelledby="recommendation-title">
-                            <div class="panel-heading">
-                                <span class="spark-mark" aria-hidden="true">✳</span>
-                                <div>
-                                    <p class="eyebrow">DEIN NÄCHSTER SCHRITT</p>
-                                    <h2 id="recommendation-title">Opty empfiehlt</h2>
-                                </div>
-                            </div>
-                            <p id="recommendation-text" class="recommendation-text">Deine Empfehlung wird vorbereitet ...</p>
-                            <a class="text-link" id="discuss-recommendation" href="/llm" hidden>Empfehlung besprechen <span aria-hidden="true">→</span></a>
-                            <button class="text-link recommendation-retry" id="retry-recommendation" type="button" hidden>Erneut versuchen ↻</button>
-                        </section>
-
-                        <section class="agenda-panel" aria-labelledby="agenda-title">
-                            <div class="section-heading compact-heading">
-                                <div>
-                                    <p class="eyebrow">DEIN KALENDER</p>
-                                    <h2 id="agenda-title">Als Nächstes</h2>
-                                </div>
-                                <a class="icon-link" href="/kalender" aria-label="Kalender öffnen">↗</a>
-                            </div>
-                            <p class="agenda-count"><strong id="task-count">0</strong> anstehende Termine</p>
-                            <ul id="task-list" class="task-list">
-                                <li class="empty-state">Termine werden geladen ...</li>
-                            </ul>
-                        </section>
-
-                        <section class="progress-panel" aria-labelledby="progress-title">
-                            <div class="section-heading compact-heading">
-                                <div>
-                                    <p class="eyebrow">HEUTE</p>
-                                    <h2 id="progress-title">Tagesfortschritt</h2>
-                                </div>
-                            </div>
-                            <div class="efficiency-content">
-                                <div class="progress-ring efficiency-ring" id="efficiency-ring" role="img" aria-label="Tagesfortschritt">
-                                    <span><strong id="efficiency-value">0%</strong><small>abgeschlossen</small></span>
-                                </div>
-                                <p id="efficiency-caption">Trage bei fünf Check-ins ein, was du seit dem letzten Mal gegessen und an Bewegung gemacht hast.</p>
-                            </div>
-                        </section>
-                    </div>
-
-                    <section class="wellbeing-panel" aria-labelledby="wellbeing-title">
+            <div class="home-components-grid" aria-label="Deine Tagesübersicht">
+                <section class="home-component home-balance" aria-labelledby="health-title">
+                    <div class="home-component-heading">
                         <div>
-                            <p class="eyebrow">DEIN TÄGLICHER ORIENTIERUNGSWERT</p>
-                            <h2 id="wellbeing-title">Belastung &amp; Erholung</h2>
-                            <p>Bewerte Stress und Workload jeweils von 0 (niedrig) bis 10 (sehr hoch). Schlaf wird aus deinem heutigen Schlaf-Check-in übernommen.</p>
+                            <p class="eyebrow">DEINE SIGNALE</p>
+                            <h2 id="health-title">Tagesbilanz</h2>
                         </div>
-                        <form id="wellbeing-form">
-                            <label for="stress-level">Stress: <output id="stress-level-value">5</output>/10</label>
-                            <input id="stress-level" name="stress_level" type="range" min="0" max="10" value="5">
-                            <label for="workload-level">Workload: <output id="workload-level-value">5</output>/10</label>
-                            <input id="workload-level" name="workload_level" type="range" min="0" max="10" value="5">
-                            <button class="text-link" type="submit">Wert berechnen</button>
-                        </form>
-                        <p id="wellbeing-result" role="status" aria-live="polite">Noch kein Wert für heute gespeichert.</p>
-                        <small>Der Wert ist eine Orientierung aus deinen Selbsteinschätzungen, keine medizinische Bewertung oder Diagnose. 80–100: niedriges, 50–79: moderates, 0–49: hohes Burnout-Risiko.</small>
-                    </section>
-                </div>
+                        <div class="health-explainer" tabindex="0" role="group" aria-describedby="health-tooltip">
+                            <div class="health-value">
+                                <strong id="health_count">--</strong>
+                                <span>Rebuild-Punkte <span class="health-info-icon" aria-hidden="true">i</span></span>
+                            </div>
+                            <div class="health-tooltip" id="health-tooltip" role="tooltip">
+                                <strong>Was bedeutet dieser Wert?</strong>
+                                <p>Ein interner Modellwert, keine medizinische Bewertung. Die Berechnung startet bei 1.000 Punkten und wird durch deine Check-ins verändert.</p>
+                                <p id="health-assessment">Die Bewertung wird geladen ...</p>
+                                <div class="health-scale" aria-hidden="true">
+                                    <span class="health-scale-baseline" id="health-scale-baseline"></span>
+                                    <span class="health-scale-current" id="health-scale-current"></span>
+                                </div>
+                                <div class="health-scale-labels" aria-hidden="true">
+                                    <span>Niedriger</span><span>Basis 1.000</span><span>Höher</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="home-chart-wrap">
+                        <svg id="health-chart" role="img" aria-label="Verlauf der Rebuild-Punkte der letzten Tage" viewBox="0 0 720 190" preserveAspectRatio="none"></svg>
+                    </div>
+                    <div class="chart-footer">
+                        <span id="health-chart-caption">Dein Verlauf erscheint nach den ersten Check-ins.</span>
+                        <span class="chart-legend"><i aria-hidden="true"></i> Verlauf</span>
+                    </div>
+                    <div class="home-checkin-row">
+                        <div class="progress-ring checkup-ring" id="checkup-ring" role="img" aria-label="Check-in Fortschritt">
+                            <span><strong id="checkupwert_today">0/5</strong><small>Check-ins</small></span>
+                        </div>
+                        <div class="home-checkin-details">
+                            <span id="checkup-status-label" class="status-pill">Wird geladen</span>
+                            <p id="sleep_checkup_today">Check-in wird geladen ...</p>
+                            <a class="text-link" id="start-checkup" href="/sleep-checkup">Check-in starten →</a>
+                        </div>
+                    </div>
+                    <div class="checkin-segments daily-checkup-slots" id="checkin-segments" aria-label="Fünf tägliche Check-ins">
+                        <span data-checkup-slot="1" aria-label="Check-in 1">1</span>
+                        <span data-checkup-slot="2" aria-label="Check-in 2">2</span>
+                        <span data-checkup-slot="3" aria-label="Check-in 3">3</span>
+                        <span data-checkup-slot="4" aria-label="Check-in 4">4</span>
+                        <span data-checkup-slot="5" aria-label="Check-in 5">5</span>
+                    </div>
+                </section>
+
+                <section class="home-component home-load wellbeing-panel" aria-labelledby="wellbeing-title">
+                    <div>
+                        <p class="eyebrow">SCHULE, ARBEIT &amp; LEBEN</p>
+                        <h2 id="wellbeing-title">Belastung &amp; Erholung</h2>
+                        <p>Wie hoch waren heute dein Stress und dein Workload? Deine Einschätzung hilft, den Tag im Zusammenhang mit Schlaf und Bewegung zu betrachten.</p>
+                    </div>
+                    <form id="wellbeing-form">
+                        <label for="stress-level">Stress <output id="stress-level-value">5</output>/10</label>
+                        <input id="stress-level" name="stress_level" type="range" min="0" max="10" value="5">
+                        <label for="workload-level">Workload <output id="workload-level-value">5</output>/10</label>
+                        <input id="workload-level" name="workload_level" type="range" min="0" max="10" value="5">
+                        <button class="text-link" type="submit">Einschätzung speichern</button>
+                    </form>
+                    <p id="wellbeing-result" role="status" aria-live="polite">Noch keine Einschätzung für heute gespeichert.</p>
+                    <small>Ein persönlicher Orientierungswert, keine Diagnose. <a href="/kalender">Deinen Kalender ansehen →</a></small>
+                </section>
+
+                <section class="home-component home-suggestion recommendation-panel" aria-labelledby="recommendation-title">
+                    <div class="panel-heading">
+                        <span class="spark-mark" aria-hidden="true">✳</span>
+                        <div>
+                            <p class="eyebrow">EIN MÖGLICHER NÄCHSTER SCHRITT</p>
+                            <h2 id="recommendation-title">Opty schlägt vor</h2>
+                        </div>
+                    </div>
+                    <p id="recommendation-text" class="recommendation-text">Deine Empfehlung wird vorbereitet ...</p>
+                    <a class="text-link" id="discuss-recommendation" href="/llm" hidden>Mit Opty besprechen →</a>
+                    <button class="text-link recommendation-retry" id="retry-recommendation" type="button" hidden>Erneut versuchen ↻</button>
+                </section>
             </div>
             <p id="dashboard-status" class="dashboard-status" role="status" aria-live="polite"></p>
         </main>
-        <script src="/static/index.js?v=20260629-health-opty-context" defer></script>
+        <script src="/static/index.js?v=20261016-home-three-panels" defer></script>
     </body>
 </html>

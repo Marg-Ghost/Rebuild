@@ -63,48 +63,58 @@ async function show_data(month, year) {
             throw new Error("Die Kalenderdaten haben ein ungültiges Format.");
         }
 
+        const entriesByDate = new Map();
         for (const entry of data.entries) {
-            const table_cell = document.getElementById(`day_${entry.task_date}`);
-            if (!table_cell) continue;
+            const entries = entriesByDate.get(entry.task_date) || [];
+            entries.push(entry);
+            entriesByDate.set(entry.task_date, entries);
+        }
 
-            const item = document.createElement("div");
-            item.className = `entry importance-${entry.importance}`;
-            if (entry.is_google_event) item.classList.add("entry-google-event");
-            const importance = document.createElement("span");
-            importance.className = "importance";
-            importance.textContent = `!${entry.importance}`;
-            const content = document.createElement("span");
-            content.className = "entry-content";
-            content.textContent = entry.content || "Task";
-            const type = document.createElement("span");
-            type.className = "task-type";
-            type.textContent = task_type_label(entry.task_type);
-            item.append(importance, content, type);
-            if (entry.task_time) {
-                const time = document.createElement("span");
-                time.className = "task-time";
-                const endTime = entry.task_end_at
-                    && entry.task_end_at.slice(0, 10) === entry.task_date
-                    ? entry.task_end_at.slice(11, 16)
-                    : "";
-                time.textContent = endTime
-                    ? `${entry.task_time}–${endTime}`
-                    : entry.task_time;
-                item.append(time);
+        for (const [taskDate, entries] of entriesByDate) {
+            const table_cell = document.getElementById(`day_${taskDate}`);
+            if (!table_cell) continue;
+            const list = document.createElement("div");
+            list.className = "calendar-entry-list";
+            for (const entry of entries.slice(0, 3)) {
+                const item = document.createElement("div");
+                item.className = `entry importance-${entry.importance}`;
+                if (entry.is_google_event) item.classList.add("entry-google-event");
+                const importance = document.createElement("span");
+                importance.className = "importance";
+                importance.textContent = `!${entry.importance}`;
+                const content = document.createElement("span");
+                content.className = "entry-content";
+                content.textContent = entry.content || "Termin";
+                const type = document.createElement("span");
+                type.className = "task-type";
+                type.textContent = task_type_label(entry.task_type);
+                item.append(importance, content, type);
+                if (entry.task_time) {
+                    const time = document.createElement("span");
+                    time.className = "task-time";
+                    const endTime = entry.task_end_at ? entry.task_end_at.slice(11, 16) : "";
+                    const overnight = entry.task_end_at
+                        && entry.task_end_at.slice(0, 10) !== entry.task_date;
+                    time.textContent = endTime
+                        ? `${entry.task_time}–${endTime}${overnight ? " +1T" : ""}`
+                        : entry.task_time;
+                    item.append(time);
+                }
+                if (entry.is_google_event) {
+                    const source = document.createElement("span");
+                    source.className = "entry-source";
+                    source.textContent = "Google";
+                    item.append(source);
+                }
+                list.append(item);
             }
-            if (entry.is_google_event) {
-                const source = document.createElement("span");
-                source.className = "entry-source";
-                source.textContent = "Google";
-                item.append(source);
+            if (entries.length > 3) {
+                const more = document.createElement("span");
+                more.className = "calendar-more-entries";
+                more.textContent = `+${entries.length - 3} weitere`;
+                list.append(more);
             }
-            let list = table_cell.querySelector(".calendar-entry-list");
-            if (!list) {
-                list = document.createElement("div");
-                list.className = "calendar-entry-list";
-                table_cell.append(list);
-            }
-            list.append(item);
+            table_cell.append(list);
         }
         show_status("");
     } catch (error) {
@@ -162,6 +172,7 @@ async function set_data(event) {
     if (task_is_submitting) return;
     const date = document.getElementById("date");
     const time = document.getElementById("time");
+    const endTime = document.getElementById("end_time");
     const sliderOutput = document.getElementById("sliderOutput");
     const type_select = document.getElementById("type_select");
     const content = document.getElementById("content");
@@ -178,6 +189,7 @@ async function set_data(event) {
             body: JSON.stringify({
                 date: date.value,
                 time: time.value,
+                end_time: endTime.value,
                 importance: sliderOutput.value,
                 task_type: type_select.value,
                 content: content.value
@@ -321,6 +333,14 @@ window.close_google_calendar_dialog = close_google_calendar_dialog;
 
 document.getElementById("task_form").addEventListener("keydown", (event) => {
     if (event.key === "Escape") toggle_add(false);
+});
+
+document.getElementById("time").addEventListener("change", (event) => {
+    const endInput = document.getElementById("end_time");
+    if (!event.currentTarget.value || endInput.value) return;
+    const [hours, minutes] = event.currentTarget.value.split(":").map(Number);
+    const endMinutes = (hours * 60 + minutes + 60) % (24 * 60);
+    endInput.value = `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(endMinutes % 60).padStart(2, "0")}`;
 });
 
 document.getElementById("google_calendar_form").addEventListener(

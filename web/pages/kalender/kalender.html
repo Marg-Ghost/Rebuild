@@ -6,7 +6,7 @@
         <meta name="theme-color" content="#FFFAED">
         <title>Kalender | Rebuild</title>
         <link rel="stylesheet" href="/static/styles/main.css?v=20261004-five-checkups">
-        <link rel="stylesheet" href="/static/styles/calendar.css?v=20261008-v1">
+        <link rel="stylesheet" href="/static/styles/calendar.css?v=20261016-time-ranges">
     </head>
     <body class="dashboard-page calendar-page">
         <header class="dashboard-topbar">
@@ -75,6 +75,9 @@
                         <label for="time">Uhrzeit
                             <input id="time" type="time">
                         </label>
+                        <label for="end_time">Endet um
+                            <input id="end_time" type="time">
+                        </label>
                         <label class="calendar-range-field" for="slider">Wichtigkeit
                             <span class="calendar-range-control">
                                 <input id="slider" type="range" min="1" max="5" step="1" value="1" oninput="update_importance(this.value)">
@@ -116,6 +119,6 @@
             </form>
         </dialog>
         <script src="/static/feature-nav.js?v=20261004-v1"></script>
-        <script src="/kalender-static/kalender.js?v=20261009-google-ical"></script>
+        <script src="/kalender-static/kalender.js?v=20261016-time-ranges"></script>
     </body>
 </html>

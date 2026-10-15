@@ -1,6 +1,6 @@
 import sqlite3
 from contextlib import closing
-from datetime import date as current_date, time as current_time
+from datetime import date as current_date, datetime, time as current_time, timedelta
 from pathlib import Path
 
 DB_PATH = Path(__file__).resolve().with_name("kalender.db")
@@ -91,19 +91,32 @@ def save_date(usr, date):
     try:
         task_date = current_date.fromisoformat(date.date).isoformat()
         task_time = current_time.fromisoformat(date.time).strftime("%H:%M") if date.time else None
+        end_time = current_time.fromisoformat(date.end_time).strftime("%H:%M") if date.end_time else None
         importance = int(date.importance)
     except (TypeError, ValueError) as error:
         raise ValueError("Ungültige Kalenderdaten") from error
     if importance < 1 or importance > 5:
         raise ValueError("Wichtigkeit muss zwischen 1 und 5 liegen")
+    if end_time and not task_time:
+        raise ValueError("Eine Endzeit braucht auch eine Startzeit")
     if date.task_type not in {"work", "private"}:
         raise ValueError("Typ muss work oder private sein")
 
+    task_end_at = None
+    if task_time and end_time:
+        start = datetime.combine(current_date.fromisoformat(task_date), current_time.fromisoformat(task_time))
+        end = datetime.combine(current_date.fromisoformat(task_date), current_time.fromisoformat(end_time))
+        if end <= start:
+            end += timedelta(days=1)
+        if end - start > timedelta(hours=24):
+            raise ValueError("Ein Termin darf höchstens 24 Stunden dauern")
+        task_end_at = end.isoformat(timespec="minutes")
+
     user_id = _get_or_create_user_id(conn, usr)
     cursor.execute("""
-        INSERT INTO tasks (user_id, task_date, task_time, importance, task_type, content)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (user_id, task_date, task_time, importance, date.task_type, date.content or None))
+        INSERT INTO tasks (user_id, task_date, task_time, task_end_at, importance, task_type, content)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (user_id, task_date, task_time, task_end_at, importance, date.task_type, date.content or None))
     conn.commit()
     return cursor.lastrowid
 

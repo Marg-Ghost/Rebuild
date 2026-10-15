@@ -37,8 +37,12 @@ if [[ -z "${OLLAMA_MODEL:-}" ]]; then
 fi
 OLLAMA_NUM_PARALLEL="${OLLAMA_NUM_PARALLEL:-1}"
 OLLAMA_CONTEXT_LENGTH="${OLLAMA_CONTEXT_LENGTH:-4096}"
-export OLLAMA_MODEL OLLAMA_NUM_PARALLEL OLLAMA_CONTEXT_LENGTH
-echo "Verwende Ollama-Modell ${OLLAMA_MODEL}."
+if [[ -z "${OLLAMA_KEEP_ALIVE:-}" ]]; then
+    OLLAMA_KEEP_ALIVE="$(sed -n 's/^OLLAMA_KEEP_ALIVE=//p' .env | tail -n 1)"
+fi
+OLLAMA_KEEP_ALIVE="${OLLAMA_KEEP_ALIVE:--1}"
+export OLLAMA_MODEL OLLAMA_NUM_PARALLEL OLLAMA_CONTEXT_LENGTH OLLAMA_KEEP_ALIVE
+echo "Verwende Ollama-Modell ${OLLAMA_MODEL}; Keep-Alive: ${OLLAMA_KEEP_ALIVE}."
 
 echo "Baue das App-Image und starte Ollama ..."
 docker compose build app
@@ -66,6 +70,10 @@ else
     echo "Modell ${OLLAMA_MODEL} fehlt; lade es jetzt herunter ..."
     docker compose exec -T ollama ollama pull "${OLLAMA_MODEL}"
 fi
+
+echo "Lade das Modell vor und halte es im Speicher ..."
+docker compose exec -T ollama ollama run "${OLLAMA_MODEL}" ""
+docker compose exec -T ollama ollama ps
 
 echo "Starte App-Container auf http://0.0.0.0:8000 ..."
 docker compose up -d app
