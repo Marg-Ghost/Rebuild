@@ -5,17 +5,18 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#FFFAED">
         <title>Kalender | Rebuild</title>
-        <link rel="stylesheet" href="/static/styles/main.css?v=20261004-five-checkups">
+        <link rel="stylesheet" href="/static/styles/main.css?v=20261025-browser-reminders">
         <link rel="stylesheet" href="/static/styles/calendar.css?v=20261016-time-ranges">
     </head>
     <body class="dashboard-page calendar-page">
         <header class="dashboard-topbar">
             <a class="brand" href="/home" aria-label="Rebuild Übersicht">
-                <span class="brand-mark">R</span>
+                <img class="brand-mark" src="/static/assets/logo.svg" alt="">
                 <span>Rebuild</span>
             </a>
             <nav class="top-navigation" aria-label="Hauptnavigation">
                 <a href="/home">Übersicht</a>
+                <a href="/recommendations">Empfehlungen</a>
                 <a href="/llm">KI-Assistent</a>
                 <a class="active" href="/kalender" aria-current="page">Kalender</a>
             </nav>
@@ -120,5 +121,6 @@
         </dialog>
         <script src="/static/feature-nav.js?v=20261004-v1"></script>
         <script src="/kalender-static/kalender.js?v=20261016-time-ranges"></script>
+            <script src="/static/reminders.js?v=20261025-2h-demo"></script>
     </body>
 </html>

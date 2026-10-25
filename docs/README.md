@@ -2,6 +2,8 @@
 
 Diese Übersicht beschreibt grob, was die sichtbaren Bereiche der Anwendung tun und wie Browser, Server und Daten zusammenspielen. Sie ist eine Orientierung für Entwicklerinnen und Entwickler, keine vollständige API- oder Datenbankspezifikation.
 
+Für die Architekturdetails gibt es [eigene Markdown-Dokumente pro großem Funktionsbereich](architecture/README.md), unter anderem zu Login/DEA, Check-ins, Scoring, Empfehlungen, Ollama/RAG/Queue, Kalender und Browser-Erinnerungen.
+
 ## Inhaltsverzeichnis
 
 - [Technischer Überblick](#technischer-überblick)
@@ -30,22 +32,21 @@ Für den Docker-Start werden Docker mit Compose und Bash benötigt. `bash start.
 
 Compose stellt die App unter `http://localhost:8000` bereit. Ollama ist für lokale Werkzeuge unter `http://localhost:11434` verfügbar; innerhalb des App-Containers wird der Dienst über `http://ollama:11434` angesprochen. Modellgewichte, Nutzerdatenbanken, Referenzdatenbanken und Chroma-Daten bleiben über Volumes bzw. Bind-Mounts erhalten.
 
+Der App-Port ist in Compose an `0.0.0.0:8000` gebunden und damit von anderen Geräten im Netzwerk erreichbar. Für Zugriff über das Internet sollte ein HTTPS-Reverse-Proxy vorgeschaltet und `SESSION_HTTPS_ONLY=true` gesetzt werden. Der Browserzugriff auf Ollama bleibt auf `127.0.0.1:11434` beschränkt. `SessionMiddlewareSecretKey` muss geheim bleiben und darf nicht in eine Abgabe oder ein öffentliches Repository gelangen.
+
 ## Anmeldung und Konto
 
 Die Login- und Registrierungsoberfläche wird aus `web/pages/login/` ausgeliefert. Der Browser sendet Login- oder Registrierungsdaten an `server.py`; bei erfolgreicher Anmeldung wird der Nutzer in einem signierten Session-Cookie gespeichert. Geschützte Seiten und Endpunkte verwenden diese Session; ein JWT oder `localStorage` wird dafür nicht benötigt. Benutzernamen sind per eindeutigem SQLite-Index abgesichert; Trigger blockieren neue doppelte E-Mail-Adressen und Telefonnummern. Bereits vorhandene Mehrfachzuordnungen bleiben erhalten und sind für den Login per E-Mail/Telefon mehrdeutig; in diesem Fall muss der Benutzername verwendet werden.
 
 Beim Registrieren werden Profilangaben und der erste Checkup schrittweise erfasst. Der Profil-Endpunkt speichert unter anderem Alter, Hobbys, Beruf, ausgewählte Erkrankungen, aktuelle Probleme und primäre Sorgen/Ängste. Die konkrete Speicherung liegt in `data/user/db_interaction.py`.
 
-### Problems
--> Noch muss eine Abfrage der korrekten syntax von email handy etc.
--> die passworter müssen noch gehashed werden!
--> schutz vor sql injections
+Bei der Registrierung werden Passwörter mit PBKDF2-HMAC-SHA256 und individuellem Salt gespeichert. Neue Passwörter müssen mindestens 12 Zeichen lang sein. Login- und Registrierungsversuche sind pro Serverprozess begrenzt; die Begrenzung wird bei mehreren Uvicorn-Workern nicht zwischen Prozessen geteilt. Ändernde Browseranfragen mit vorhandenem `Origin`- oder `Referer`-Header werden auf dieselbe Host-Adresse begrenzt. SQL-Abfragen verwenden gebundene Parameter; Eingaben werden zusätzlich nach Feldlänge und Format geprüft.
 
 ## Übersicht und Tagesfortschritt
 
 Die Startseite `/home` lädt Tageswerte, Check-in-Status und Verlaufsdaten und stellt sie als Health-Verlauf, Fortschrittsanzeige und nächste Aufgaben dar. Die Browserlogik befindet sich in `web/index.js`.
 
-Die Übersicht zeigt außerdem eine Opty-Empfehlung. Dafür fasst der Server Check-in-, Schlaf-, Health- und Kalenderdaten in einem Kontext zusammen und sendet eine priorisierte Systemanfrage an die LLM-Queue. Ist Ollama nicht erreichbar, kann die Empfehlung nicht erstellt werden; der API-Endpunkt meldet dann einen Fehler.
+Die Übersicht zeigt außerdem eine Opty-Empfehlung. Dafür fasst der Server Check-in-, Schlaf-, Health- und Kalenderdaten in einem Kontext zusammen und sendet eine priorisierte Systemanfrage an die LLM-Queue. Ist Ollama nicht erreichbar, meldet dieser Dashboard-Endpunkt einen Fehler. Die Empfehlungen-Seite besitzt einen separaten Fallback, der Profilhobbys direkt anzeigen kann; er bewertet dabei nicht, ob ein Hobby körperliche Bewegung beinhaltet.
 
 Der angezeigte Tageswert ist ein interner Rechenwert, kein medizinisch validierter Health-Score: Jeder Check-in startet bei 1.000 Punkten; Schlaf- sowie Essens- und Bewegungs-Impacts verändern ihn. Angezeigt wird der Mittelwert der heutigen Check-ins. Schlaf wird beim ersten Check-in berücksichtigt, bei späteren nicht; zusätzliche Check-ins können den Mittelwert deshalb verschieben. Das Registrierungsprofil fließt derzeit nicht in diese Zahl ein. Der Hinweis am Wert zeigt den Abstand zur Rechenbasis und zum letzten gespeicherten Verlaufstag, aber keine medizinische Einstufung.
 
@@ -62,6 +63,10 @@ Der Schlaf-Check-in wird über `/sleep-checkup` geöffnet. Man trägt Schlafstun
 Nach dem Schlaf-Check-in können bis zu fünf Ernährungs-/Aktivitäts-Check-ins pro Tag gespeichert werden. Die Formulare bieten Referenzeinträge aus dem Katalog an. Freitext kann serverseitig mit Ollama einem vorhandenen Katalogeintrag zugeordnet werden; unbekannte oder nicht sicher zuordenbare Werte werden nicht als Referenzdaten akzeptiert.
 
 Der Server erstellt aus den ausgewählten Einträgen Merkmalsvektoren, lässt Ernährung und Aktivität bewerten und speichert die Scores samt Check-in-Daten pro Nutzer. Der Tagesstatus-Endpunkt liefert den Fortschritt an die Übersicht zurück.
+
+### Erinnerungen
+
+`web/reminders.js` fügt auf Übersicht, Empfehlungen, Kalender und KI-Assistent eine optionale Browser-Erinnerung hinzu. Nach explizitem Klick und Browserfreigabe wird alle zwei Stunden erinnert, höchstens zehn Stunden lang. Timer und Aktivierungsstatus liegen im Browser-`localStorage`; es gibt dafür keinen Python-Endpunkt und keine Datenbanktabelle. Die Seite muss geöffnet bleiben. Push-Benachrichtigungen bei geschlossenem Browser sind weiterhin nicht implementiert.
 
 ## Schlaf und Brain
 
@@ -105,3 +110,4 @@ Die API ist nutzergebunden. Aufgaben werden in der Kalenderdatenbank gespeichert
 - Im Kalender sind derzeit Lesen und Hinzufügen beschrieben; Bearbeiten und Löschen sind nicht implementiert.
 - Check-ins sind auf einen Schlaf-Check-in und bis zu fünf Ernährungs-/Aktivitäts-Check-ins pro Tag ausgelegt.
 - Die LLM-Antwort, automatische Empfehlungen und Freitext-Zuordnung hängen davon ab, dass der konfigurierte Ollama-Dienst und das Modell erreichbar sind.
+- Die Browser-Erinnerung ist derzeit zeitgesteuert und nicht an den Abschluss von Check-ins gekoppelt; sie ist keine Push-Erinnerung für geschlossene Seiten.

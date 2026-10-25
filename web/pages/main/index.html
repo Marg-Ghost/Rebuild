@@ -5,16 +5,17 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#f2f4f1">
         <title>Übersicht | Rebuild</title>
-        <link rel="stylesheet" href="/static/styles/main.css?v=20261016-home-three-panels">
+        <link rel="stylesheet" href="/static/styles/main.css?v=20261025-browser-reminders">
     </head>
     <body class="dashboard-page home-dashboard">
         <header class="dashboard-topbar">
             <a class="brand" href="/home" aria-label="Rebuild Übersicht">
-                <span class="brand-mark">R</span>
+                <img class="brand-mark" src="/static/assets/logo.svg" alt="">
                 <span>Rebuild</span>
             </a>
             <nav class="top-navigation" aria-label="Hauptnavigation">
                 <a class="active" href="/home" aria-current="page">Übersicht</a>
+                <a href="/recommendations">Empfehlungen</a>
                 <a href="/llm">KI-Assistent</a>
                 <a href="/kalender">Kalender</a>
             </nav>
@@ -29,6 +30,26 @@
                 <p class="eyebrow" id="today-date">DEIN TAG AUF EINEN BLICK</p>
                 <h1 id="welcome-title">Wie geht es dir in deinem Alltag?</h1>
                 <p>Schule, Arbeit und Erholung gehören zusammen.</p>
+            </section>
+
+            <section class="home-feature-band" aria-label="Gesundheitsbereiche: Schlaf, Ernährung und Aktivität">
+                <div class="home-feature-figure">
+                    <span class="home-feature-halo home-feature-halo-outer" aria-hidden="true"></span>
+                    <span class="home-feature-halo home-feature-halo-inner" aria-hidden="true"></span>
+                    <img src="/static/assets/body.svg" alt="Körpersilhouette mit drei verlinkten Gesundheitsbereichen">
+                    <a class="home-feature-pin home-feature-pin-sleep" href="/brain" aria-label="Schlaf öffnen"><span></span></a>
+                    <a class="home-feature-pin home-feature-pin-food" href="/stomach" aria-label="Ernährung öffnen"><span></span></a>
+                    <a class="home-feature-pin home-feature-pin-activity" href="/activity" aria-label="Aktivität öffnen"><span></span></a>
+                </div>
+                <div class="home-feature-links">
+                    <p class="eyebrow">DEINE BEREICHE</p>
+                    <h2>Wähle einen Punkt am Körper</h2>
+                    <div>
+                        <a href="/brain"><img src="/static/assets/sleep.svg" alt=""><span>Schlaf</span><small>Erholung und Schlafverlauf</small></a>
+                        <a href="/stomach"><img src="/static/assets/food.svg" alt=""><span>Ernährung</span><small>Deine Food-Check-ins</small></a>
+                        <a href="/activity"><img src="/static/assets/activity.svg" alt=""><span>Aktivität</span><small>Bewegung und Verlauf</small></a>
+                    </div>
+                </div>
             </section>
 
             <div class="home-components-grid" aria-label="Deine Tagesübersicht">
@@ -83,31 +104,8 @@
                     </div>
                 </section>
 
-                <section class="home-component home-load wellbeing-panel" aria-labelledby="wellbeing-title">
-                    <div>
-                        <p class="eyebrow">SCHULE, ARBEIT &amp; LEBEN</p>
-                        <h2 id="wellbeing-title">Belastung &amp; Erholung</h2>
-                        <p>Wie hoch waren heute dein Stress und dein Workload? Deine Einschätzung hilft, den Tag im Zusammenhang mit Schlaf und Bewegung zu betrachten.</p>
-                    </div>
-                    <form id="wellbeing-form">
-                        <label for="stress-level">Stress <output id="stress-level-value">5</output>/10</label>
-                        <input id="stress-level" name="stress_level" type="range" min="0" max="10" value="5">
-                        <label for="workload-level">Workload <output id="workload-level-value">5</output>/10</label>
-                        <input id="workload-level" name="workload_level" type="range" min="0" max="10" value="5">
-                        <button class="text-link" type="submit">Einschätzung speichern</button>
-                    </form>
-                    <p id="wellbeing-result" role="status" aria-live="polite">Noch keine Einschätzung für heute gespeichert.</p>
-                    <small>Ein persönlicher Orientierungswert, keine Diagnose. <a href="/kalender">Deinen Kalender ansehen →</a></small>
-                </section>
-
                 <section class="home-component home-suggestion recommendation-panel" aria-labelledby="recommendation-title">
-                    <div class="panel-heading">
-                        <span class="spark-mark" aria-hidden="true">✳</span>
-                        <div>
-                            <p class="eyebrow">EIN MÖGLICHER NÄCHSTER SCHRITT</p>
-                            <h2 id="recommendation-title">Opty schlägt vor</h2>
-                        </div>
-                    </div>
+                    <div class="panel-heading"><span class="spark-mark" aria-hidden="true">✳</span><div><p class="eyebrow">EIN MÖGLICHER NÄCHSTER SCHRITT</p><h2 id="recommendation-title">Opty schlägt vor</h2></div></div>
                     <p id="recommendation-text" class="recommendation-text">Deine Empfehlung wird vorbereitet ...</p>
                     <a class="text-link" id="discuss-recommendation" href="/llm" hidden>Mit Opty besprechen →</a>
                     <button class="text-link recommendation-retry" id="retry-recommendation" type="button" hidden>Erneut versuchen ↻</button>
@@ -115,6 +113,7 @@
             </div>
             <p id="dashboard-status" class="dashboard-status" role="status" aria-live="polite"></p>
         </main>
-        <script src="/static/index.js?v=20261016-home-three-panels" defer></script>
+        <script src="/static/index.js?v=20261025-home-layout" defer></script>
+            <script src="/static/reminders.js?v=20261025-2h-demo"></script>
     </body>
 </html>

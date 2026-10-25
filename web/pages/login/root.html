@@ -51,7 +51,8 @@
                     </div>
                     <div class="auth-field">
                         <label for="pwd_input_reg">Password</label>
-                        <input type="password" id="pwd_input_reg" autocomplete="new-password" required>
+                        <input type="password" id="pwd_input_reg" autocomplete="new-password" minlength="12" maxlength="256" required>
+                        <small>Mindestens 12 Zeichen.</small>
                     </div>
                     <p class="auth-switch">already have an account? <button type="button" onclick="load_r_or_l('login')">Sign in</button></p>
                     <button class="auth-submit" type="button" onclick="registerUser()">Create account</button>

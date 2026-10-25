@@ -8,15 +8,18 @@ from llm.ollama_config import select_ollama_model
 
 # da RAG Pipline system eine que die requests unterschiedlich priorisiert
 USER_REQUEST = "user"
+RECOMMENDATION_REQUEST = "recommendation"
 SYSTEM_REQUEST = "system"
 SUPER_SYSTEM_REQUEST = "super_system"
 CHECKUP_REQUEST = "checkup"
 
 REQUEST_PRIORITIES = {
     USER_REQUEST: 0,
-    CHECKUP_REQUEST: 1,
-    SUPER_SYSTEM_REQUEST: 2,
-    SYSTEM_REQUEST: 3,
+    # Recommendations follow personal chat requests immediately.
+    RECOMMENDATION_REQUEST: 1,
+    CHECKUP_REQUEST: 2,
+    SUPER_SYSTEM_REQUEST: 3,
+    SYSTEM_REQUEST: 4,
 }
 
 class LlmRequest:

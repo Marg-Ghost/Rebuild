@@ -111,49 +111,6 @@ function renderCheckup(status) {
     }
 }
 
-function renderEfficiencyScore(result) {
-    const target = byId('wellbeing-result');
-    if (!result) {
-        target.textContent = 'Noch keine Einschätzung für heute gespeichert.';
-        return;
-    }
-    target.textContent = `${Math.round(Number(result.score))}/100 · Orientierungswert aus deinen Angaben.`;
-    if (Number.isFinite(Number(result.stress_level))) {
-        byId('stress-level').value = result.stress_level;
-        byId('stress-level-value').value = result.stress_level;
-    }
-    if (Number.isFinite(Number(result.workload_level))) {
-        byId('workload-level').value = result.workload_level;
-        byId('workload-level-value').value = result.workload_level;
-    }
-}
-
-async function submitEfficiencyAssessment(event) {
-    event.preventDefault();
-    const target = byId('wellbeing-result');
-    const button = event.currentTarget.querySelector('button[type="submit"]');
-    button.disabled = true;
-    target.textContent = 'Wert wird berechnet ...';
-    try {
-        const response = await fetch('/api/efficiency-score', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                stress_level: Number(byId('stress-level').value),
-                workload_level: Number(byId('workload-level').value),
-            }),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Wert konnte nicht gespeichert werden.');
-        renderEfficiencyScore(data);
-    } catch (error) {
-        target.textContent = error.message;
-    } finally {
-        button.disabled = false;
-    }
-}
-
 function renderHealthExplanation(currentScore, history, isToday) {
     const assessment = byId('health-assessment');
     const baselineMarker = byId('health-scale-baseline');
@@ -208,22 +165,15 @@ async function loadRecommendation() {
     const retryButton = byId('retry-recommendation');
     try {
         const data = await fetchJson('/api/dashboard/recommendation');
-        const recommendation = typeof data.recommendation === 'string'
-            ? data.recommendation.trim()
-            : '';
+        const recommendation = typeof data.recommendation === 'string' ? data.recommendation.trim() : '';
         target.textContent = recommendation || 'Heute gibt es noch keine Empfehlung.';
         retryButton.hidden = true;
+        discussLink.hidden = !recommendation;
         if (recommendation) {
-            const message = `Helfe mir diese Entscheidung nachzuvollziehn : ${recommendation}`;
-            discussLink.href = `/llm?ask=${encodeURIComponent(message)}`;
-            discussLink.hidden = false;
-        } else {
-            discussLink.hidden = true;
+            discussLink.href = `/llm?ask=${encodeURIComponent(`Hilf mir, diese Empfehlung nachzuvollziehen: ${recommendation}`)}`;
         }
     } catch (error) {
-        target.textContent = error instanceof Error
-            ? `Opty konnte die Empfehlung nicht laden: ${error.message}`
-            : 'Opty konnte die Empfehlung nicht laden.';
+        target.textContent = error instanceof Error ? `Opty konnte die Empfehlung nicht laden: ${error.message}` : 'Opty konnte die Empfehlung nicht laden.';
         discussLink.hidden = true;
         retryButton.hidden = false;
     }
@@ -237,11 +187,10 @@ async function loadDashboard() {
     }).toUpperCase();
 
     try {
-        const [health, checkup, user, efficiency] = await Promise.all([
+        const [health, checkup, user] = await Promise.all([
             fetchJson('/api/get_health_data/index'),
             fetchJson('/api/daily-checkup/status'),
             fetchJson('/api/me'),
-            fetchJson('/api/efficiency-score'),
         ]);
 
         byId('dashboard-username').textContent = user.usr || 'Dein Bereich';
@@ -259,7 +208,6 @@ async function loadDashboard() {
         renderHealthExplanation(healthToday, history, count > 0);
         renderHealthChart(chartHistory);
         renderCheckup(checkup);
-        renderEfficiencyScore(efficiency.latest);
         status.textContent = '';
         if (checkup.processing) {
             window.setTimeout(() => { void loadDashboard(); }, 3000);
@@ -279,13 +227,5 @@ byId('retry-recommendation').addEventListener('click', async (event) => {
     await loadRecommendation();
     button.disabled = false;
 });
-
-byId('stress-level').addEventListener('input', (event) => {
-    byId('stress-level-value').value = event.currentTarget.value;
-});
-byId('workload-level').addEventListener('input', (event) => {
-    byId('workload-level-value').value = event.currentTarget.value;
-});
-byId('wellbeing-form').addEventListener('submit', submitEfficiencyAssessment);
 
 window.addEventListener('DOMContentLoaded', loadDashboard);

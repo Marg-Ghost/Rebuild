@@ -13,6 +13,7 @@ if ! docker compose version >/dev/null 2>&1; then
 fi
 
 if [[ ! -f ".env" ]]; then
+    umask 077
     if command -v openssl >/dev/null 2>&1; then
         session_secret="$(openssl rand -hex 32)"
     elif command -v od >/dev/null 2>&1; then
@@ -26,7 +27,7 @@ if [[ ! -f ".env" ]]; then
 fi
 
 if [[ -z "${OLLAMA_MODEL:-}" ]]; then
-    OLLAMA_MODEL="$(sed -n 's/^OLLAMA_MODEL=//p' .env | tail -n 1)"
+    OLLAMA_MODEL="$(sed -n 's/^OLLAMA_MODEL=//p' .env | tail -n 1 | tr -d '\r')"
 fi
 if [[ -z "${OLLAMA_MODEL:-}" ]]; then
     if ! command -v python3 >/dev/null 2>&1; then
@@ -38,7 +39,7 @@ fi
 OLLAMA_NUM_PARALLEL="${OLLAMA_NUM_PARALLEL:-1}"
 OLLAMA_CONTEXT_LENGTH="${OLLAMA_CONTEXT_LENGTH:-4096}"
 if [[ -z "${OLLAMA_KEEP_ALIVE:-}" ]]; then
-    OLLAMA_KEEP_ALIVE="$(sed -n 's/^OLLAMA_KEEP_ALIVE=//p' .env | tail -n 1)"
+    OLLAMA_KEEP_ALIVE="$(sed -n 's/^OLLAMA_KEEP_ALIVE=//p' .env | tail -n 1 | tr -d '\r')"
 fi
 OLLAMA_KEEP_ALIVE="${OLLAMA_KEEP_ALIVE:--1}"
 export OLLAMA_MODEL OLLAMA_NUM_PARALLEL OLLAMA_CONTEXT_LENGTH OLLAMA_KEEP_ALIVE
@@ -72,10 +73,10 @@ else
 fi
 
 echo "Lade das Modell vor und halte es im Speicher ..."
-docker compose exec -T ollama ollama run "${OLLAMA_MODEL}" ""
+docker compose exec -T ollama ollama run "${OLLAMA_MODEL}" "Antworte nur mit OK." >/dev/null
 docker compose exec -T ollama ollama ps
 
-echo "Starte App-Container auf http://0.0.0.0:8000 ..."
+echo "Starte App-Container; im Browser öffnen: http://localhost:8000 ..."
 docker compose up -d app
 
 echo "Warte auf den Rebuild-Server ..."
