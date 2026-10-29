@@ -73,8 +73,8 @@ else
 fi
 
 echo "Lade das Modell vor und halte es im Speicher ..."
-docker compose exec -T ollama ollama run "${OLLAMA_MODEL}" "Antworte nur mit OK." >/dev/null
-docker compose exec -T ollama ollama ps
+#docker compose exec -T ollama ollama run "${OLLAMA_MODEL}" "Antworte nur mit OK." >/dev/null
+#docker compose exec -T ollama ollama ps
 
 echo "Starte App-Container; im Browser öffnen: http://localhost:8000 ..."
 docker compose up -d app
