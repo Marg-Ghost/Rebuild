@@ -1,6 +1,6 @@
 const monthNames = [
-    "Januar", "Februar", "März", "April", "Mai", "Juni",
-    "Juli", "August", "September", "Oktober", "November", "Dezember"
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
 ];
 
 let selected_month = new Date().getMonth() + 1;
@@ -20,7 +20,7 @@ function toggle_add(force_open) {
     add_element.hidden = !should_open;
     const toggle_button = document.getElementById("toggle_add_button");
     toggle_button.setAttribute("aria-expanded", String(should_open));
-    toggle_button.textContent = should_open ? "Formular schließen" : "Task hinzufügen";
+    toggle_button.textContent = should_open ? "Close form" : "Add task";
     if (should_open) {
         const now = new Date();
         const target_date = now.getFullYear() === selected_year
@@ -41,14 +41,14 @@ function show_status(message) {
 
 function task_type_label(task_type) {
     const labels = {
-        work: "Arbeit",
-        leisure: "Freizeit",
-        health: "Gesundheit",
-        personal: "Privat",
-        other: "Sonstiges",
-        private: "Privat"
+        work: "Work",
+        leisure: "Leisure",
+        health: "Health",
+        personal: "Personal",
+        other: "Other",
+        private: "Personal"
     };
-    return labels[task_type] || "Sonstiges";
+    return labels[task_type] || "Other";
 }
 
 async function show_data(month, year) {
@@ -57,10 +57,10 @@ async function show_data(month, year) {
             credentials: "include"
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || "Kalenderdaten konnten nicht geladen werden.");
+        if (!response.ok) throw new Error("Could not load calendar data.");
 
         if (!Array.isArray(data.entries)) {
-            throw new Error("Die Kalenderdaten haben ein ungültiges Format.");
+            throw new Error("The calendar data has an invalid format.");
         }
 
         const entriesByDate = new Map();
@@ -84,7 +84,7 @@ async function show_data(month, year) {
                 importance.textContent = `!${entry.importance}`;
                 const content = document.createElement("span");
                 content.className = "entry-content";
-                content.textContent = entry.content || "Termin";
+                content.textContent = entry.content || "Event";
                 const type = document.createElement("span");
                 type.className = "task-type";
                 type.textContent = task_type_label(entry.task_type);
@@ -96,7 +96,7 @@ async function show_data(month, year) {
                     const overnight = entry.task_end_at
                         && entry.task_end_at.slice(0, 10) !== entry.task_date;
                     time.textContent = endTime
-                        ? `${entry.task_time}–${endTime}${overnight ? " +1T" : ""}`
+                        ? `${entry.task_time}–${endTime}${overnight ? " +1d" : ""}`
                         : entry.task_time;
                     item.append(time);
                 }
@@ -111,14 +111,14 @@ async function show_data(month, year) {
             if (entries.length > 3) {
                 const more = document.createElement("span");
                 more.className = "calendar-more-entries";
-                more.textContent = `+${entries.length - 3} weitere`;
+                more.textContent = `+${entries.length - 3} more`;
                 list.append(more);
             }
             table_cell.append(list);
         }
         show_status("");
     } catch (error) {
-        show_status(error.message || "Kalenderdaten konnten nicht geladen werden.");
+        show_status(error.message || "Could not load calendar data.");
     }
 }
 
@@ -139,7 +139,7 @@ async function connect_google_calendar(event) {
     const submitButton = document.getElementById("google_calendar_submit");
     const status = document.getElementById("google_calendar_status");
     submitButton.disabled = true;
-    status.textContent = "Feed wird abgerufen, Termine werden eingeordnet ...";
+    status.textContent = "Fetching the feed and classifying events ...";
     try {
         const response = await fetch("/api/calendar/connect-google", {
             method: "POST",
@@ -151,17 +151,17 @@ async function connect_google_calendar(event) {
         });
         const result = await response.json();
         if (!response.ok) {
-            throw new Error(result.detail || "Google Kalender konnte nicht verbunden werden.");
+            throw new Error("Could not connect Google Calendar.");
         }
 
         close_google_calendar_dialog();
         form.reset();
         await get_all_enties(selected_month, selected_year);
-        show_status(`${result.imported_count} Google-Termine synchronisiert.`);
+        show_status(`${result.imported_count} Google events synced.`);
     } catch (error) {
         status.textContent = error instanceof Error
             ? error.message
-            : "Google Kalender konnte nicht verbunden werden.";
+            : "Could not connect Google Calendar.";
     } finally {
         submitButton.disabled = false;
     }
@@ -180,7 +180,7 @@ async function set_data(event) {
 
     task_is_submitting = true;
     submit_button.disabled = true;
-    show_status("Task wird gespeichert ...");
+    show_status("Saving task ...");
     try {
         const response = await fetch("/api/kalender/add", {
             method: "POST",
@@ -196,7 +196,7 @@ async function set_data(event) {
             })
         });
         const result = await response.json();
-        if (!response.ok) throw new Error(result.detail || "Task konnte nicht gespeichert werden.");
+        if (!response.ok) throw new Error("Could not save task.");
 
         const task_month = Number(date.value.slice(5, 7));
         const task_year = Number(date.value.slice(0, 4));
@@ -204,9 +204,9 @@ async function set_data(event) {
         sliderOutput.value = "1";
         toggle_add(false);
         await get_all_enties(task_month, task_year);
-        show_status("Task gespeichert.");
+        show_status("Task saved.");
     } catch (error) {
-        show_status(error.message || "Task konnte nicht gespeichert werden.");
+        show_status(error.message || "Could not save task.");
     } finally {
         task_is_submitting = false;
         submit_button.disabled = false;
@@ -299,7 +299,7 @@ async function get_month_name() {
             return [data.month, data.year];
         }
     } catch {
-        show_status("Aktueller Monat konnte nicht vom Server geladen werden.");
+        show_status("Could not load the current month from the server.");
     }
     const now = new Date();
     return [now.getMonth() + 1, now.getFullYear()];

@@ -3,7 +3,7 @@ const foodById = (id) => document.getElementById(id);
 function formatFoodImpact(value) {
     const score = Number(value);
     if (!Number.isFinite(score)) return '--';
-    const formatted = Math.abs(score).toLocaleString('de-DE', { maximumFractionDigits: 1 });
+    const formatted = Math.abs(score).toLocaleString('en-GB', { maximumFractionDigits: 1 });
     return `${score > 0 ? '+' : score < 0 ? '−' : ''}${formatted}`;
 }
 
@@ -15,7 +15,7 @@ function renderFoodHistory(history) {
 
     if (values.length === 0) {
         path.setAttribute('d', '');
-        caption.textContent = 'Dein Food-Verlauf erscheint nach den ersten Check-ins.';
+        caption.textContent = 'Your nutrition history will appear after your first check-ins.';
         return;
     }
 
@@ -24,7 +24,7 @@ function renderFoodHistory(history) {
         .filter((item) => Number.isFinite(item.impact));
     if (pointsData.length === 0) {
         path.setAttribute('d', '');
-        caption.textContent = 'Für den Verlauf liegen noch keine auswertbaren Check-ins vor.';
+        caption.textContent = 'There is not enough check-in data to show a history yet.';
         return;
     }
 
@@ -42,8 +42,8 @@ function renderFoodHistory(history) {
     const firstDate = new Date(`${pointsData[0].date}T00:00:00`);
     const formattedDate = Number.isNaN(firstDate.getTime())
         ? pointsData[0].date
-        : firstDate.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
-    caption.textContent = `Täglicher Food-Score seit ${formattedDate} · ${pointsData.length} Tage`;
+        : firstDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    caption.textContent = `Daily food score since ${formattedDate} · ${pointsData.length} days`;
 }
 
 function renderFoodEntries(checkups) {
@@ -53,7 +53,7 @@ function renderFoodEntries(checkups) {
     if (!checkups.length) {
         const empty = document.createElement('p');
         empty.className = 'food-empty-state';
-        empty.textContent = 'Heute wurden noch keine Food-Einträge gespeichert.';
+        empty.textContent = 'No food entries saved for today yet.';
         list.append(empty);
         return;
     }
@@ -66,7 +66,7 @@ function renderFoodEntries(checkups) {
         names.className = 'food-entry-names';
         names.textContent = Array.isArray(checkup.food) && checkup.food.length
             ? checkup.food.join(', ')
-            : 'Keine Food-Einträge';
+            : 'No food entries';
 
         const checkupLabel = document.createElement('span');
         checkupLabel.className = 'food-entry-checkup';
@@ -75,7 +75,7 @@ function renderFoodEntries(checkups) {
         const impact = document.createElement('strong');
         impact.className = 'food-entry-impact';
         impact.textContent = formatFoodImpact(checkup.impact);
-        impact.setAttribute('aria-label', `Score-Veränderung ${impact.textContent}`);
+        impact.setAttribute('aria-label', `Score change ${impact.textContent}`);
 
         row.append(names, checkupLabel, impact);
         list.append(row);
@@ -88,7 +88,7 @@ async function loadFoodDashboard() {
     try {
         const response = await fetch('/api/food/summary', { credentials: 'include' });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Food-Daten konnten nicht geladen werden.');
+        if (!response.ok) throw new Error('Could not load nutrition data.');
 
         foodById('food-counter-value').textContent = data.checkups.length
             ? formatFoodImpact(data.today_impact)
@@ -98,7 +98,7 @@ async function loadFoodDashboard() {
     } catch (error) {
         status.textContent = error.message;
         renderFoodEntries([]);
-        foodById('food-entry-list').firstElementChild.textContent = 'Food-Einträge konnten nicht geladen werden.';
+        foodById('food-entry-list').firstElementChild.textContent = 'Could not load food entries.';
     }
 }
 

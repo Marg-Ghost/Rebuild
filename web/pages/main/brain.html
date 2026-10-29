@@ -1,39 +1,39 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#FFFAED">
-        <title>Schlaf | Rebuild</title>
-        <link rel="stylesheet" href="/static/styles/main.css?v=20261025-logo">
-        <link rel="stylesheet" href="/static/styles/feature-pages.css?v=20261004-v4">
+        <title>Sleep | Rebuild</title>
+        <link rel="stylesheet" href="/static/styles/main.css?v=20261029-feature-alignment">
+        <link rel="stylesheet" href="/static/styles/feature-pages.css?v=20261029-anatomy-nav">
     </head>
     <body class="brain-page feature-page brain-feature-page">
         <header class="dashboard-topbar">
-            <a class="brand" href="/home" aria-label="Opty Übersicht">
+            <a class="brand" href="/home" aria-label="Opty overview">
                 <img class="brand-mark" src="/static/assets/logo.svg" alt="">
                 <span>Rebuild</span>
             </a>
-            <nav class="top-navigation" aria-label="Hauptnavigation">
-                <a href="/home">Übersicht</a>
-                <a href="/llm">KI-Assistent</a>
-                <a href="/kalender">Kalender</a>
+            <nav class="top-navigation" aria-label="Main navigation">
+                <a href="/home">Overview</a>
+                <a href="/llm">AI assistant</a>
+                <a href="/kalender">Calendar</a>
             </nav>
-            <div class="user-chip" aria-label="Angemeldeter Benutzer">
+            <div class="user-chip" aria-label="Signed-in user">
                 <span class="user-avatar" aria-hidden="true">O</span>
-                <span id="dashboard-username">Dein Bereich</span>
+                <span id="dashboard-username">Your space</span>
             </div>
         </header>
 
         <main class="brain-dashboard">
-            <section class="brain-visual" aria-label="Schlaf und Gehirn">
+            <section class="brain-visual" aria-label="Sleep and brain">
                 <div class="brain-halo brain-halo-outer" aria-hidden="true"></div>
                 <div class="brain-halo brain-halo-inner" aria-hidden="true"></div>
                 <img class="brain-silhouette" src="/static/assets/body.svg" alt="">
-                <img class="brain-sleep-icon" src="/static/assets/sleep.svg" alt="Schlaf">
+                <img class="brain-sleep-icon" src="/static/assets/sleep.svg" alt="Sleep">
             </section>
 
-            <section class="brain-data" aria-label="Deine Schlafdaten">
+            <section class="brain-data" aria-label="Your sleep data">
                 <div class="brain-sleep-summary">
                     <div class="brain-sleep-value">
                         <strong id="brain-sleep-hours">--</strong>
@@ -42,22 +42,22 @@
                     <span class="brain-today-label">today</span>
                 </div>
                 <div class="brain-midnight-value">
-                    <span>past Midnight :</span>
+                    <span>After midnight:</span>
                     <strong id="brain-late-nights">--/7</strong>
                 </div>
 
                 <section class="brain-counter-card" aria-labelledby="brain-counter-title">
                     <div class="brain-counter-value" id="brain-sleep-counter">--</div>
                     <h1 id="brain-counter-title">Sleep counter</h1>
-                    <svg class="brain-history-chart" id="brain-history-chart" viewBox="0 0 360 100" role="img" aria-label="Schlafqualitäts-Verlauf der letzten sieben Check-ins">
+                    <svg class="brain-history-chart" id="brain-history-chart" viewBox="0 0 360 100" role="img" aria-label="Sleep quality over the last seven check-ins">
                         <path class="brain-chart-line" id="brain-chart-line" d=""></path>
                     </svg>
-                    <p class="brain-history-caption" id="brain-history-caption">Dein Verlauf erscheint nach den ersten Check-ins.</p>
+                    <p class="brain-history-caption" id="brain-history-caption">Your history will appear after your first check-ins.</p>
                 </section>
                 <p class="brain-status" id="brain-status" role="status" aria-live="polite"></p>
             </section>
         </main>
-        <script src="/static/feature-nav.js?v=20261004-v1"></script>
-        <script src="/static/brain.js?v=20261004-brain"></script>
+        <script src="/static/feature-nav.js?v=20261029-english-ui"></script>
+        <script src="/static/brain.js?v=20261029-english-ui"></script>
     </body>
 </html>

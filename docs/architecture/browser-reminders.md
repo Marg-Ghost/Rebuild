@@ -1,14 +1,14 @@
-# Browser-Erinnerungen
+# Browser Reminders
 
-## Ablauf im Browser
+## Browser flow
 
-`web/reminders.js` wird auf Übersicht, Empfehlungen, Kalender und KI-Assistent geladen. Das Script ergänzt eine Schaltfläche in der Nutzerleiste. Erst nach Klick fragt der Browser nach Notification-Berechtigung; Python und die Datenbank sind am Timer nicht beteiligt.
+`web/reminders.js` is loaded on the Overview, Recommendations, Calendar, and AI assistant pages. The script adds a button to the user bar. The browser asks for notification permission only after the user clicks; Python and the database are not involved in the timer.
 
-Nach Zustimmung speichert der Browser Start, nächsten Termin und Ablaufzeit in `localStorage`. Ein JavaScript-Timer prüft alle 30 Sekunden, ob eine Erinnerung fällig ist. Die Benachrichtigung kommt alle zwei Stunden und die Aktivierung endet nach zehn Stunden. Die lokale Speicherbasis hält den Zustand beim Navigieren zwischen den unterstützten Rebuild-Seiten aufrecht.
+After permission is granted, the browser stores the start time, next reminder time, and expiry time in `localStorage`. A JavaScript timer checks every 30 seconds whether a reminder is due. Reminders appear every two hours, and activation ends after ten hours. Local storage preserves the state while navigating between supported Rebuild pages.
 
-## Grenzen
+## Limitations
 
-- Die Benachrichtigung funktioniert nur, wenn eine Rebuild-Seite geöffnet bleibt und der Browser Notification API unterstützt.
-- Bei geschlossenem Browser oder geschlossener Seite läuft kein Timer und wird keine Push-Nachricht zugestellt.
-- Benötigt eine sichere Browser-Umgebung (HTTPS oder localhost) sowie die Erlaubnis des Nutzers.
-- Die aktuelle Aktivierung wird lokal im Browser gespeichert, nicht pro Benutzer in Python oder SQLite.
+- A reminder works only while a Rebuild page stays open and the browser supports the Notification API.
+- No timer runs and no push notification is delivered while the browser or page is closed.
+- A secure browser context (HTTPS or localhost) and the user's permission are required.
+- The active reminder is stored locally in the browser, not per user in Python or SQLite.

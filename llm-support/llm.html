@@ -1,82 +1,82 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#FFFAED">
-        <title>KI-Assistent | Rebuild</title>
-        <link rel="stylesheet" href="/static/styles/main.css?v=20261025-browser-reminders">
+        <title>AI assistant | Rebuild</title>
+        <link rel="stylesheet" href="/static/styles/main.css?v=20261029-feature-alignment">
         <link rel="stylesheet" href="/static/styles/llm.css?v=20261008-v1">
     </head>
     <body class="dashboard-page assistant-page">
         <header class="dashboard-topbar">
-            <a class="brand" href="/home" aria-label="Rebuild Übersicht">
+            <a class="brand" href="/home" aria-label="Rebuild overview">
                 <span class="brand-mark">R</span>
                 <span>Rebuild</span>
             </a>
-            <nav class="top-navigation" aria-label="Hauptnavigation">
-                <a href="/home">Übersicht</a>
-                <a href="/recommendations">Empfehlungen</a>
-                <a class="active" href="/llm" aria-current="page">KI-Assistent</a>
-                <a href="/kalender">Kalender</a>
+            <nav class="top-navigation" aria-label="Main navigation">
+                <a href="/home">Overview</a>
+                <a href="/recommendations">Recommendations</a>
+                <a class="active" href="/llm" aria-current="page">AI assistant</a>
+                <a href="/kalender">Calendar</a>
             </nav>
-            <div class="user-chip" aria-label="Angemeldeter Benutzer">
+            <div class="user-chip" aria-label="Signed-in user">
                 <span class="user-avatar" aria-hidden="true">R</span>
-                <span id="dashboard-username">Dein Bereich</span>
+                <span id="dashboard-username">Your space</span>
             </div>
         </header>
 
         <main class="assistant-shell">
             <section class="assistant-intro" aria-labelledby="assistant-title">
-                <p class="eyebrow">DEIN PERSÖNLICHER BEGLEITER</p>
-                <h1 id="assistant-title">Was ist dein nächster Schritt?</h1>
-                <p>Sortiere deine Gedanken, finde Ideen und mach aus deinem Vorhaben einen machbaren Plan.</p>
+                <p class="eyebrow">YOUR PERSONAL COMPANION</p>
+                <h1 id="assistant-title">What is your next step?</h1>
+                <p>Sort through your thoughts, find ideas, and turn your goal into a practical plan.</p>
             </section>
 
-            <section class="assistant-card" aria-label="Gespräch mit Opty">
+            <section class="assistant-card" aria-label="Conversation with Opty">
                 <header class="assistant-card-heading">
                     <span class="assistant-avatar" aria-hidden="true">O</span>
                     <div>
                         <h2>Opty</h2>
-                        <p>Dein Rebuild-Assistent</p>
+                        <p>Your Rebuild assistant</p>
                     </div>
-                    <span class="assistant-presence"><i aria-hidden="true"></i> bereit</span>
+                    <span class="assistant-presence"><i aria-hidden="true"></i> ready</span>
                 </header>
 
                 <section id="assistant-empty" class="assistant-empty" aria-labelledby="assistant-empty-title">
                     <span class="assistant-empty-icon" aria-hidden="true">✳</span>
-                    <h3 id="assistant-empty-title">Womit kann ich dir helfen?</h3>
-                    <p>Wähle einen Einstieg oder schreib mir, was dich gerade beschäftigt.</p>
-                    <div class="assistant-suggestions" aria-label="Gesprächsvorschläge">
-                        <button type="button" data-prompt="Hilf mir, einen kleinen machbaren nächsten Schritt zu finden.">Einen nächsten Schritt finden</button>
-                        <button type="button" data-prompt="Hilf mir, meine Gedanken zu ordnen und einen einfachen Plan zu machen.">Einen einfachen Plan machen</button>
-                        <button type="button" data-prompt="Ich möchte über meine Gewohnheiten sprechen und eine kleine Verbesserung finden.">Über Gewohnheiten sprechen</button>
+                    <h3 id="assistant-empty-title">How can I help?</h3>
+                    <p>Choose a prompt or tell me what is on your mind.</p>
+                    <div class="assistant-suggestions" aria-label="Suggested prompts">
+                        <button type="button" data-prompt="Help me find one small, achievable next step.">Find a next step</button>
+                        <button type="button" data-prompt="Help me organize my thoughts and make a simple plan.">Make a simple plan</button>
+                        <button type="button" data-prompt="I want to talk about my habits and find one small improvement.">Talk about habits</button>
                     </div>
                 </section>
 
-                <section id="gespräch" class="assistant-conversation" aria-live="polite" aria-label="Gespräch" hidden></section>
+                <section id="gespräch" class="assistant-conversation" aria-live="polite" aria-label="Conversation" hidden></section>
                 <p id="status" class="assistant-status" role="status" aria-live="polite"></p>
 
                 <div class="assistant-composer">
-                    <label class="visually-hidden" for="text">Nachricht an Opty</label>
-                    <textarea id="text" placeholder="Schreib Opty eine Nachricht ..." rows="2"></textarea>
+                    <label class="visually-hidden" for="text">Message to Opty</label>
+                    <textarea id="text" placeholder="Write a message to Opty ..." rows="2"></textarea>
                     <div class="assistant-composer-footer">
-                        <span>Mit Strg+Enter senden</span>
+                        <span>Press Ctrl+Enter to send</span>
                         <button id="sendButton" class="assistant-send-button" type="button">
-                            <span>Senden</span><span aria-hidden="true">→</span>
+                            <span>Send</span><span aria-hidden="true">→</span>
                         </button>
                     </div>
                 </div>
 
                 <footer class="assistant-card-footer">
-                    <span>Dein Gespräch bleibt in diesem Fenster.</span>
-                    <button id="clearButton" type="button" disabled>Gespräch speichern und leeren</button>
+                    <span>Your conversation stays in this window.</span>
+                    <button id="clearButton" type="button" disabled>Save and clear conversation</button>
                 </footer>
             </section>
-            <p class="assistant-disclaimer">Opty kann sich irren. Bei wichtigen gesundheitlichen Fragen wende dich an eine Fachperson.</p>
+            <p class="assistant-disclaimer">Opty can make mistakes. For important health questions, consult a qualified professional.</p>
         </main>
-        <script src="/static/feature-nav.js?v=20261004-v1"></script>
-        <script src="/llm-static/llm.js?v=20261008-v1" defer></script>
-            <script src="/static/reminders.js?v=20261025-2h-demo"></script>
+        <script src="/static/feature-nav.js?v=20261029-english-ui"></script>
+        <script src="/llm-static/llm.js?v=20261029-english-ui2" defer></script>
+            <script src="/static/reminders.js?v=20261029-english-ui"></script>
     </body>
 </html>

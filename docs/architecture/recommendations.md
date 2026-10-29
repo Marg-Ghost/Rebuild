@@ -1,15 +1,15 @@
-# Empfehlungen
+# Recommendations
 
-## Zwei Empfehlungspfade
+## Two recommendation paths
 
-Die Übersicht fragt `/api/dashboard/recommendation` ab. Die Empfehlungen-Seite nutzt `/api/recommendations`, `web/recommendations.js` und die Kalenderdaten zur Suche nach einem freien 30-Minuten-Fenster. Beide Pfade können eine priorisierte Anfrage an die LLM-Queue stellen.
+The Overview requests `/api/dashboard/recommendation`. The Recommendations page uses `/api/recommendations`, `web/recommendations.js`, and calendar data to find a free 30-minute slot. Both paths can submit a prioritized request to the LLM queue.
 
-Für Aktivitätsvorschläge bildet der Server einen Kontext aus dem Profilhobby und dem nächsten freien Kalenderfenster. Ollama kann bis zu drei Vorschläge mit Begründung und einem optionalen `estimated_health_score_delta` liefern. Die Aktivitätsdauer der Empfehlung ist im aktuellen Servercode fest auf 30 Minuten gesetzt.
+For activity suggestions, the server builds context from profile hobbies and the next free calendar slot. Ollama can return up to three suggestions with reasons and an optional `estimated_health_score_delta`. The current server code fixes the recommended activity duration at 30 minutes.
 
-Ist die Modellanfrage nicht verfügbar oder liefert sie keine verwendbaren Aktivitäten, kann der `/api/recommendations`-Endpunkt Hobbys direkt als Vorschläge zurückgeben. Dieser Fallback bewertet nicht, ob ein Hobby körperliche Bewegung beinhaltet. Darum kann beispielsweise Klavierspielen auftauchen. Der Fallback liefert kein Punktdelta.
+If the model request is unavailable or returns no usable activities, `/api/recommendations` can return profile hobbies directly as suggestions. This fallback does not assess whether a hobby involves physical activity, so piano playing, for example, may appear. The fallback does not provide a point delta.
 
-## Anzeige der Wirkung
+## Displaying estimated impact
 
-`web/recommendations.js` lädt den aktuellen Punktewert und berechnet die Prozentdarstellung mit einer Sigmoidfunktion. Ein geschätzter Prozentbeitrag wird nur angezeigt, wenn Ollama ein Punktdelta geliefert hat; dann wird die Differenz der Sigmoidwerte vor und nach diesem Delta gebildet. Das ist eine Schätzung aus dem LLM-Output, nicht die eigentliche Rebuild-Punkteberechnung.
+`web/recommendations.js` loads the current point value and calculates the percentage display using a sigmoid function. An estimated percentage contribution is shown only when Ollama returns a point delta; the UI calculates the difference between the sigmoid values before and after that delta. This estimate comes from the LLM output; it is not part of the actual Rebuild point calculation.
 
-Die Empfehlungskarten sind Alternativen für dasselbe freie Fenster. Die UI zeigt daher bei jeder Karte dieselbe Fensterzeit und 30 Minuten an. Bei mehreren Vorschlägen wächst die grüne Karte in der Höhe.
+Recommendation cards are alternatives for the same free slot. The UI therefore shows the same time window and 30-minute duration on each card. When there are several suggestions, the green card grows vertically.

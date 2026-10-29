@@ -1,13 +1,13 @@
-# Aktivität
+# Activity
 
-## Komponentenfluss
+## Component flow
 
-Aktivitätseinträge werden zusammen mit den täglichen Check-ins erfasst. `server.py` validiert Name und Dauer, löst den Namen gegen den Aktivitätskatalog auf und speichert den Eintrag in `data/user/user.db`. `/api/activity/summary` stellt Tageswerte und Verlauf bereit; `/activity` und `web/activity.js` rendern die Darstellung.
+Activity entries are recorded with daily check-ins. `server.py` validates the name and duration, matches the name against the activity catalog, and stores the entry in `data/user/user.db`. `/api/activity/summary` provides daily values and history; `/activity` and `web/activity.js` render them.
 
-`core/input_vector.py` baut einen Vektor aus dem Aktivitätskatalog und ruft das Aktivitätsnetz aus `core/ai/ai.py` auf. Wenn kein Modellwert verfügbar ist, wird der Score des Katalogeintrags genutzt. `activity_impact` aus `data/ai_konstanten/health.db` bildet den Modellscore auf Rebuild-Punkte ab.
+`core/input_vector.py` builds a vector from the activity catalog and calls the activity network in `core/ai/ai.py`. If no model value is available, it uses the catalog entry's score. `activity_impact` in `data/ai_konstanten/health.db` maps the model score to Rebuild points.
 
-Die Dauer gewichtet den Impact logarithmisch relativ zu 30 Minuten: `log1p(minuten / 30) / log(2)`. Das ist ein interner Gewichtungsfaktor, keine direkte Messung von Fitness oder Kalorien.
+Duration weights the impact logarithmically relative to 30 minutes: `log1p(minutes / 30) / log(2)`. This is an internal weighting factor, not a direct measure of fitness or calories.
 
-## Abgrenzung zu Empfehlungen
+## How recommendations differ
 
-Gespeicherte Aktivitäten verwenden die erfasste Dauer. Automatische Empfehlungen sind getrennt: Sie schlagen Alternativen für ein festes freies 30-Minuten-Fenster vor. Ein lokaler Fallback kann Hobbynamen übernehmen, ohne deren Fitnessbezug zu bewerten.
+Logged activities use the duration entered by the user. Automatic recommendations are separate: they suggest alternatives for a fixed, free 30-minute slot. A local fallback may use hobby names without evaluating whether they involve fitness.

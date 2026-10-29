@@ -1,7 +1,7 @@
-<!DOCTYPE html>
-<html>
+﻿<!DOCTYPE html>
+<html lang="en">
     <head>
-        <title>Checkup</title>
+        <title>Check-in</title>
     </head>
     <body>
         <main>
@@ -9,44 +9,44 @@
             <section id="auth" class="auth-panel">
                 <div id="login" class="auth-mode">
                     <div id="login_message">
-                        <h1>Login</h1>
-                        <p>Login mit genau einem Identifikator.</p>
+                        <h1>Sign in</h1>
+                        <p>Sign in with one identifier.</p>
                     </div>
 
                     <fieldset>
-                        <legend>Login mit</legend>
+                        <legend>Sign in with</legend>
                         <label>
                             <input type="radio" name="login_method" value="username" checked onchange="updateLoginFields()" />
-                            Benutzername
+                            Username
                         </label>
                         <label>
                             <input type="radio" name="login_method" value="email" onchange="updateLoginFields()" />
-                            E-Mail
+                            Email
                         </label>
                     </fieldset>
-                    <input type="text" id="username_input" placeholder="Benutzername" required />
-                    <input type="email" id="email_input" placeholder="E-Mail-Adresse" hidden />
-                    <input type="password" id="pwd_input" placeholder="Passwort" required />
-                    <button onclick="loginUser()">Login</button>
+                    <input type="text" id="username_input" placeholder="Username" required />
+                    <input type="email" id="email_input" placeholder="Email address" hidden />
+                    <input type="password" id="pwd_input" placeholder="Password" required />
+                    <button onclick="loginUser()">Sign in</button>
                     <p id="login_status" aria-live="polite"></p>
-                    <p>Du hast noch kein Konto? <button type="button" onclick="load_r_or_l('register')">Registrieren</button></p>
+                    <p>Don't have an account yet? <button type="button" onclick="load_r_or_l('register')">Create an account</button></p>
                 </div>
 
                 <div id="register" class="auth-mode" hidden>
                     <div id="register_message">
-                        <h1>Register</h1>
-                        <p>Erstelle ein neues Konto.</p>
+                        <h1>Create account</h1>
+                        <p>Create a new account.</p>
                     </div>
 
-                    <input type="text" id="usr_input_reg" placeholder="Benutzername (Pflichtfeld)" required />
-                    <input type="email" id="email_input_reg" placeholder="E-Mail-Adresse (Pflichtfeld)" required />
-                    <input type="tel" id="phone_input_reg" placeholder="Telefonnummer (optional)" />
-                    <input type="password" id="pwd_input_reg" placeholder="Passwort" required />
-                    <button onclick="registerUser()">Register</button>
-                    <p>Du hast bereits ein Konto? <button type="button" onclick="load_r_or_l('login')">Zum Login</button></p>
+                    <input type="text" id="usr_input_reg" placeholder="Username (required)" required />
+                    <input type="email" id="email_input_reg" placeholder="Email address (required)" required />
+                    <input type="tel" id="phone_input_reg" placeholder="Phone number (optional)" />
+                    <input type="password" id="pwd_input_reg" placeholder="Password" required />
+                    <button onclick="registerUser()">Create account</button>
+                    <p>Already have an account? <button type="button" onclick="load_r_or_l('login')">Sign in</button></p>
                 </div>
             </section>
         </main>
-        <script src="/static/main.js"></script>
+        <script src="/static/main.js?v=20261029-english-ui2"></script>
     </body>
 </html>

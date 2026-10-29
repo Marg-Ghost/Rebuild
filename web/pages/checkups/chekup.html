@@ -1,68 +1,68 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Tages-Check-in | Rebuild</title>
+        <title>Daily check-in | Rebuild</title>
         <link rel="stylesheet" href="/static/styles/main.css">
-        <link rel="stylesheet" href="/static/styles/checkup.css?v=20261009-survey">
+        <link rel="stylesheet" href="/static/styles/checkup.css?v=20261029-plain-bg">
     </head>
     <body class="checkup-page">
         <main class="checkup-shell">
             <header class="checkup-header">
                 <div>
-                    <p class="eyebrow">Rebuild / Dein Tag</p>
-                    <h1>Was ist seit deinem letzten Check-in passiert?</h1>
-                    <p class="intro">Ein kurzer Zwischenstand zu Essen und Bewegung – ohne Druck, einfach so genau wie möglich.</p>
+                    <p class="eyebrow">Rebuild / Your day</p>
+                    <h1>What has happened since your last check-in?</h1>
+                    <p class="intro">A quick update on food and activity—no pressure, just be as accurate as you can.</p>
                 </div>
-                <span class="step-count">Heute · <span id="checkup-number">1</span> / 5</span>
+                <span class="step-count">Today · <span id="checkup-number">1</span> / 5</span>
             </header>
-            <p class="checkup-summary">Heute: <span id="checkup_date">-</span> · Deine Angaben bleiben deinem Konto zugeordnet.</p>
+            <p class="checkup-summary">Today: <span id="checkup_date">-</span> · Your entries are saved to your account.</p>
             <form class="checkup-form">
             <section id="food" class="checkup-card">
-                <h2>Ernährung</h2>
-                <p class="question-help">Was hast du seit deinem letzten Check-in gegessen oder getrunken?</p>
-                <p>Aktueller Durchschnitt: <span id="food_total">-</span></p>
+                <h2>Food</h2>
+                <p class="question-help">What have you eaten or drunk since your last check-in?</p>
+                <p>Current average: <span id="food_total">-</span></p>
                 <div id="food_current" class="entry-list">
                     <div class="entry-row food">
                         <div class="catalog-control">
-                            <input class="food_input" type="text" data-kind="food" aria-label="Lebensmittel" aria-autocomplete="list" aria-expanded="false" placeholder="Lebensmittel auswählen" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
+                            <input class="food_input" type="text" data-kind="food" aria-label="Food" aria-autocomplete="list" aria-expanded="false" placeholder="Choose food" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
                             <div class="catalog-options" role="listbox" hidden></div>
                         </div>
-                        <button type="button" onclick="remove_note(this)" aria-label="Eintrag entfernen">&times;</button>
+                        <button type="button" onclick="remove_note(this)" aria-label="Remove entry">&times;</button>
                         <output class="reference-preview" aria-live="polite"></output>
                     </div>
                 </div>
-                <button class="add-button" type="button" onclick="add_note('food')">+ Essen hinzufügen</button>
+                <button class="add-button" type="button" onclick="add_note('food')">+ Add food</button>
             </section>
 
             <section id="outdoor_activity" class="checkup-card">
-                <h2>Bewegung</h2>
-                <p class="question-help">Welche Aktivitäten hast du seit dem letzten Check-in gemacht?</p>
-                <p>Aktueller Durchschnitt: <span id="activity_total">-</span></p>
+                <h2>Activity</h2>
+                <p class="question-help">What activities have you done since your last check-in?</p>
+                <p>Current average: <span id="activity_total">-</span></p>
                 <div id="activity_current" class="entry-list">
                     <div class="entry-row activity">
                         <div class="catalog-control">
-                            <input class="act_input" type="text" data-kind="activity" aria-label="Aktivität" aria-autocomplete="list" aria-expanded="false" placeholder="Aktivität auswählen" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
+                            <input class="act_input" type="text" data-kind="activity" aria-label="Activity" aria-autocomplete="list" aria-expanded="false" placeholder="Choose activity" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
                             <div class="catalog-options" role="listbox" hidden></div>
                         </div>
-                        <label class="activity-duration">Dauer (Minuten)
+                        <label class="activity-duration">Duration (minutes)
                             <input type="number" data-activity-duration min="1" max="1440" value="30" inputmode="numeric">
                         </label>
-                        <button type="button" onclick="remove_note(this)" aria-label="Eintrag entfernen">&times;</button>
+                        <button type="button" onclick="remove_note(this)" aria-label="Remove entry">&times;</button>
                         <output class="reference-preview" aria-live="polite"></output>
                     </div>
                 </div>
-                <button class="add-button" type="button" onclick="add_note('activity')">+ Aktivität hinzufügen</button>
+                <button class="add-button" type="button" onclick="add_note('activity')">+ Add activity</button>
             </section>
 
-            <button class="submit-button" type="button" onclick="send_daily_checkup()" disabled>Check-in speichern</button>
+            <button class="submit-button" type="button" onclick="send_daily_checkup()" disabled>Save check-in</button>
             <p id="checkup_status" role="status" aria-live="polite"></p>
             </form>
             <div class="checkup-actions">
-                <a href="/home">← Zurück zum Überblick</a>
+                <a href="/home">← Back to overview</a>
             </div>
         </main>
-        <script src="/static/main.js?v=20261004-five-checkups"></script>
+        <script src="/static/main.js?v=20261029-english-ui2"></script>
     </body>
 </html>

@@ -1,65 +1,65 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f2f4f1">
-    <title>Empfehlungen | Rebuild</title>
-    <link rel="stylesheet" href="/static/styles/main.css?v=20261025-browser-reminders">
+    <title>Recommendations | Rebuild</title>
+    <link rel="stylesheet" href="/static/styles/main.css?v=20261029-feature-alignment">
 </head>
 <body class="dashboard-page home-dashboard recommendations-page">
     <header class="dashboard-topbar">
-        <a class="brand" href="/home" aria-label="Rebuild Übersicht"><img class="brand-mark" src="/static/assets/logo.svg" alt=""><span>Rebuild</span></a>
-        <nav class="top-navigation" aria-label="Hauptnavigation">
-            <a href="/home">Übersicht</a>
-            <a class="active" href="/recommendations" aria-current="page">Empfehlungen</a>
-            <a href="/llm">KI-Assistent</a>
-            <a href="/kalender">Kalender</a>
+        <a class="brand" href="/home" aria-label="Rebuild overview"><img class="brand-mark" src="/static/assets/logo.svg" alt=""><span>Rebuild</span></a>
+        <nav class="top-navigation" aria-label="Main navigation">
+            <a href="/home">Overview</a>
+            <a class="active" href="/recommendations" aria-current="page">Recommendations</a>
+            <a href="/llm">AI assistant</a>
+            <a href="/kalender">Calendar</a>
         </nav>
-        <div class="user-chip" aria-label="Angemeldeter Benutzer"><span class="user-avatar" aria-hidden="true">R</span><span id="recommendation-user">Dein Bereich</span></div>
+        <div class="user-chip" aria-label="Signed-in user"><span class="user-avatar" aria-hidden="true">R</span><span id="recommendation-user">Your space</span></div>
     </header>
 
     <main class="dashboard-shell home-shell">
         <section class="home-welcome">
-            <p class="eyebrow">PERSÖNLICH &amp; UMSETZBAR</p>
-            <h1>Empfehlungen</h1>
-            <p>Du siehst, welches deiner Hobbys in einen echten freien Zeitraum passt und welchen geschätzten Beitrag die Aktivität zum Healthscore haben könnte. Der Prozentbeitrag ist eine Modellschätzung, keine garantierte Wirkung.</p>
+            <p class="eyebrow">PERSONAL &amp; PRACTICAL</p>
+            <h1>Recommendations</h1>
+            <p>See which of your hobbies fits into a real free-time slot and the estimated contribution it could make to your health score. This percentage is a model estimate, not a guaranteed result.</p>
         </section>
         <div class="home-components-grid">
             <section class="home-component home-balance" aria-labelledby="recommendation-health-title">
-                <div class="home-component-heading"><div><p class="eyebrow">DEINE SIGNALE</p><h2 id="recommendation-health-title">Healthscore</h2></div></div>
-                <div class="health-value"><strong id="health-percent">--%</strong><span id="health-score">Punkte werden geladen</span></div>
-                <p class="recommendation-note">Die Prozentanzeige wird mit einer Sigmoidfunktion berechnet. Kalibrierung: 400 Punkte ≈ 10 %, 1.500 Punkte ≈ 99 %. Orientierungswert, keine medizinische Bewertung.</p>
+                <div class="home-component-heading"><div><p class="eyebrow">YOUR SIGNALS</p><h2 id="recommendation-health-title">Health score</h2></div></div>
+                <div class="health-value"><strong id="health-percent">--%</strong><span id="health-score">Loading score</span></div>
+                <p class="recommendation-note">The percentage uses a sigmoid function. Calibration: 400 points ≈ 10%, 1,500 points ≈ 99%. For guidance only, not a medical assessment.</p>
             </section>
             <section class="home-component wellbeing-panel recommendations-wellbeing" aria-labelledby="wellbeing-title">
                 <div>
-                    <p class="eyebrow">DEIN TAGESCHECK</p>
-                    <h2 id="wellbeing-title">Belastung heute</h2>
-                    <p>Wie hoch waren heute Stress und Workload?</p>
+                    <p class="eyebrow">YOUR DAILY CHECK-IN</p>
+                    <h2 id="wellbeing-title">Today's workload</h2>
+                    <p>How high were your stress and workload today?</p>
                 </div>
                 <form id="wellbeing-form">
                     <label for="stress-level">Stress <output id="stress-level-value">5</output>/10</label>
                     <input id="stress-level" name="stress_level" type="range" min="0" max="10" value="5">
                     <label for="workload-level">Workload <output id="workload-level-value">5</output>/10</label>
                     <input id="workload-level" name="workload_level" type="range" min="0" max="10" value="5">
-                    <button class="text-link" type="submit">Speichern</button>
+                    <button class="text-link" type="submit">Save</button>
                 </form>
-                <p id="wellbeing-result" role="status" aria-live="polite">Noch keine Einschätzung für heute gespeichert.</p>
-                <small>Orientierungswert, keine Diagnose.</small>
+                <p id="wellbeing-result" role="status" aria-live="polite">No assessment saved for today yet.</p>
+                <small>For guidance only, not a diagnosis.</small>
             </section>
             <section class="home-component home-suggestion recommendation-panel" aria-labelledby="recommendation-title">
-                <div class="panel-heading"><span class="spark-mark" aria-hidden="true">✳</span><div><p class="eyebrow">PASSEND ZU HOBBYS &amp; FREIER ZEIT</p><h2 id="recommendation-title">Aktivitätsvorschläge</h2></div></div>
+                <div class="panel-heading"><span class="spark-mark" aria-hidden="true">✳</span><div><p class="eyebrow">MATCHED TO YOUR HOBBIES &amp; FREE TIME</p><h2 id="recommendation-title">Activity suggestions</h2></div></div>
                 <div id="recommendation-list" class="recommendation-list">
-                    <p id="recommendation-text" class="recommendation-text">Deine Empfehlung wird vorbereitet …</p>
+                    <p id="recommendation-text" class="recommendation-text">Preparing your recommendation …</p>
                 </div>
                 <p id="recommendation-window" class="recommendation-note"></p>
-                <a class="text-link" id="discuss-recommendation" href="/llm" hidden>Mit Opty besprechen →</a>
-                <button class="text-link recommendation-retry" id="retry-recommendation" type="button" hidden>Erneut versuchen ↻</button>
+                <a class="text-link" id="discuss-recommendation" href="/llm" hidden>Discuss with Opty →</a>
+                <button class="text-link recommendation-retry" id="retry-recommendation" type="button" hidden>Try again ↻</button>
             </section>
         </div>
         <p id="recommendation-status" class="dashboard-status" role="status" aria-live="polite"></p>
     </main>
-    <script src="/static/recommendations.js?v=20261025-recommendations" defer></script>
-        <script src="/static/reminders.js?v=20261025-2h-demo"></script>
+    <script src="/static/recommendations.js?v=20261029-english-ui2" defer></script>
+        <script src="/static/reminders.js?v=20261029-english-ui"></script>
     </body>
 </html>

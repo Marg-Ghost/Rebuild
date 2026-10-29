@@ -99,9 +99,7 @@
   min-height: 100vh;
   margin: 0;
   background-color: var(--paper);
-  background-image: linear-gradient(90deg, rgb(31 63 49 / 2%) 1px, transparent 1px),
-    linear-gradient(rgb(31 63 49 / 2%) 1px, transparent 1px);
-  background-size: 34px 34px;
+  background-image: none;
   color: var(--ink);
   font-family: "Bahnschrift", "Aptos", "Trebuchet MS", sans-serif;
 }
@@ -141,11 +139,7 @@
   display: block;
   width: 32px;
   height: 32px;
-  padding: 6px;
-  border-radius: 50%;
-  background: var(--forest);
   object-fit: contain;
-  filter: brightness(0) invert(1);
 }
 
 .top-navigation {
@@ -968,10 +962,9 @@
 }
 
 @media (max-width: 700px) {
-  .dashboard-topbar { min-height: 64px; padding: 0 18px; }
-  .top-navigation { gap: 14px; height: 64px; }
-  .top-navigation a { font-size: 11px; }
-  .top-navigation a:first-child { display: none; }
+  .dashboard-topbar { min-height: 64px; gap: 8px; padding: 0 12px; }
+  .top-navigation { gap: clamp(5px, 2vw, 12px); height: 64px; }
+  .top-navigation a { font-size: clamp(9px, 2.7vw, 11px); white-space: nowrap; }
   .user-chip > span:not(.user-avatar) { display: none; }
   .browser-reminder-toggle { width: 36px; padding: 7px; overflow: hidden; font-size: 0; }
   .browser-reminder-toggle::before { content: "◷"; font-size: 17px; }

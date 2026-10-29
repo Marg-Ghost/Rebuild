@@ -1,17 +1,17 @@
 const checkupCatalog = { food: [], activity: [] };
 const pendingCatalogResolutions = new WeakMap();
 const catalogVectorLabels = {
-    food: ['Eiweiß (g)', 'Fett (g)', 'Zucker (g)', 'Kohlenhydrate (g)', 'Ballaststoffe (g)', 'Wasser (g)', 'Makronährstoffe (g)', 'Mikronährstoffe'],
-    activity: ['Energie (kcal/30 min)', 'Cardio', 'Kraft', 'Beweglichkeit', 'Koordination', 'Stressabbau', 'Gelenkbelastung', 'Verletzungsrisiko']
+    food: ['Protein (g)', 'Fat (g)', 'Sugar (g)', 'Carbohydrates (g)', 'Fiber (g)', 'Water (g)', 'Macronutrients (g)', 'Micronutrients'],
+    activity: ['Energy (kcal/30 min)', 'Cardio', 'Strength', 'Flexibility', 'Coordination', 'Stress relief', 'Joint strain', 'Injury risk']
 };
 
-async function loadCheckupCatalog() {
+async function loadCheck-inCatalog() {
     const status = document.getElementById('checkup_status');
     const submitButton = document.querySelector('.submit-button');
     try {
         const response = await fetch('/api/checkup/catalog', { credentials: 'include' });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Referenzdaten konnten nicht geladen werden');
+        if (!response.ok) throw new Error('Could not load reference data.');
 
         Object.assign(checkupCatalog, data);
         document.querySelectorAll('.catalog-control input[data-kind]').forEach((input) => {
@@ -28,16 +28,16 @@ function add_note(node_type) {
     const node = document.getElementById(`${node_type}_current`);
     if (!node || !['activity', 'food'].includes(node_type)) return;
 
-    const label = node_type === 'food' ? 'Lebensmittel oder Mahlzeit' : 'Aktivität im Freien';
-    const placeholder = node_type === 'food' ? 'z. B. Frühstück, Obst, Pasta' : 'z. B. Spaziergang, Radfahren';
+    const label = node_type === 'food' ? 'Food or meal' : 'Outdoor activity';
+    const placeholder = node_type === 'food' ? 'e.g. breakfast, fruit, pasta' : 'e.g. walking, cycling';
     node.insertAdjacentHTML('beforeend', `
         <div class="entry-row ${node_type}">
             <div class="catalog-control">
                 <input type="text" data-kind="${node_type}" aria-label="${label}" aria-autocomplete="list" aria-expanded="false" placeholder="${placeholder}" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
                 <div class="catalog-options" role="listbox" hidden></div>
             </div>
-            ${node_type === 'activity' ? '<label class="activity-duration">Dauer (Minuten)<input type="number" data-activity-duration min="1" max="1440" value="30" inputmode="numeric"></label>' : ''}
-            <button class="icon-button" type="button" aria-label="Eintrag entfernen" onclick="remove_note(this)">&times;</button>
+            ${node_type === 'activity' ? '<label class="activity-duration">Duration (minutes)<input type="number" data-activity-duration min="1" max="1440" value="30" inputmode="numeric"></label>' : ''}
+            <button class="icon-button" type="button" aria-label="Remove entry" onclick="remove_note(this)">&times;</button>
             <output class="reference-preview" aria-live="polite"></output>
         </div>`);
     node.lastElementChild.querySelector('input').focus();
@@ -75,7 +75,7 @@ async function registerUser() {
     const password = document.getElementById('pwd_input_reg').value;
 
     if (!email) {
-        alert('Bitte eine E-Mail-Adresse eingeben');
+        alert('Please enter an email address.');
         return;
     }
 
@@ -88,11 +88,11 @@ async function registerUser() {
 
     const result = await response.json();
     if (!response.ok) {
-        alert(result.detail || 'Registrierung fehlgeschlagen');
+        alert('Sign-up failed.');
         return;
     }
 
-    alert('Registrierung erfolgreich');
+    alert('Account created successfully.');
     load_r_or_l('login');
 }
 
@@ -103,11 +103,11 @@ async function loadCurrentUser() {
 
     const data = await response.json();
     if (!response.ok) {
-        console.log(data.detail || 'Nicht eingeloggt');
+        console.log(data.detail || 'Not signed in');
         return;
     }
 
-    document.getElementById('login_status').textContent = `Aktiver User: ${data.usr}`;
+    document.getElementById('login_status').textContent = `Signed in as: ${data.usr}`;
 }
 
 async function send_data() {
@@ -127,13 +127,13 @@ async function send_data() {
     const lateSleepInput = document.getElementById('sleep_count_input');
     const lateSleepCount = Number(lateSleepInput.value);
     if (!lateSleepInput.value.trim() || !Number.isInteger(lateSleepCount) || lateSleepCount < 0 || lateSleepCount > 7) {
-        status.textContent = 'Bitte gib eine ganze Anzahl zwischen 0 und 7 Nächten an.';
+        status.textContent = 'Enter a whole number from 0 to 7 nights.';
         lateSleepInput.focus();
         return;
     }
 
     submitButton.disabled = true;
-    if (status) status.textContent = 'Pruefe Eingaben und Referenzwerte ...';
+    if (status) status.textContent = 'Checking entries and reference values ...';
 
     try {
         const referenceInputs = Array.from(document.querySelectorAll('.entry-row input[data-kind]'));
@@ -143,7 +143,7 @@ async function send_data() {
             if (pending) await pending;
             else await resolveReferenceValue(input);
             if (!input.dataset.catalogName) {
-                throw new Error(input.dataset.resolveError || 'Ein Eintrag konnte nicht zugeordnet werden.');
+                throw new Error(input.dataset.resolveError || 'Could not match an entry to the catalog.');
             }
         }
     } catch (error) {
@@ -172,7 +172,7 @@ async function send_data() {
     };
 
     submitButton.disabled = true;
-    if (status) status.textContent = 'Speichere deine Angaben ...';
+    if (status) status.textContent = 'Saving your entries ...';
 
     try {
         const response = await fetch('/api/checkup_data', {
@@ -185,10 +185,10 @@ async function send_data() {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.detail || 'Speichern fehlgeschlagen');
+            throw new Error('Could not save.');
         }
 
-        if (status) status.textContent = 'Gespeichert. Willkommen bei Rebuild.';
+        if (status) status.textContent = 'Saved. Welcome to Rebuild.';
         window.location.href = '/index.html';
     } catch (error) {
         if (status) status.textContent = error.message;
@@ -218,7 +218,7 @@ async function loginUser() {
     const identifier = identifierInput.value.trim();
 
     if (!identifier) {
-        alert('Bitte einen Identifikator eingeben');
+        alert('Please enter a username or email address.');
         return;
     }
 
@@ -232,11 +232,11 @@ async function loginUser() {
 
         const result = await response.json();
         if (!response.ok) {
-            alert(result.detail || 'Login fehlgeschlagen');
+            alert('Sign-in failed.');
             return;
         }
 
-        document.getElementById('login_status').textContent = `Eingeloggt als: ${result.usr}`;
+        document.getElementById('login_status').textContent = `Signed in as: ${result.usr}`;
         const checkupResponse = await fetch('/register_checkup', {
             method: 'POST',
             credentials: 'include'
@@ -244,7 +244,7 @@ async function loginUser() {
         const checkupResult = await checkupResponse.json();
 
         if (!checkupResponse.ok) {
-            alert(checkupResult.detail || 'Checkup-Status konnte nicht geladen werden');
+            alert('Could not load check-in status.');
             return;
         }
 
@@ -258,7 +258,7 @@ async function loginUser() {
             window.location.href = '/home';
         }
     } catch (error) {
-        alert('Server nicht erreichbar');
+        alert('Server is unavailable.');
         console.error(error);
     }
 }
@@ -268,7 +268,7 @@ async function saveProfile() {
     const sickness = Array.from(document.querySelectorAll('input[name="sickness"]:checked'))
         .map((input) => input.value);
 
-    status.textContent = 'Speichere deine Angaben ...';
+    status.textContent = 'Saving your entries ...';
     try {
         const response = await fetch('/register_info', {
             method: 'POST',
@@ -285,7 +285,7 @@ async function saveProfile() {
         });
         const result = await response.json();
         if (!response.ok) {
-            throw new Error(result.detail || 'Speichern fehlgeschlagen');
+            throw new Error('Could not save.');
         }
         window.location.href = '/checkup_first';
     } catch (error) {
@@ -299,14 +299,14 @@ function confirm_register() {
 
 window.addEventListener('DOMContentLoaded', () => {
     if (document.querySelector('.catalog-control input[data-kind]')) {
-        loadCheckupCatalog();
-        loadDailyCheckupSummary();
+        loadCheck-inCatalog();
+        loadDailyCheck-inSummary();
     }
-    if (document.getElementById('sleep_checkup_status')) loadSleepCheckupState();
+    if (document.getElementById('sleep_checkup_status')) loadSleepCheck-inState();
 });
 
 function normalizeCatalogName(name) {
-    return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('de');
+    return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('en');
 }
 
 function closeCatalogMenu(input) {
@@ -343,7 +343,7 @@ function renderCatalogMenu(input) {
     if (matches.length === 0) {
         const emptyOption = document.createElement('div');
         emptyOption.className = 'catalog-empty';
-        emptyOption.textContent = 'Keine DB-Treffer. Beim Verlassen wird Ollama gefragt.';
+        emptyOption.textContent = 'No catalog matches. Ollama will be asked when you leave this field.';
         menu.appendChild(emptyOption);
     } else {
         for (const item of matches) {
@@ -429,9 +429,9 @@ function updateReferenceValue(input) {
 }
 
 function showReferenceValue(input, item, source) {
-    const prefix = source === 'ollama' ? `Ollama-Zuordnung: ${item.name}. ` : '';
+    const prefix = source === 'ollama' ? `Ollama match: ${item.name}. ` : '';
     input.closest('.entry-row').querySelector('.reference-preview').textContent =
-        `${prefix}DB (${item.category}) | Score: ${Number(item.score).toLocaleString('de-DE')}`;
+        `${prefix}Catalog (${item.category}) | Score: ${Number(item.score).toLocaleString('en-GB')}`;
 }
 
 async function resolveReferenceValue(input) {
@@ -456,7 +456,7 @@ async function resolveReferenceValue(input) {
         body: JSON.stringify({ kind, query })
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || 'Kein Referenzeintrag gefunden');
+    if (!response.ok) throw new Error('No matching catalog entry found.');
     if (input.dataset.queryVersion !== queryVersion || input.value.trim() !== query) return;
 
     input.value = data.item.name;
@@ -486,18 +486,18 @@ async function resolveAllReferenceInputs() {
         if (pending) await pending;
         else await resolveReferenceValue(input);
         if (!input.dataset.catalogName) {
-            throw new Error(input.dataset.resolveError || 'Ein Eintrag konnte nicht zugeordnet werden.');
+            throw new Error(input.dataset.resolveError || 'Could not match an entry to the catalog.');
         }
     }
 }
 
-async function loadDailyCheckupSummary() {
+async function loadDailyCheck-inSummary() {
     const dateElement = document.getElementById('checkup_date');
     if (!dateElement) return;
 
     const response = await fetch('/api/daily-checkup/status', { credentials: 'include' });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || 'Tageswerte konnten nicht geladen werden');
+    if (!response.ok) throw new Error('Could not load daily values.');
     dateElement.textContent = data.daily.date;
     document.getElementById('food_total').textContent = data.daily.food_score ?? '-';
     document.getElementById('activity_total').textContent = data.daily.activity_score ?? '-';
@@ -508,8 +508,8 @@ async function loadDailyCheckupSummary() {
     if (submitButton && completed >= 5) {
         submitButton.dataset.limitReached = 'true';
         submitButton.disabled = true;
-        submitButton.textContent = 'Alle fünf Check-ins erledigt';
-        document.getElementById('checkup_status').textContent = 'Du hast heute bereits alle fünf Check-ins abgeschlossen.';
+        submitButton.textContent = 'All five check-ins complete';
+        document.getElementById('checkup_status').textContent = 'You have already completed all five check-ins today.';
     }
 }
 
@@ -517,7 +517,7 @@ async function send_daily_checkup() {
     const status = document.getElementById('checkup_status');
     const submitButton = document.querySelector('.submit-button');
     submitButton.disabled = true;
-    if (status) status.textContent = 'Pruefe Food- und Activity-Eintraege ...';
+    if (status) status.textContent = 'Checking food and activity entries ...';
 
     try {
         const food = Array.from(document.querySelectorAll('#food_current input[data-kind="food"]'))
@@ -528,12 +528,12 @@ async function send_daily_checkup() {
             .map((input) => {
                 const duration = Number(input.closest('.entry-row').querySelector('[data-activity-duration]')?.value);
                 if (!Number.isInteger(duration) || duration < 1 || duration > 1440) {
-                    throw new Error('Bitte gib für jede Aktivität eine Dauer zwischen 1 und 1.440 Minuten an.');
+                    throw new Error('Enter a duration from 1 to 1,440 minutes for each activity.');
                 }
                 return { name: input.dataset.catalogName || input.value.trim(), duration_minutes: duration };
             });
         if (activity.reduce((sum, item) => sum + item.duration_minutes, 0) > 1440) {
-            throw new Error('Die gesamte Aktivitätsdauer darf 1.440 Minuten nicht überschreiten.');
+            throw new Error('Total activity duration cannot exceed 1,440 minutes.');
         }
         const response = await fetch('/api/daily-checkup', {
             method: 'POST',
@@ -542,9 +542,9 @@ async function send_daily_checkup() {
             body: JSON.stringify({ food, activity })
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Checkup konnte nicht gespeichert werden');
+        if (!response.ok) throw new Error('Could not save the check-in.');
 
-        if (status) status.textContent = `Check-in ${data.checkup_number} von 5 wird ausgewertet.`;
+        if (status) status.textContent = `Check-in ${data.checkup_number} of 5 is being processed.`;
         window.location.href = '/index.html';
     } catch (error) {
         if (status) status.textContent = error.message;
@@ -552,32 +552,32 @@ async function send_daily_checkup() {
     }
 }
 
-async function loadSleepCheckupState() {
+async function loadSleepCheck-inState() {
     const status = document.getElementById('sleep_checkup_status');
     try {
         const response = await fetch('/api/sleep-checkup', { credentials: 'include' });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Schlafstatus konnte nicht geladen werden');
+        if (!response.ok) throw new Error('Could not load sleep status.');
         const weeklySummary = document.getElementById('sleep_week_summary');
         if (weeklySummary) {
-            weeklySummary.textContent = `In den letzten 7 Tagen: ${data.late_nights_last_week}/7 Nächte nach Mitternacht.`;
+            weeklySummary.textContent = `In the past 7 days: ${data.late_nights_last_week}/7 nights after midnight.`;
         }
         if (data.status === 'pending') {
-            status.textContent = 'Der Check-in bleibt offen. Trage die Schlafstunden ein, sobald du geschlafen hast.';
+            status.textContent = 'This check-in remains open. Enter your sleep hours once you have slept.';
         }
     } catch (error) {
         status.textContent = error.message;
     }
 }
 
-async function submitSleepCheckup(action) {
+async function submitSleepCheck-in(action) {
     const status = document.getElementById('sleep_checkup_status');
     const payload = { action };
     if (action === 'slept') {
         const hours = document.getElementById('sleep_hours').value;
         const startTime = document.getElementById('sleep_start_time').value;
         if (!hours || !startTime) {
-            status.textContent = 'Bitte Schlafstunden und Einschlafzeit angeben.';
+            status.textContent = 'Enter your sleep hours and bedtime.';
             return;
         }
         payload.sleep_hours = Number(hours);
@@ -592,9 +592,9 @@ async function submitSleepCheckup(action) {
             body: JSON.stringify(payload)
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Schlafstatus konnte nicht gespeichert werden');
+        if (!response.ok) throw new Error('Could not save sleep status.');
         if (action === 'not_slept') {
-            status.textContent = 'Gespeichert. Der erste Check-in bleibt offen, bis du deinen Schlaf einträgst.';
+            status.textContent = 'Saved. Your first check-in remains open until you log your sleep.';
             return;
         }
         window.location.href = '/checkup';
@@ -612,5 +612,5 @@ Object.assign(window, {
     remove_note,
     confirm_register,
     send_daily_checkup,
-    submitSleepCheckup
+    submitSleepCheck-in
 });

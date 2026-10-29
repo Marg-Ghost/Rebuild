@@ -9,7 +9,7 @@ function renderBrainHistory(history) {
 
     if (values.length === 0) {
         path.setAttribute('d', '');
-        caption.textContent = 'Dein Verlauf erscheint nach den ersten Schlaf-Check-ins.';
+        caption.textContent = 'Your history will appear after your first sleep check-ins.';
         return;
     }
 
@@ -27,8 +27,8 @@ function renderBrainHistory(history) {
     const firstDate = new Date(`${values[0].date}T00:00:00`);
     const formattedDate = Number.isNaN(firstDate.getTime())
         ? values[0].date
-        : firstDate.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
-    caption.textContent = `Schlafqualität seit ${formattedDate} · ${values.length} Check-ins`;
+        : firstDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    caption.textContent = `Sleep quality since ${formattedDate} · ${values.length} Check-ins`;
 }
 
 async function loadBrainDashboard() {
@@ -37,21 +37,21 @@ async function loadBrainDashboard() {
     try {
         const response = await fetch('/api/brain/summary', { credentials: 'include' });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Schlafdaten konnten nicht geladen werden.');
+        if (!response.ok) throw new Error('Could not load sleep data.');
 
         const sleep = data.sleep || {};
         byId('brain-sleep-hours').textContent = sleep.sleep_hours === null || sleep.sleep_hours === undefined
             ? '--'
-            : Number(sleep.sleep_hours).toLocaleString('de-DE', { maximumFractionDigits: 1 });
+            : Number(sleep.sleep_hours).toLocaleString('en-GB', { maximumFractionDigits: 1 });
         byId('brain-late-nights').textContent = `${sleep.late_nights_last_week ?? 0}/7`;
 
         byId('brain-sleep-counter').textContent = Number.isFinite(Number(sleep.sleep_quality))
-            ? Math.round(Number(sleep.sleep_quality)).toLocaleString('de-DE')
+            ? Math.round(Number(sleep.sleep_quality)).toLocaleString('en-GB')
             : '--';
         renderBrainHistory(data.history);
         status.textContent = sleep.status === 'complete'
-            ? 'Dein heutiger Schlaf-Check-in ist gespeichert.'
-            : 'Dein Schlaf-Check-in für heute steht noch aus.';
+            ? 'Your sleep check-in for today is saved.'
+            : 'Your sleep check-in for today is still due.';
     } catch (error) {
         status.textContent = error.message;
     }

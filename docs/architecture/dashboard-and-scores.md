@@ -1,17 +1,17 @@
-# Übersicht und Scores
+# Overview and Scores
 
-## Übersicht
+## Overview
 
-`/home` liefert `web/pages/main/index.html`. `web/index.js` lädt parallel `/api/get_health_data/index`, `/api/daily-checkup/status` und `/api/me`, aktualisiert Verlauf und Fortschritt und fragt anschließend `/api/dashboard/recommendation` ab. Lang laufende Check-in-Auswertungen werden über einen Status-Polling-Mechanismus nachgeladen.
+`/home` serves `web/pages/main/index.html`. `web/index.js` loads `/api/get_health_data/index`, `/api/daily-checkup/status`, and `/api/me` in parallel, updates history and progress, and then requests `/api/dashboard/recommendation`. Long-running check-in scoring is refreshed through status polling.
 
-## Rebuild-Punkte
+## Rebuild points
 
-`data/user/db_interaction.py` liefert heutige Check-in-Werte und den Verlauf. Beim Speichern eines Check-ins ruft `server.py` die Bewertungslogik in `core/input_vector.py` auf. Sie kombiniert Schlaf, Ernährung und Aktivität. Essen und Aktivität werden über die Netze in `core/ai/ai.py` bewertet; Referenzvektoren, Katalog-Scores und Impacts kommen aus `data/ai_konstanten/health.db`. Wenn Gewichte nicht verfügbar sind, kann die Logik auf den Katalog-Score zurückfallen.
+`data/user/db_interaction.py` provides today's check-in values and history. When a check-in is saved, `server.py` calls the scoring logic in `core/input_vector.py`, which combines sleep, nutrition, and activity. Food and activity are scored by the networks in `core/ai/ai.py`; reference vectors, catalog scores, and impacts come from `data/ai_konstanten/health.db`. If weights are unavailable, the logic can fall back to the catalog score.
 
-Der Dashboardwert ist der Mittelwert heutiger gespeicherter Rebuild-Punkte, nicht Ollama-Ausgabe und keine medizinisch validierte Diagnose. Die Empfehlungen-Seite bildet diesen Punktewert zusätzlich mit einer Sigmoidfunktion auf Prozent ab (`web/recommendations.js`).
+The dashboard value is the average of today's saved Rebuild points. It is not an Ollama output or a medically validated diagnosis. The Recommendations page also maps this point value to a percentage using a sigmoid function (`web/recommendations.js`).
 
-## Belastungs-/Erholungswert
+## Workload and recovery score
 
-Der separate Endpunkt `/api/efficiency-score` lädt und speichert die Einschätzung. `data/user/health_score.py` rechnet lokal: Schlafkomponente 40 %, Stress-Selbsteinschätzung 30 % und Workload-Selbsteinschätzung 30 %. Eingaben und Ergebnis werden in `efficiency_scores` nutzerbezogen gespeichert.
+The separate `/api/efficiency-score` endpoint loads and saves this assessment. `data/user/health_score.py` calculates it locally: sleep is weighted at 40%, self-reported stress at 30%, and self-reported workload at 30%. Inputs and results are stored per user in `efficiency_scores`.
 
-Die Oberfläche sitzt am unteren Rand der Empfehlungen-Seite. `web/recommendations.js` lädt den letzten Wert und sendet Änderungen; die Berechnung benötigt keine LLM-Anfrage. Der Wert ist eine grobe Selbsteinschätzung, kein validierter Test.
+The form appears near the bottom of the Recommendations page. `web/recommendations.js` loads the latest value and submits changes; the calculation does not require an LLM request. This is a rough self-assessment, not a validated test.

@@ -1,13 +1,13 @@
-# Ernährung und Stomach
+# Nutrition and Stomach
 
-## Komponentenfluss
+## Component flow
 
-Nach einem abgeschlossenen Schlaf-Check-in kann der Browser bis zu fünf Essen-/Bewegungs-Check-ins pro Tag absenden. Die Ernährungswerte kommen aus `/api/checkup/catalog` oder werden über `/api/checkup/resolve` einem Katalogeintrag zugeordnet. `server.py` speichert die aufgelösten Werte asynchron über `data/user/db_interaction.py`.
+After completing a sleep check-in, the browser can submit up to five food/activity check-ins per day. Nutrition values come from `/api/checkup/catalog` or are matched to a catalog entry through `/api/checkup/resolve`. `server.py` asynchronously stores the resolved values through `data/user/db_interaction.py`.
 
-Für jeden Ernährungseintrag erstellt `core/input_vector.py` einen Merkmalsvektor und wertet ihn mit dem Ernährungsnetz aus `core/ai/ai.py` aus. Falls das Netz keinen Wert liefert, wird der gespeicherte Katalog-Score aus `data/ai_konstanten/health.db` verwendet. Die Impact-Tabelle übersetzt den Score in einen Beitrag zum Rebuild-Punktewert.
+For each food entry, `core/input_vector.py` builds a feature vector and scores it with the nutrition network in `core/ai/ai.py`. If the network does not return a value, the saved catalog score from `data/ai_konstanten/health.db` is used. The impact table maps the score to a contribution to the Rebuild point value.
 
-`/api/food/summary` liefert Tageswerte und Verlauf. `/stomach` und `web/food.js` stellen diese als Food-/Ernährungsübersicht dar.
+`/api/food/summary` provides daily values and history. `/stomach` and `web/food.js` display the nutrition overview.
 
-## Grenzen
+## Limitations
 
-Ollama kann beim Auflösen von Freitext helfen, ist aber nicht der eigentliche Rechenweg des Ernährungsscores. Unbekannte Katalogeinträge werden nicht automatisch als trainierte Fakten behandelt. Score und Impacts sind interne Modellwerte, keine Ernährungsberatung.
+Ollama can help match free text, but it is not the calculation path for the nutrition score itself. Unknown catalog entries are not automatically treated as trained facts. Scores and impacts are internal model values, not nutrition advice.

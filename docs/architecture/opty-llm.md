@@ -1,24 +1,24 @@
-# Opty: LLM, RAG, Prioritätsqueue und Datenbank
+# Opty: LLM, RAG, Priority Queue, and Data
 
-## Komponenten
+## Components
 
-- Oberfläche und Gesprächszustand im offenen Tab: `llm-support/llm.html`, `llm-support/llm.js`.
-- HTTP-Endpunkte und Sessionprüfung: `POST /api/llm/chat`, `POST /api/llm/conversation/clear` in `server.py`.
-- Queue und Ollama-Client: `llm-support/llm_communication.py` (`LlmRequestQueue`).
-- Kontextaufbereitung und Vektorsuche: `llm-support/vectordb.py`.
-- Nutzerdaten und persönliche Zusammenfassungen: `data/user/db_interaction.py`.
-- Allgemeine persistente Referenzen: Chroma-Verzeichnis `chroma_data/` und Collection `GhostReferenceV1`.
+- Interface and conversation state in the open tab: `llm-support/llm.html`, `llm-support/llm.js`.
+- HTTP endpoints and session checks: `POST /api/llm/chat`, `POST /api/llm/conversation/clear` in `server.py`.
+- Queue and Ollama client: `llm-support/llm_communication.py` (`LlmRequestQueue`).
+- Context preparation and vector search: `llm-support/vectordb.py`.
+- User data and personal summaries: `data/user/db_interaction.py`.
+- Persistent general references: the `chroma_data/` directory and `GhostReferenceV1` collection.
 
-## Anfrageablauf
+## Request flow
 
-1. Der Browser sendet Nachricht, sichtbaren Gesprächsverlauf und Session-Cookie an `/api/llm/chat`.
-2. `server.py` validiert Anzahl, Rollen und Länge der Nachrichten und übergibt eine nutzergebundene Anfrage an die Queue.
-3. Die Queue sortiert nach Priorität und stabiler Einfügereihenfolge: Nutzeranfrage (0), Empfehlung (1), Check-up (2), Zusammenfassung (3), Systemanfrage (4). Ein Worker verarbeitet die Requests nacheinander.
-4. Für normale Chats erstellt `vectordb.build_rag_context` einen Systemkontext aus dem Profil, Check-ins, Health-Verlauf, Effizienz-Scores, heutigen Kalenderdaten, persönlichen Erinnerungen und den ähnlichsten allgemeinen Chroma-Referenzen.
-5. Die Queue sendet Kontext, Gesprächsverlauf und Nutzernachricht an den konfigurierten Ollama-Client. Die Modelladresse und das Modell kommen aus `OLLAMA_HOST` und `OLLAMA_MODEL` beziehungsweise deren Auswahlfunktionen.
+1. The browser sends the message, visible conversation, and session cookie to `/api/llm/chat`.
+2. `server.py` validates the number, roles, and length of messages, then submits a user-scoped request to the queue.
+3. The queue sorts by priority and stable insertion order: user request (0), recommendation (1), check-in (2), summary (3), system request (4). One worker processes requests sequentially.
+4. For normal chats, `vectordb.build_rag_context` creates a system context from the profile, check-ins, health history, efficiency scores, today's calendar data, personal memories, and the most similar general Chroma references.
+5. The queue sends the context, conversation, and user message to the configured Ollama client. The model and server address come from `OLLAMA_HOST` and `OLLAMA_MODEL` or their selection functions.
 
-## Daten- und Speichergrenzen
+## Data and storage boundaries
 
-Die Chroma-Collection enthält den allgemeinen Referenzkorpus; sie ist keine persönliche Vektordatenbank pro Nutzer. Persönliche Zusammenfassungen werden in `llm_problem_memory` in der Nutzerdatenbank gespeichert und beim Kontextaufbau nur für den angemeldeten Nutzernamen abgefragt. Profil-, Health- und Kalenderdaten kommen ebenfalls aus nutzerbezogenen Datenbankabfragen.
+The Chroma collection contains the general reference corpus; it is not a separate personal vector database for each user. Personal summaries are stored in `llm_problem_memory` in the user database and loaded only for the signed-in username. Profile, health, and calendar data are also fetched through user-scoped database queries.
 
-Der sichtbare Chatverlauf liegt im Frontend-Zustand des geöffneten Browser-Tabs. Beim Speichern und Leeren sendet die UI den Verlauf an den Clear-Endpunkt; die Queue erstellt daraus eine Zusammenfassung und speichert diese nutzerbezogen. Das Modell kann ausfallen; Chat und generative Empfehlung sind dann nicht verfügbar oder verwenden den jeweils implementierten Fallback.
+The visible chat history remains in the open browser tab's frontend state. When the user saves and clears it, the UI sends the conversation to the clear endpoint; the queue creates a summary and stores it for that user. If the model is unavailable, chat and generative recommendations are unavailable or use their respective implemented fallbacks.

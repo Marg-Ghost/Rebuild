@@ -7,16 +7,16 @@ async function loadDailyFeature() {
         const response = await fetch('/api/daily-features', { credentials: 'include' });
         const data = await response.json();
         if (!response.ok) {
-            throw new Error(data.detail || 'Tageswerte konnten nicht geladen werden');
+            throw new Error('Could not load daily values');
         }
 
         const value = data[featureKey];
         valueElement.textContent = value === null
             ? '-'
-            : Number(value).toLocaleString('de-DE', { maximumFractionDigits: 2 });
+            : Number(value).toLocaleString('en-GB', { maximumFractionDigits: 2 });
         statusElement.textContent = data.checkup_count
-            ? `Durchschnitt aus ${data.checkup_count} Checkup(s) heute.`
-            : 'Noch keine Checkup-Daten fuer heute.';
+            ? `Average across ${data.checkup_count} check-in(s) today.`
+            : 'No check-in data for today yet.';
     } catch (error) {
         valueElement.textContent = '-';
         statusElement.textContent = error.message;

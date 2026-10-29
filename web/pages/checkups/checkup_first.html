@@ -1,72 +1,72 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Erster Checkup | Rebuild</title>
+    <title>First check-in | Rebuild</title>
     <link rel="stylesheet" href="/static/styles/main.css">
-    <link rel="stylesheet" href="/static/styles/checkup.css?v=20261009-survey">
+    <link rel="stylesheet" href="/static/styles/checkup.css?v=20261029-plain-bg">
 </head>
 <body class="checkup-page">
     <main class="checkup-shell">
         <header class="checkup-header">
             <div>
-                <p class="eyebrow">Rebuild / Startpunkt</p>
-                <h1>Wie sieht dein normaler Tag aus?</h1>
-                <p class="intro">Ein paar grobe Angaben reichen. Daraus kann Rebuild später passende Empfehlungen für dich ableiten.</p>
+                <p class="eyebrow">Rebuild / Getting started</p>
+                <h1>What does a typical day look like for you?</h1>
+                <p class="intro">A few estimates are enough. Rebuild can use them to tailor future recommendations to you.</p>
             </div>
-            <span class="step-count">Dein Startpunkt · 01 / 03</span>
+            <span class="step-count">Getting started · 01 / 03</span>
         </header>
 
         <form class="checkup-form">
             <section class="checkup-card" aria-labelledby="sleep-heading">
-                <h2 id="sleep-heading">Schlaf</h2>
-                <p class="question-help">Wie viele Stunden schläfst du an einem gewöhnlichen Tag?</p>
+                <h2 id="sleep-heading">Sleep</h2>
+                <p class="question-help">How many hours do you sleep on a typical day?</p>
                 <label class="sleep-control" for="sleep_input">
                     <input type="number" id="sleep_input" min="0" max="24" step="0.5" placeholder="z. B. 7.5" required>
-                    <span class="unit">Stunden</span>
+                    <span class="unit">Hours</span>
                 </label>
-                <label for="sleep_count_input">Wie oft bist du in den letzten 7 Tagen nach Mitternacht eingeschlafen?</label>
+                <label for="sleep_count_input">How many times did you fall asleep after midnight in the last 7 days?</label>
                 <input type="number" id="sleep_count_input" min="0" max="7" step="1" placeholder="z. B. 2" required>
-                <p class="question-help">Anzahl der Nächte von 0 bis 7.</p>
+                <p class="question-help">Number of nights, from 0 to 7.</p>
             </section>
 
             <section class="checkup-card" aria-labelledby="food-heading">
-                <h2 id="food-heading">Essen</h2>
-                <p class="question-help">Welche Lebensmittel oder Mahlzeiten gehören an einem normalen Tag dazu?</p>
+                <h2 id="food-heading">Food</h2>
+                <p class="question-help">What foods or meals are part of a typical day for you?</p>
                 <div id="food_current" class="entry-list">
                     <div class="entry-row food">
                         <div class="catalog-control">
-                            <input class="food_input" type="text" data-kind="food" aria-label="Lebensmittel oder Mahlzeit" aria-autocomplete="list" aria-expanded="false" placeholder="z. B. Frühstück, Obst, Pasta" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
+                            <input class="food_input" type="text" data-kind="food" aria-label="Food or meal" aria-autocomplete="list" aria-expanded="false" placeholder="e.g. breakfast, fruit, pasta" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
                             <div class="catalog-options" role="listbox" hidden></div>
                         </div>
-                        <button class="icon-button" type="button" aria-label="Eintrag entfernen" onclick="remove_note(this)">&times;</button>
+                        <button class="icon-button" type="button" aria-label="Remove entry" onclick="remove_note(this)">&times;</button>
                         <output class="reference-preview" aria-live="polite"></output>
                     </div>
                 </div>
-                <button class="add-button" type="button" onclick="add_note('food')">+ Essen hinzufügen</button>
+                <button class="add-button" type="button" onclick="add_note('food')">+ Add food</button>
             </section>
 
             <section class="checkup-card" aria-labelledby="activity-heading">
-                <h2 id="activity-heading">Bewegung</h2>
-                <p class="question-help">Welche Aktivität im Freien machst du an einem normalen Tag?</p>
+                <h2 id="activity-heading">Activity</h2>
+                <p class="question-help">What outdoor activity do you usually do?</p>
                 <div id="activity_current" class="entry-list">
                     <div class="entry-row activity">
                         <div class="catalog-control">
-                            <input class="act_input" type="text" data-kind="activity" aria-label="Aktivität im Freien" aria-autocomplete="list" aria-expanded="false" placeholder="z. B. Spaziergang, Radfahren" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
+                            <input class="act_input" type="text" data-kind="activity" aria-label="Outdoor activity" aria-autocomplete="list" aria-expanded="false" placeholder="e.g. walking, cycling" onfocus="openCatalogMenu(this)" onclick="openCatalogMenu(this)" oninput="updateReferenceValue(this)" onblur="handleReferenceBlur(this)" onkeydown="handleCatalogKeydown(event, this)">
                             <div class="catalog-options" role="listbox" hidden></div>
                         </div>
-                        <button class="icon-button" type="button" aria-label="Eintrag entfernen" onclick="remove_note(this)">&times;</button>
+                        <button class="icon-button" type="button" aria-label="Remove entry" onclick="remove_note(this)">&times;</button>
                         <output class="reference-preview" aria-live="polite"></output>
                     </div>
                 </div>
-                <button class="add-button" type="button" onclick="add_note('activity')">+ Aktivität hinzufügen</button>
+                <button class="add-button" type="button" onclick="add_note('activity')">+ Add activity</button>
             </section>
 
-            <button class="submit-button" type="button" onclick="confirm_register()">Checkup abschließen</button>
+            <button class="submit-button" type="button" onclick="confirm_register()">Complete check-in</button>
             <p id="checkup_status" role="status" aria-live="polite"></p>
         </form>
     </main>
-    <script src="/static/main.js?v=20260928-dropdown"></script>
+    <script src="/static/main.js?v=20261029-english-ui2"></script>
 </body>
 </html>

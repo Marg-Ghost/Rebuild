@@ -1,101 +1,101 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#f2f4f1">
-        <title>Übersicht | Rebuild</title>
-        <link rel="stylesheet" href="/static/styles/main.css?v=20261025-browser-reminders">
+        <title>Overview | Rebuild</title>
+        <link rel="stylesheet" href="/static/styles/main.css?v=20261029-feature-alignment">
     </head>
     <body class="dashboard-page home-dashboard">
         <header class="dashboard-topbar">
-            <a class="brand" href="/home" aria-label="Rebuild Übersicht">
+            <a class="brand" href="/home" aria-label="Rebuild overview">
                 <img class="brand-mark" src="/static/assets/logo.svg" alt="">
                 <span>Rebuild</span>
             </a>
-            <nav class="top-navigation" aria-label="Hauptnavigation">
-                <a class="active" href="/home" aria-current="page">Übersicht</a>
-                <a href="/recommendations">Empfehlungen</a>
-                <a href="/llm">KI-Assistent</a>
-                <a href="/kalender">Kalender</a>
+            <nav class="top-navigation" aria-label="Main navigation">
+                <a class="active" href="/home" aria-current="page">Overview</a>
+                <a href="/recommendations">Recommendations</a>
+                <a href="/llm">AI assistant</a>
+                <a href="/kalender">Calendar</a>
             </nav>
-            <div class="user-chip" id="dashboard-user" aria-label="Angemeldeter Benutzer">
+            <div class="user-chip" id="dashboard-user" aria-label="Signed-in user">
                 <span class="user-avatar" aria-hidden="true">O</span>
-                <span id="dashboard-username">Dein Bereich</span>
+                <span id="dashboard-username">Your space</span>
             </div>
         </header>
 
         <main class="dashboard-shell home-shell">
             <section class="home-welcome" aria-labelledby="welcome-title">
-                <p class="eyebrow" id="today-date">DEIN TAG AUF EINEN BLICK</p>
-                <h1 id="welcome-title">Wie geht es dir in deinem Alltag?</h1>
-                <p>Schule, Arbeit und Erholung gehören zusammen.</p>
+                <p class="eyebrow" id="today-date">YOUR DAY AT A GLANCE</p>
+                <h1 id="welcome-title">How are things going day to day?</h1>
+                <p>School, work, and rest are all connected.</p>
             </section>
 
-            <section class="home-feature-band" aria-label="Gesundheitsbereiche: Schlaf, Ernährung und Aktivität">
+            <section class="home-feature-band" aria-label="Health areas: sleep, nutrition, and activity">
                 <div class="home-feature-figure">
                     <span class="home-feature-halo home-feature-halo-outer" aria-hidden="true"></span>
                     <span class="home-feature-halo home-feature-halo-inner" aria-hidden="true"></span>
-                    <img src="/static/assets/body.svg" alt="Körpersilhouette mit drei verlinkten Gesundheitsbereichen">
-                    <a class="home-feature-pin home-feature-pin-sleep" href="/brain" aria-label="Schlaf öffnen"><span></span></a>
-                    <a class="home-feature-pin home-feature-pin-food" href="/stomach" aria-label="Ernährung öffnen"><span></span></a>
-                    <a class="home-feature-pin home-feature-pin-activity" href="/activity" aria-label="Aktivität öffnen"><span></span></a>
+                    <img src="/static/assets/body.svg" alt="Body silhouette with links to three health areas">
+                    <a class="home-feature-pin home-feature-pin-sleep" href="/brain" aria-label="Open sleep"><span></span></a>
+                    <a class="home-feature-pin home-feature-pin-food" href="/stomach" aria-label="Open nutrition"><span></span></a>
+                    <a class="home-feature-pin home-feature-pin-activity" href="/activity" aria-label="Open activity"><span></span></a>
                 </div>
                 <div class="home-feature-links">
-                    <p class="eyebrow">DEINE BEREICHE</p>
-                    <h2>Wähle einen Punkt am Körper</h2>
+                    <p class="eyebrow">YOUR AREAS</p>
+                    <h2>Choose an area on the body</h2>
                     <div>
-                        <a href="/brain"><img src="/static/assets/sleep.svg" alt=""><span>Schlaf</span><small>Erholung und Schlafverlauf</small></a>
-                        <a href="/stomach"><img src="/static/assets/food.svg" alt=""><span>Ernährung</span><small>Deine Food-Check-ins</small></a>
-                        <a href="/activity"><img src="/static/assets/activity.svg" alt=""><span>Aktivität</span><small>Bewegung und Verlauf</small></a>
+                        <a href="/brain"><img src="/static/assets/sleep.svg" alt=""><span>Sleep</span><small>Rest and sleep history</small></a>
+                        <a href="/stomach"><img src="/static/assets/food.svg" alt=""><span>Nutrition</span><small>Your food check-ins</small></a>
+                        <a href="/activity"><img src="/static/assets/activity.svg" alt=""><span>Activity</span><small>Activity and history</small></a>
                     </div>
                 </div>
             </section>
 
-            <div class="home-components-grid" aria-label="Deine Tagesübersicht">
+            <div class="home-components-grid" aria-label="Your daily overview">
                 <section class="home-component home-balance" aria-labelledby="health-title">
                     <div class="home-component-heading">
                         <div>
-                            <p class="eyebrow">DEINE SIGNALE</p>
-                            <h2 id="health-title">Tagesbilanz</h2>
+                            <p class="eyebrow">YOUR SIGNALS</p>
+                            <h2 id="health-title">Daily summary</h2>
                         </div>
                         <div class="health-explainer" tabindex="0" role="group" aria-describedby="health-tooltip">
                             <div class="health-value">
                                 <strong id="health_count">--</strong>
-                                <span>Rebuild-Punkte <span class="health-info-icon" aria-hidden="true">i</span></span>
+                                <span>Rebuild points <span class="health-info-icon" aria-hidden="true">i</span></span>
                             </div>
                             <div class="health-tooltip" id="health-tooltip" role="tooltip">
-                                <strong>Was bedeutet dieser Wert?</strong>
-                                <p>Ein interner Modellwert, keine medizinische Bewertung. Die Berechnung startet bei 1.000 Punkten und wird durch deine Check-ins verändert.</p>
-                                <p id="health-assessment">Die Bewertung wird geladen ...</p>
+                                <strong>What does this score mean?</strong>
+                                <p>An internal model score, not a medical assessment. It starts at 1,000 points and changes based on your check-ins.</p>
+                                <p id="health-assessment">Loading your score ...</p>
                                 <div class="health-scale" aria-hidden="true">
                                     <span class="health-scale-baseline" id="health-scale-baseline"></span>
                                     <span class="health-scale-current" id="health-scale-current"></span>
                                 </div>
                                 <div class="health-scale-labels" aria-hidden="true">
-                                    <span>Niedriger</span><span>Basis 1.000</span><span>Höher</span>
+                                    <span>Lower</span><span>Baseline 1,000</span><span>Higher</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="home-chart-wrap">
-                        <svg id="health-chart" role="img" aria-label="Verlauf der Rebuild-Punkte der letzten Tage" viewBox="0 0 720 190" preserveAspectRatio="none"></svg>
+                        <svg id="health-chart" role="img" aria-label="Rebuild point history for recent days" viewBox="0 0 720 190" preserveAspectRatio="none"></svg>
                     </div>
                     <div class="chart-footer">
-                        <span id="health-chart-caption">Dein Verlauf erscheint nach den ersten Check-ins.</span>
-                        <span class="chart-legend"><i aria-hidden="true"></i> Verlauf</span>
+                        <span id="health-chart-caption">Your history will appear after your first check-ins.</span>
+                        <span class="chart-legend"><i aria-hidden="true"></i> History</span>
                     </div>
                     <div class="home-checkin-row">
-                        <div class="progress-ring checkup-ring" id="checkup-ring" role="img" aria-label="Check-in Fortschritt">
+                        <div class="progress-ring checkup-ring" id="checkup-ring" role="img" aria-label="Check-in progress">
                             <span><strong id="checkupwert_today">0/5</strong><small>Check-ins</small></span>
                         </div>
                         <div class="home-checkin-details">
-                            <span id="checkup-status-label" class="status-pill">Wird geladen</span>
-                            <p id="sleep_checkup_today">Check-in wird geladen ...</p>
-                            <a class="text-link" id="start-checkup" href="/sleep-checkup">Check-in starten →</a>
+                            <span id="checkup-status-label" class="status-pill">Loading</span>
+                            <p id="sleep_checkup_today">Loading check-in status ...</p>
+                            <a class="text-link" id="start-checkup" href="/sleep-checkup">Start check-in →</a>
                         </div>
                     </div>
-                    <div class="checkin-segments daily-checkup-slots" id="checkin-segments" aria-label="Fünf tägliche Check-ins">
+                    <div class="checkin-segments daily-checkup-slots" id="checkin-segments" aria-label="Five daily check-ins">
                         <span data-checkup-slot="1" aria-label="Check-in 1">1</span>
                         <span data-checkup-slot="2" aria-label="Check-in 2">2</span>
                         <span data-checkup-slot="3" aria-label="Check-in 3">3</span>
@@ -105,15 +105,15 @@
                 </section>
 
                 <section class="home-component home-suggestion recommendation-panel" aria-labelledby="recommendation-title">
-                    <div class="panel-heading"><span class="spark-mark" aria-hidden="true">✳</span><div><p class="eyebrow">EIN MÖGLICHER NÄCHSTER SCHRITT</p><h2 id="recommendation-title">Opty schlägt vor</h2></div></div>
-                    <p id="recommendation-text" class="recommendation-text">Deine Empfehlung wird vorbereitet ...</p>
-                    <a class="text-link" id="discuss-recommendation" href="/llm" hidden>Mit Opty besprechen →</a>
-                    <button class="text-link recommendation-retry" id="retry-recommendation" type="button" hidden>Erneut versuchen ↻</button>
+                    <div class="panel-heading"><span class="spark-mark" aria-hidden="true">✳</span><div><p class="eyebrow">A POSSIBLE NEXT STEP</p><h2 id="recommendation-title">Opty suggests</h2></div></div>
+                    <p id="recommendation-text" class="recommendation-text">Preparing your recommendation ...</p>
+                    <a class="text-link" id="discuss-recommendation" href="/llm" hidden>Discuss with Opty →</a>
+                    <button class="text-link recommendation-retry" id="retry-recommendation" type="button" hidden>Try again ↻</button>
                 </section>
             </div>
             <p id="dashboard-status" class="dashboard-status" role="status" aria-live="polite"></p>
         </main>
-        <script src="/static/index.js?v=20261025-home-layout" defer></script>
-            <script src="/static/reminders.js?v=20261025-2h-demo"></script>
+        <script src="/static/index.js?v=20261029-english-ui" defer></script>
+            <script src="/static/reminders.js?v=20261029-english-ui"></script>
     </body>
 </html>

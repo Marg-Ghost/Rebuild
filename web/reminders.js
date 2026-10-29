@@ -8,7 +8,7 @@
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'browser-reminder-toggle';
-    button.textContent = 'Erinnerungen aktivieren';
+    button.textContent = 'Enable reminders';
     button.setAttribute('aria-pressed', 'false');
     const status = document.createElement('span');
     status.className = 'visually-hidden';
@@ -33,10 +33,10 @@
     function refreshButton() {
         const session = readSession();
         const active = Boolean(session && session.expiresAt > Date.now());
-        button.textContent = active ? 'Erinnerungen aktiv ✓' : 'Erinnerungen aktivieren';
+        button.textContent = active ? 'Erinnerungen aktiv ✓' : 'Enable reminders';
         button.title = active
-            ? 'Alle zwei Stunden, höchstens zehn Stunden. Klicken zum Ausschalten.'
-            : 'Alle zwei Stunden für höchstens zehn Stunden.';
+            ? 'Every two hours for up to ten hours. Click to turn off.'
+            : 'Every two hours for up to ten hours.';
         button.setAttribute('aria-pressed', String(active));
     }
 
@@ -50,7 +50,7 @@
         }
         if (session.nextAt <= now) {
             new Notification('Rebuild', {
-                body: 'Zeit für eine kurze Pause oder einen Check-in.',
+                body: 'Time for a short break or a check-in.',
                 icon: '/static/assets/logo.svg',
             });
             session.nextAt = now + INTERVAL_MS;
@@ -61,12 +61,12 @@
 
     button.addEventListener('click', async () => {
         if (!('Notification' in window) || !window.isSecureContext) {
-            status.textContent = 'Browser-Erinnerungen sind hier nicht verfügbar.';
+            status.textContent = 'Browser reminders are not available here.';
             return;
         }
         if (readSession()?.expiresAt > Date.now()) {
             localStorage.removeItem(STORAGE_KEY);
-            status.textContent = 'Browser-Erinnerungen sind ausgeschaltet.';
+            status.textContent = 'Browser reminders are turned off.';
             refreshButton();
             return;
         }
@@ -74,12 +74,12 @@
             ? await Notification.requestPermission()
             : Notification.permission;
         if (permission !== 'granted') {
-            status.textContent = 'Bitte erlaube Benachrichtigungen in den Browsereinstellungen.';
+            status.textContent = 'Allow notifications in your browser settings.';
             return;
         }
         const now = Date.now();
         saveSession({ startedAt: now, nextAt: now + INTERVAL_MS, expiresAt: now + SESSION_MS });
-        status.textContent = 'Erinnerungen kommen alle zwei Stunden für bis zu zehn Stunden.';
+        status.textContent = 'Reminders will appear every two hours for up to ten hours.';
         refreshButton();
     });
 

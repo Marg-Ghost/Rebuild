@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Über dich | Rebuild</title>
+    <title>About you | Rebuild</title>
     <link rel="stylesheet" href="/static/styles/main.css">
     <link rel="stylesheet" href="/static/styles/checkup.css?v=20261009-survey">
 </head>
@@ -11,52 +11,52 @@
     <main class="checkup-shell">
         <header class="checkup-header">
             <div>
-                <p class="eyebrow">Rebuild / Über dich</p>
-                <h1>Ein paar Angaben zu dir</h1>
-                <p class="intro">Diese Informationen helfen Rebuild, deine späteren Empfehlungen besser einzuordnen.</p>
+                <p class="eyebrow">Rebuild / About you</p>
+                <h1>A few details about you</h1>
+                <p class="intro">This information helps Rebuild tailor future recommendations to you.</p>
             </div>
-            <span class="step-count">Dein Profil · 01 / 02</span>
+            <span class="step-count">Your profile · 01 / 02</span>
         </header>
 
         <form class="checkup-form">
             <section class="checkup-card">
-                <h2>Grunddaten</h2>
-                <label for="age_input">Alter</label>
-                <input type="number" id="age_input" min="1" max="120" required placeholder="z. B. 28">
+                <h2>Basic information</h2>
+                <label for="age_input">Age</label>
+                <input type="number" id="age_input" min="1" max="120" required placeholder="e.g. 28">
 
-                <label for="job_input">Beruf <span>(optional)</span></label>
-                <input type="text" id="job_input" maxlength="120" placeholder="z. B. Student, Entwickler ...">
+                <label for="job_input">Occupation <span>(optional)</span></label>
+                <input type="text" id="job_input" maxlength="120" placeholder="e.g. student, developer ...">
 
-                <label for="hobbies_input">Hobbys <span>(optional)</span></label>
-                <input type="text" id="hobbies_input" maxlength="240" placeholder="z. B. Musik, Radfahren, Lesen">
+                <label for="hobbies_input">Hobbies <span>(optional)</span></label>
+                <input type="text" id="hobbies_input" maxlength="240" placeholder="e.g. music, cycling, reading">
             </section>
 
             <section class="checkup-card">
-                <h2>Erkrankungen</h2>
-                <p class="question-help">Wähle nur aus, was auf dich zutrifft.</p>
-                <label><input type="checkbox" name="sickness" value="none"> Keine</label>
-                <label><input type="checkbox" name="sickness" value="allergies"> Allergien</label>
+                <h2>Health conditions</h2>
+                <p class="question-help">Select only the items that apply to you.</p>
+                <label><input type="checkbox" name="sickness" value="none"> None</label>
+                <label><input type="checkbox" name="sickness" value="allergies"> Allergies</label>
                 <label><input type="checkbox" name="sickness" value="asthma"> Asthma</label>
                 <label><input type="checkbox" name="sickness" value="diabetes"> Diabetes</label>
-                <label><input type="checkbox" name="sickness" value="cardiovascular"> Herz-Kreislauf-Erkrankung</label>
-                <label><input type="checkbox" name="sickness" value="chronic_pain"> Chronische Schmerzen</label>
-                <label><input type="checkbox" name="sickness" value="other"> Andere Erkrankung</label>
+                <label><input type="checkbox" name="sickness" value="cardiovascular"> Cardiovascular condition</label>
+                <label><input type="checkbox" name="sickness" value="chronic_pain"> Chronic pain</label>
+                <label><input type="checkbox" name="sickness" value="other"> Other condition</label>
             </section>
 
             <section class="checkup-card">
-                <h2>Was dich gerade beschäftigt</h2>
-                <label for="current_problems_input">Aktuelle Probleme <span>(optional)</span></label>
-                <textarea id="current_problems_input" maxlength="2000" rows="4" placeholder="Was belastet dich im Moment?"></textarea>
+                <h2>What is on your mind</h2>
+                <label for="current_problems_input">Current challenges <span>(optional)</span></label>
+                <textarea id="current_problems_input" maxlength="2000" rows="4" placeholder="What is troubling you right now?"></textarea>
 
-                <label for="primary_fears_input">Sorgen oder Ängste <span>(optional)</span></label>
-                <textarea id="primary_fears_input" maxlength="2000" rows="4" placeholder="Gibt es etwas, vor dem du dir besonders Sorgen machst?"></textarea>
-                <p class="question-help">Diese Angaben werden vertraulich gespeichert und können Opty helfen, Antworten besser einzuordnen.</p>
+                <label for="primary_fears_input">Concerns or fears <span>(optional)</span></label>
+                <textarea id="primary_fears_input" maxlength="2000" rows="4" placeholder="Is there anything you are especially worried about?"></textarea>
+                <p class="question-help">This information is stored privately and may help Opty put its responses in context.</p>
             </section>
 
-            <button class="submit-button" type="button" onclick="saveProfile()">Weiter zum Checkup</button>
+            <button class="submit-button" type="button" onclick="saveProfile()">Continue to check-in</button>
             <p id="profile_status" role="status" aria-live="polite"></p>
         </form>
     </main>
-    <script src="/static/main.js"></script>
+    <script src="/static/main.js?v=20261029-english-ui2"></script>
 </body>
 </html>

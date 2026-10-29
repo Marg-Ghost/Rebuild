@@ -38,38 +38,55 @@
 }
 
 .food-page .food-visual .brain-halo-outer {
+  top: 54%;
   width: min(98%, 760px);
   background: #e4e8e2;
 }
 
 .food-page .food-visual .brain-halo-inner {
-  width: min(88%, 680px);
+  top: 54%;
+  width: min(78%, 600px);
   background: #d6dcd6;
 }
 
 .food-page .food-silhouette {
-  bottom: -10%;
-  width: min(124%, 920px);
-  height: 132%;
-  transform: translateX(-50%) scale(1.08);
-}
-
-.food-page .food-organ-icon {
-  width: clamp(160px, 19vw, 250px);
-  height: clamp(160px, 19vw, 250px);
-}
-
-.food-page .activity-silhouette {
-  bottom: 42px;
-  width: min(150%, 1120px);
-  height: 140%;
+  bottom: 0;
+  width: min(100%, 790px);
+  height: 100%;
   transform: translateX(-50%);
 }
 
+.food-page .food-organ-icon {
+  top: 54%;
+  width: clamp(160px, 19vw, 250px);
+  height: clamp(160px, 19vw, 250px);
+  transform: translate(-50%, -50%);
+}
+
+.food-page .activity-silhouette {
+  bottom: 0;
+  width: min(100%, 790px);
+  height: 100%;
+  transform: translateX(-50%);
+}
+
+.food-page .activity-visual .brain-halo {
+  top: 73%;
+}
+
+.food-page .activity-visual .brain-halo-outer {
+  width: min(62%, 540px);
+}
+
+.food-page .activity-visual .brain-halo-inner {
+  width: min(52%, 460px);
+}
+
 .food-page .activity-icon {
-  top: 37%;
+  top: 73%;
   width: clamp(200px, 25vw, 310px);
   height: clamp(200px, 25vw, 310px);
+  transform: translate(-50%, -50%);
 }
 
 .food-page .food-data {
@@ -144,25 +161,28 @@
 }
 
 .brain-feature-page .brain-halo-outer {
-  width: min(98%, 760px);
+  top: 15%;
+  width: min(48%, 390px);
   background: #e4e8e2;
 }
 
 .brain-feature-page .brain-halo-inner {
-  width: min(88%, 680px);
+  top: 15%;
+  width: min(39%, 320px);
   background: #d6dcd6;
 }
 
 .brain-feature-page .brain-silhouette {
-  bottom: -6%;
-  width: min(124%, 920px);
-  height: 118%;
+  bottom: 0;
+  width: min(100%, 790px);
+  height: 100%;
 }
 
 .brain-feature-page .brain-sleep-icon {
-  top: -10%;
+  top: 15%;
   width: clamp(150px, 14vw, 185px);
   height: clamp(150px, 14vw, 185px);
+  transform: translate(-50%, -50%);
 }
 
 .brain-feature-page .brain-data {
@@ -273,25 +293,38 @@
   }
 
   .food-page .food-visual .brain-halo-inner {
-    width: min(88%, 475px);
+    width: min(78%, 420px);
   }
 
   .food-page .food-silhouette {
-    bottom: -7%;
-    width: min(124%, 640px);
-    height: 125%;
+    bottom: 0;
+    width: min(100%, 540px);
+    height: 100%;
   }
 
   .food-page .activity-silhouette {
-    bottom: 28px;
-    width: min(155%, 800px);
-    height: 145%;
+    bottom: 0;
+    width: min(100%, 540px);
+    height: 100%;
   }
 
   .food-page .activity-icon {
-    top: 37%;
+    top: 73%;
     width: clamp(190px, 42vw, 250px);
     height: clamp(190px, 42vw, 250px);
+    transform: translate(-50%, -50%);
+  }
+
+  .food-page .activity-visual .brain-halo {
+    top: 73%;
+  }
+
+  .food-page .activity-visual .brain-halo-outer {
+    width: min(62%, 360px);
+  }
+
+  .food-page .activity-visual .brain-halo-inner {
+    width: min(52%, 300px);
   }
 
   .food-page .food-data {
@@ -317,27 +350,31 @@
   }
 
   .brain-feature-page .brain-visual {
-    min-height: min(128vw, 680px);
+    aspect-ratio: 1;
+    min-height: 0;
   }
 
   .brain-feature-page .brain-halo-outer {
-    width: min(98%, 540px);
+    top: 15%;
+    width: min(48%, 260px);
   }
 
   .brain-feature-page .brain-halo-inner {
-    width: min(88%, 475px);
+    top: 15%;
+    width: min(39%, 220px);
   }
 
   .brain-feature-page .brain-silhouette {
-    bottom: -4%;
-    width: min(124%, 640px);
-    height: 115%;
+    bottom: 0;
+    width: min(100%, 540px);
+    height: 100%;
   }
 
   .brain-feature-page .brain-sleep-icon {
-    top: -10%;
+    top: 15%;
     width: clamp(144px, 38vw, 180px);
     height: clamp(144px, 38vw, 180px);
+    transform: translate(-50%, -50%);
   }
 
   .brain-feature-page .brain-data {

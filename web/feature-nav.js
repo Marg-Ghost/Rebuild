@@ -6,14 +6,14 @@ async function loadFeatureNavigation() {
         const data = await response.json();
         if (!response.ok) {
             if (response.status === 401) window.location.href = '/login';
-            throw new Error(data.detail || 'Benutzer konnte nicht geladen werden.');
+            throw new Error('Could not load the user.');
         }
-        if (username) username.textContent = data.usr || 'Dein Bereich';
+        if (username) username.textContent = data.usr || 'Your space';
     } catch (error) {
         if (error instanceof TypeError && username) {
-            username.textContent = 'Dein Bereich';
+            username.textContent = 'Your space';
         }
-        console.error('Navigation des Bereichs konnte nicht geladen werden.', error);
+        console.error('Could not load the section navigation.', error);
     }
 }
 

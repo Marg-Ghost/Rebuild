@@ -1,113 +1,116 @@
-# Rebuild – Funktionsübersicht
+# Rebuild – Application Overview
 
-Diese Übersicht beschreibt grob, was die sichtbaren Bereiche der Anwendung tun und wie Browser, Server und Daten zusammenspielen. Sie ist eine Orientierung für Entwicklerinnen und Entwickler, keine vollständige API- oder Datenbankspezifikation.
+This document summarizes what the visible parts of the application do and how the browser, server, and data stores work together. It is an orientation guide for developers, not a complete API or database specification.
 
-Für die Architekturdetails gibt es [eigene Markdown-Dokumente pro großem Funktionsbereich](architecture/README.md), unter anderem zu Login/DEA, Check-ins, Scoring, Empfehlungen, Ollama/RAG/Queue, Kalender und Browser-Erinnerungen.
+For architecture details, see the [feature guides](architecture/README.md), covering account access and input validation, check-ins, scoring, recommendations, Ollama/RAG/queue processing, the calendar, and browser reminders.
 
-## Inhaltsverzeichnis
+## Contents
 
-- [Technischer Überblick](#technischer-überblick)
-- [Anmeldung und Konto](#anmeldung-und-konto)
-- [Übersicht und Tagesfortschritt](#übersicht-und-tagesfortschritt)
+- [Technical overview](#technical-overview)
+- [Starting the containers](#starting-the-containers)
+- [Accounts and sign-in](#accounts-and-sign-in)
+- [Overview and daily progress](#overview-and-daily-progress)
 - [Check-ins](#check-ins)
-- [Schlaf und Brain](#schlaf-und-brain)
-- [Ernährung und Stomach](#ernährung-und-stomach)
-- [Aktivität](#aktivität)
-- [Opty und LLM](#opty-und-llm)
-- [Kalender](#kalender)
-- [Wichtige Grenzen des aktuellen Umfangs](#wichtige-grenzen-des-aktuellen-umfangs)
+- [Sleep and Brain](#sleep-and-brain)
+- [Nutrition and Stomach](#nutrition-and-stomach)
+- [Activity](#activity)
+- [Opty and the LLM](#opty-and-the-llm)
+- [Calendar](#calendar)
+- [Current limitations](#current-limitations)
 
-## Technischer Überblick
+## Technical overview
 
-- `server.py` stellt die Seiten und die FastAPI-Endpunkte bereit.
-- HTML, CSS und Browser-JavaScript liegen hauptsächlich unter `web/`. Das Kalender-JavaScript liegt unter `Kalender/web/`, die Assistenten-Oberfläche und ihre Logik unter `llm-support/`.
-- Datenbankzugriffe für Konten, Check-ins und Verlaufswerte laufen über `data/user/db_interaction.py`. Kalenderaufgaben werden über `Kalender/date.py` und `Kalender/data/database.py` verwaltet.
-- Die Browser-Aufrufe verwenden für geschützte Funktionen eine serverseitige Session. Die API prüft den angemeldeten Nutzer, bevor sie persönliche Daten liest oder ändert.
-- Das Bewertungsnetz für Ernährung und Aktivität ist in `core/ai/ai.py` implementiert. Die Anwendung kombiniert die Eingaben mit Referenzdaten und den gespeicherten Modellgewichten.
-- Opty verwendet Ollama für Textantworten. `llm-support/llm_communication.py` verwaltet die Anfragen; `llm-support/vectordb.py` liefert ergänzenden Kontext aus der Chroma-Vektordatenbank.
+- `server.py` serves the pages and FastAPI endpoints.
+- HTML, CSS, and browser JavaScript are mainly under `web/`. Calendar JavaScript is under `Kalender/web/`; the assistant interface and its logic are under `llm-support/`.
+- Account, check-in, and history database access goes through `data/user/db_interaction.py`. Calendar tasks are managed through `Kalender/date.py` and `Kalender/data/database.py`.
+- The browser uses a server-side session for protected features. The API checks the signed-in user before reading or changing personal data.
+- The nutrition and activity scoring network is implemented in `core/ai/ai.py`. The application combines user entries with reference data and the stored model weights.
+- Opty uses Ollama for text responses. `llm-support/llm_communication.py` manages requests; `llm-support/vectordb.py` supplies additional context from the Chroma vector database.
 
-### Container starten
+## Starting the containers
 
-Für den Docker-Start werden Docker mit Compose und Bash benötigt. `bash start.sh` erstellt beim ersten Start automatisch eine lokale `.env` mit zufälligem Session-Schlüssel, baut die App mit den Abhängigkeiten aus `requirements.txt`, startet Ollama, prüft `OLLAMA_MODEL` und lädt das Modell nur herunter, wenn es fehlt. Anschließend startet der Rebuild-App-Container.
+Docker with Compose and Bash are required. On first run, `bash start.sh` automatically creates a local `.env` file with a random session secret, builds the app with the dependencies from `requirements.txt`, starts Ollama, checks `OLLAMA_MODEL`, and downloads the model only if it is missing. It then starts the Rebuild app container.
 
-Compose stellt die App unter `http://localhost:8000` bereit. Ollama ist für lokale Werkzeuge unter `http://localhost:11434` verfügbar; innerhalb des App-Containers wird der Dienst über `http://ollama:11434` angesprochen. Modellgewichte, Nutzerdatenbanken, Referenzdatenbanken und Chroma-Daten bleiben über Volumes bzw. Bind-Mounts erhalten.
+Compose serves the app at `http://localhost:8000`. Ollama is available to local tools at `http://localhost:11434`; inside the app container, the service is reached at `http://ollama:11434`. Model weights, user databases, reference databases, and Chroma data persist through volumes or bind mounts.
 
-Der App-Port ist in Compose an `0.0.0.0:8000` gebunden und damit von anderen Geräten im Netzwerk erreichbar. Für Zugriff über das Internet sollte ein HTTPS-Reverse-Proxy vorgeschaltet und `SESSION_HTTPS_ONLY=true` gesetzt werden. Der Browserzugriff auf Ollama bleibt auf `127.0.0.1:11434` beschränkt. `SessionMiddlewareSecretKey` muss geheim bleiben und darf nicht in eine Abgabe oder ein öffentliches Repository gelangen.
+Compose binds the app port to `0.0.0.0:8000`, making it reachable from other devices on the network. For internet access, put an HTTPS reverse proxy in front of it and set `SESSION_HTTPS_ONLY=true`. Browser access to Ollama remains limited to `127.0.0.1:11434`. Keep `SessionMiddlewareSecretKey` secret; do not include it in a submission or public repository.
 
-## Anmeldung und Konto
+## Accounts and sign-in
 
-Die Login- und Registrierungsoberfläche wird aus `web/pages/login/` ausgeliefert. Der Browser sendet Login- oder Registrierungsdaten an `server.py`; bei erfolgreicher Anmeldung wird der Nutzer in einem signierten Session-Cookie gespeichert. Geschützte Seiten und Endpunkte verwenden diese Session; ein JWT oder `localStorage` wird dafür nicht benötigt. Benutzernamen sind per eindeutigem SQLite-Index abgesichert; Trigger blockieren neue doppelte E-Mail-Adressen und Telefonnummern. Bereits vorhandene Mehrfachzuordnungen bleiben erhalten und sind für den Login per E-Mail/Telefon mehrdeutig; in diesem Fall muss der Benutzername verwendet werden.
+The sign-in and registration interface is served from `web/pages/login/`. The browser sends sign-in or registration data to `server.py`; after a successful sign-in, the user is stored in a signed session cookie. Protected pages and endpoints use this session; no JWT or `localStorage` token is required. A unique SQLite index protects usernames; triggers block new duplicate email addresses and phone numbers. Existing duplicates are retained and make email- or phone-based sign-in ambiguous; in that case, the username must be used.
 
-Beim Registrieren werden Profilangaben und der erste Checkup schrittweise erfasst. Der Profil-Endpunkt speichert unter anderem Alter, Hobbys, Beruf, ausgewählte Erkrankungen, aktuelle Probleme und primäre Sorgen/Ängste. Die konkrete Speicherung liegt in `data/user/db_interaction.py`.
+During registration, profile details and the first check-in are collected in stages. The profile endpoint stores details including age, hobbies, occupation, selected conditions, current problems, and primary concerns. The actual persistence is implemented in `data/user/db_interaction.py`.
 
-Bei der Registrierung werden Passwörter mit PBKDF2-HMAC-SHA256 und individuellem Salt gespeichert. Neue Passwörter müssen mindestens 12 Zeichen lang sein. Login- und Registrierungsversuche sind pro Serverprozess begrenzt; die Begrenzung wird bei mehreren Uvicorn-Workern nicht zwischen Prozessen geteilt. Ändernde Browseranfragen mit vorhandenem `Origin`- oder `Referer`-Header werden auf dieselbe Host-Adresse begrenzt. SQL-Abfragen verwenden gebundene Parameter; Eingaben werden zusätzlich nach Feldlänge und Format geprüft.
+Passwords are stored with PBKDF2-HMAC-SHA256 and an individual salt. New passwords must be at least 12 characters long. Sign-in and registration attempts are rate-limited per server process; the limit is not shared between multiple Uvicorn workers. Mutating browser requests that include an `Origin` or `Referer` header are restricted to the same host. SQL queries use bound parameters, and inputs are also checked for length and format.
 
-## Übersicht und Tagesfortschritt
+## Overview and daily progress
 
-Die Startseite `/home` lädt Tageswerte, Check-in-Status und Verlaufsdaten und stellt sie als Health-Verlauf, Fortschrittsanzeige und nächste Aufgaben dar. Die Browserlogik befindet sich in `web/index.js`.
+The `/home` page loads daily values, check-in status, and history, then displays them as a health history, progress indicator, and next steps. Its browser logic is in `web/index.js`.
 
-Die Übersicht zeigt außerdem eine Opty-Empfehlung. Dafür fasst der Server Check-in-, Schlaf-, Health- und Kalenderdaten in einem Kontext zusammen und sendet eine priorisierte Systemanfrage an die LLM-Queue. Ist Ollama nicht erreichbar, meldet dieser Dashboard-Endpunkt einen Fehler. Die Empfehlungen-Seite besitzt einen separaten Fallback, der Profilhobbys direkt anzeigen kann; er bewertet dabei nicht, ob ein Hobby körperliche Bewegung beinhaltet.
+The overview also displays an Opty recommendation. The server combines check-in, sleep, health, and calendar data into a context and sends a prioritized system request to the LLM queue. If Ollama is unreachable, this dashboard endpoint reports an error. The Recommendations page has a separate fallback that can display profile hobbies directly; that fallback does not assess whether a hobby involves physical activity.
 
-Der angezeigte Tageswert ist ein interner Rechenwert, kein medizinisch validierter Health-Score: Jeder Check-in startet bei 1.000 Punkten; Schlaf- sowie Essens- und Bewegungs-Impacts verändern ihn. Angezeigt wird der Mittelwert der heutigen Check-ins. Schlaf wird beim ersten Check-in berücksichtigt, bei späteren nicht; zusätzliche Check-ins können den Mittelwert deshalb verschieben. Das Registrierungsprofil fließt derzeit nicht in diese Zahl ein. Der Hinweis am Wert zeigt den Abstand zur Rechenbasis und zum letzten gespeicherten Verlaufstag, aber keine medizinische Einstufung.
+The displayed daily value is an internal calculation, not a medically validated health score. Each check-in starts at 1,000 points; sleep, food, and activity impacts change that value. The page displays the average of today's check-ins. Sleep is included in the first check-in but not in later ones, so additional check-ins can shift the average. Registration profile data does not currently affect this value. Its explanation shows the difference from the baseline and the previous saved day, not a medical classification.
 
-Davon getrennt gibt es einen täglichen Belastungs-/Erholungswert von 0 bis 100. Er kombiniert Schlaf (40 %), Stress-Selbsteinschätzung (30 %) und Workload-Selbsteinschätzung (30 %). Stress und Workload werden jeweils von 0 bis 10 eingegeben; Schlaf stammt aus dem Schlaf-Check-in. 80–100 bedeutet niedriges, 50–79 moderates und 0–49 hohes Burnout-Risiko. Dies ist ein transparenter Orientierungswert, kein validierter Test und keine Diagnose. Die Eingaben und Ergebnisse werden nutzerbezogen in `efficiency_scores` gespeichert.
+A separate daily workload and recovery score ranges from 0 to 100. It combines sleep (40%), self-reported stress (30%), and self-reported workload (30%). Stress and workload are each entered on a 0–10 scale; sleep comes from the sleep check-in. Scores of 80–100 are labelled low risk, 50–79 moderate risk, and 0–49 high burnout risk. This is a transparent guidance value, not a validated test or diagnosis. Inputs and results are stored per user in `efficiency_scores`.
 
 ## Check-ins
 
-### Schlaf-Check-in
+### Sleep check-in
 
-Der Schlaf-Check-in wird über `/sleep-checkup` geöffnet. Man trägt Schlafstunden und ungefähre Einschlafzeit ein oder markiert, dass man noch nicht geschlafen hat. Der Server zählt späte Nächte der letzten sieben Tage, ermittelt einen möglichen Schlafzeitpunkt-Effekt und speichert den Tagesstatus.
+The sleep check-in is opened at `/sleep-checkup`. Users enter hours slept and an approximate time they fell asleep, or indicate that they have not slept yet. The server counts late nights in the past seven days, calculates a possible sleep-timing effect, and stores the daily status.
 
-### Ernährung und Bewegung
+### Nutrition and activity
 
-Nach dem Schlaf-Check-in können bis zu fünf Ernährungs-/Aktivitäts-Check-ins pro Tag gespeichert werden. Die Formulare bieten Referenzeinträge aus dem Katalog an. Freitext kann serverseitig mit Ollama einem vorhandenen Katalogeintrag zugeordnet werden; unbekannte oder nicht sicher zuordenbare Werte werden nicht als Referenzdaten akzeptiert.
+After the sleep check-in, users can save up to five nutrition/activity check-ins per day. The forms offer reference entries from a catalog. Free text can be matched to an existing catalog entry by Ollama on the server; unknown or uncertain entries are not accepted as reference data.
 
-Der Server erstellt aus den ausgewählten Einträgen Merkmalsvektoren, lässt Ernährung und Aktivität bewerten und speichert die Scores samt Check-in-Daten pro Nutzer. Der Tagesstatus-Endpunkt liefert den Fortschritt an die Übersicht zurück.
+The server builds feature vectors from selected entries, scores nutrition and activity, and stores the scores and check-in data per user. The daily status endpoint returns progress to the overview.
 
-### Erinnerungen
+### Reminders
 
-`web/reminders.js` fügt auf Übersicht, Empfehlungen, Kalender und KI-Assistent eine optionale Browser-Erinnerung hinzu. Nach explizitem Klick und Browserfreigabe wird alle zwei Stunden erinnert, höchstens zehn Stunden lang. Timer und Aktivierungsstatus liegen im Browser-`localStorage`; es gibt dafür keinen Python-Endpunkt und keine Datenbanktabelle. Die Seite muss geöffnet bleiben. Push-Benachrichtigungen bei geschlossenem Browser sind weiterhin nicht implementiert.
+`web/reminders.js` adds an optional browser reminder to the overview, Recommendations, Calendar, and AI assistant pages. After the user clicks to enable it and grants browser permission, a reminder appears every two hours for up to ten hours. The timer and activation status are kept in browser `localStorage`; there is no Python endpoint or database table for this feature. The page must remain open. Push notifications while the browser is closed are not implemented.
 
-## Schlaf und Brain
+## Sleep and Brain
 
-`/brain` zeigt Schlafstunden, späte Nächte und einen Verlauf der Schlafqualität. Die Seite lädt ihre Daten über `/api/brain/summary`; die Darstellung des Diagramms liegt in `web/brain.js`.
+`/brain` displays sleep hours, late nights, and sleep quality history. The page loads data from `/api/brain/summary`; the chart is rendered by `web/brain.js`.
 
-Der Schlafwert wird aus den eingetragenen Schlafstunden und einem möglichen Effekt später Einschlafzeiten berechnet. Die Historie stammt aus den gespeicherten Schlaf-Check-ins des jeweiligen Nutzers.
+The sleep value is calculated from entered sleep hours and a possible effect from late bedtimes. History comes from the signed-in user's saved sleep check-ins.
 
-## Ernährung und Stomach
+## Nutrition and Stomach
 
-`/stomach` zeigt den Ernährungsscore des Tages, die jüngsten Check-ins und einen Verlauf. Die Daten kommen aus `/api/food/summary`; Diagramm und Eintragsliste werden in `web/food.js` aufgebaut.
+`/stomach` displays the day's nutrition score, recent check-ins, and history. Data comes from `/api/food/summary`; `web/food.js` renders the chart and entry list.
 
-Der Score basiert auf den erfassten Ernährungseinträgen und dem Bewertungsmodell. Die angezeigte Wirkung auf den Gesamtwert wird zusätzlich über die dafür vorgesehenen Impact-Daten bestimmt.
+The score is based on recorded nutrition entries and the scoring model. The displayed effect on the overall value is determined separately using the relevant impact data.
 
-## Aktivität
+## Activity
 
-`/activity` zeigt analog den Aktivitätsscore, die jüngsten Bewegungs-Check-ins und den Verlauf. Die Seite lädt `/api/activity/summary`; die Darstellung übernimmt `web/activity.js`.
+`/activity` displays the activity score, recent activity check-ins, and history. The page loads `/api/activity/summary`; `web/activity.js` renders the data.
 
-Die Aktivitäten werden über den Referenzkatalog in Merkmale übersetzt und vom Aktivitätsmodell bewertet. Die resultierende Wirkung auf den Gesamtwert kommt aus den Aktivitäts-Impact-Daten.
+Activities are mapped to features through the reference catalog and scored by the activity model. The resulting effect on the overall value comes from the activity impact data.
 
-## Opty und LLM
+## Opty and the LLM
 
-Die Seite `/llm` bietet einen Chat mit Opty. `llm-support/llm.js` hält den Gesprächsverlauf während der geöffneten Seite im Browser und sendet neue Nachrichten an `/api/llm/chat`.
+The `/llm` page provides a chat with Opty. `llm-support/llm.js` keeps the conversation in the open browser page and sends new messages to `/api/llm/chat`.
 
-Der Server reiht Anfragen in `LlmRequestQueue` ein. Nutzernachrichten haben Vorrang vor automatisch erzeugten Systemempfehlungen. `build_rag_context` bündelt für jeden Request das Profil (einschließlich aktueller Probleme und Sorgen), Health-/Check-in-Daten, die letzten Belastungswerte, heutige Kalenderaufgaben und Termine, persönliche Zusammenfassungen sowie passende Chroma-Kontexte, bevor der System-Prompt an Ollama gesendet wird.
+The server queues requests in `LlmRequestQueue`. User messages take priority over automatically generated system recommendations. For every request, `build_rag_context` combines the profile (including current problems and concerns), health and check-in data, recent workload values, today's calendar tasks and events, personal summaries, and relevant Chroma context before sending the system prompt to Ollama.
 
-Die Chroma-Collection `GhostReferenceV1` wird aus der versionierten allgemeinen Referenzdatei befüllt; die bisherige `Ghost`-Collection wird nicht mehr abgefragt. Persönliche Zusammenfassungen werden in `llm_problem_memory` mit Nutzerkennung gespeichert und nur für dieselbe Kennung geladen; die Health-, Profil- und Kalenderdaten werden ebenfalls anhand des angemeldeten Nutzers abgefragt.
+The `GhostReferenceV1` Chroma collection is populated from the versioned general reference file; the old `Ghost` collection is no longer queried. Personal summaries are stored in `llm_problem_memory` with a user identifier and loaded only for that same user. Health, profile, and calendar data are also queried for the signed-in user.
 
-„Gespräch speichern und leeren“ sendet den aktuellen Verlauf an `/api/llm/conversation/clear`. Die Queue erstellt daraus eine Zusammenfassung und speichert sie als persönliches Memory; anschließend wird der sichtbare Gesprächsverlauf geleert. Der Verlauf selbst wird nicht durch diesen Browsercode dauerhaft wiederhergestellt.
+“Save and clear conversation” sends the current conversation to `/api/llm/conversation/clear`. The queue creates a summary and stores it as personal memory, then clears the visible conversation. This browser code does not restore the conversation itself permanently.
 
-Ollama-Modell und Serveradresse werden über `OLLAMA_MODEL` und `OLLAMA_HOST` konfiguriert. Standardmäßig wird `llama3.1:8b` verwendet, ein Llama-3.x-Modell mit 8B Parametern. Das Startskript `start.sh` startet Ollama und die App als Docker-Container, prüft das Modell und lädt es bei Bedarf herunter.
+The Ollama model and server address are configured through `OLLAMA_MODEL` and `OLLAMA_HOST`. When started with `bash start.sh`, `llm/ollama_config.py` selects a model based on available memory: up to 6 GB uses `llama3.2:1b`, up to 12 GB uses `llama3.2:3b`, and above that uses `llama3.1:8b`. If the memory query is unavailable, it uses `llama3.2:3b`. When starting directly with `docker compose up` and no `OLLAMA_MODEL` set, Compose defaults to `llama3.2:3b`.
 
-## Kalender
+For a faster response, set `OLLAMA_MODEL=llama3.2:1b` before startup; an explicit value overrides automatic selection. Alternatively, put the value in a local, unversioned `.env` file. The startup script checks whether the model is already present and downloads it only if needed. A smaller model may respond faster and use fewer resources, but may be less capable at answering questions and generating recommendations. Actual response time also depends on available CPU/GPU resources and context length.
 
-`/kalender` zeigt eine Monatsansicht mit Aufgaben. Die Browserlogik liegt in `Kalender/web/kalender.js`; sie lädt den Monat über `/api/kalender/get` und kann mit `/api/kalender/add` neue Aufgaben speichern. Aufgaben enthalten Datum, optionale Uhrzeit, Wichtigkeit, Typ und Inhalt.
+## Calendar
 
-Die API ist nutzergebunden. Aufgaben werden in der Kalenderdatenbank gespeichert und nach Datum und Uhrzeit sortiert. Die Oberfläche kann Monate wechseln, zum aktuellen Monat zurückkehren und das Formular zum Hinzufügen öffnen. Ein Löschen oder Bearbeiten vorhandener Aufgaben ist in den derzeitigen Kalender-Endpunkten nicht vorgesehen.
+`/kalender` displays a monthly task view. Browser logic is in `Kalender/web/kalender.js`; it loads a month through `/api/kalender/get` and saves tasks through `/api/kalender/add`. Tasks include a date, optional time, importance, type, and content.
 
-## Wichtige Grenzen des aktuellen Umfangs
+The API scopes tasks to the signed-in user. Tasks are stored in the calendar database and sorted by date and time. The interface can switch months, return to the current month, and open the add-task form. The current calendar endpoints do not support editing or deleting existing tasks.
 
-- Die Chat-Nachrichten bleiben während der Sitzung im Browserzustand; für spätere Nutzung wird beim Leeren nur eine Zusammenfassung als Memory gespeichert.
-- Im Kalender sind derzeit Lesen und Hinzufügen beschrieben; Bearbeiten und Löschen sind nicht implementiert.
-- Check-ins sind auf einen Schlaf-Check-in und bis zu fünf Ernährungs-/Aktivitäts-Check-ins pro Tag ausgelegt.
-- Die LLM-Antwort, automatische Empfehlungen und Freitext-Zuordnung hängen davon ab, dass der konfigurierte Ollama-Dienst und das Modell erreichbar sind.
-- Die Browser-Erinnerung ist derzeit zeitgesteuert und nicht an den Abschluss von Check-ins gekoppelt; sie ist keine Push-Erinnerung für geschlossene Seiten.
+## Current limitations
+
+- Chat messages remain in browser state during the session; when clearing the conversation, only a summary is saved for later use.
+- The calendar currently supports reading and adding tasks; editing and deletion are not implemented.
+- Check-ins are designed for one sleep check-in and up to five nutrition/activity check-ins per day.
+- LLM answers, automatic recommendations, and free-text matching depend on the configured Ollama service and model being available.
+- Browser reminders are currently time-based and are not tied to completion of check-ins; they are not push notifications for closed pages.

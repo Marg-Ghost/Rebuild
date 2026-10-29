@@ -1,19 +1,19 @@
 # Check-ins
 
-## Seiten und Endpunkte
+## Pages and endpoints
 
-- Ersteinrichtung: `web/pages/checkups/checkup_first.html`, Registrierungsprofil und `/register_info`.
-- Schlaf: `/sleep-checkup` und `/api/sleep-checkup`.
-- Essen und Bewegung: `/checkup`, `/api/checkup/catalog`, `/api/checkup/resolve`, `/api/checkup_data`.
-- Tagesstatus: `/api/daily-checkup/status` und `/api/daily-checkup`.
-- Browserlogik: `web/main.js` und `web/index.js`.
+- First-time setup: `web/pages/checkups/checkup_first.html`, the registration profile, and `/register_info`.
+- Sleep: `/sleep-checkup` and `/api/sleep-checkup`.
+- Food and activity: `/checkup`, `/api/checkup/catalog`, `/api/checkup/resolve`, and `/api/checkup_data`.
+- Daily status: `/api/daily-checkup/status` and `/api/daily-checkup`.
+- Browser logic: `web/main.js` and `web/index.js`.
 
-## Datenfluss
+## Data flow
 
-Der Browser lädt Referenzwerte und sendet strukturierte Formulardaten. `server.py` prüft Typen, Mengen und Dauer, normalisiert die Aktivitäten und löst Einträge über Kataloge auf. Freitext-Zuordnung kann eine Ollama-Anfrage verwenden; Katalogwerte selbst bleiben in `health.db`. Anschließend werden Scoring und Persistenz durchgeführt.
+The browser loads reference values and sends structured form data. `server.py` validates types, counts, and durations, normalizes activities, and matches entries through catalogs. Free-text matching may use an Ollama request; catalog values themselves remain in `health.db`. Scoring and persistence follow.
 
-Tägliche Check-ins laufen asynchron: Der Server legt einen Job in der Nutzerdatenbank an, startet die Auswertung als Hintergrund-Task und aktualisiert danach gespeicherte Einträge und Jobstatus. Der Status-Endpunkt versorgt die Übersicht mit Anzahl, Schlafstatus und laufender Verarbeitung. Es gibt einen Schlaf-Check-in und bis zu fünf Essens-/Aktivitäts-Check-ins pro Tag.
+Daily check-ins run asynchronously: the server creates a job in the user database, starts scoring as a background task, and then updates saved entries and the job status. The status endpoint provides the Overview with counts, sleep status, and processing state. Each day supports one sleep check-in and up to five food/activity check-ins.
 
-## Persistenz und Grenzen
+## Persistence and limits
 
-Tabellen und Funktionen für Schlaf, Check-ins und ausstehende Jobs liegen in `data/user/db_interaction.py`. Die Auswertung verwendet `core/input_vector.py`, `core/ai/ai.py` und `data/ai_konstanten/health.db`. Check-in-Daten sind nutzergebunden. Fehlgeschlagene oder nicht zuordenbare Freitext-Einträge werden nicht als beliebige Referenzdaten gespeichert.
+Tables and functions for sleep, check-ins, and pending jobs are in `data/user/db_interaction.py`. Scoring uses `core/input_vector.py`, `core/ai/ai.py`, and `data/ai_konstanten/health.db`. Check-in data is scoped to the user. Failed or unmatched free-text entries are not stored as arbitrary reference data.

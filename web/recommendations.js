@@ -1,10 +1,22 @@
 const byId = (id) => document.getElementById(id);
 let activeHealthScore = 1000;
 
+async function readApiJson(response) {
+    const body = await response.text();
+    try {
+        return body ? JSON.parse(body) : {};
+    } catch {
+        const status = `HTTP ${response.status}`;
+        throw new Error(response.ok
+            ? `The server did not return valid JSON (${status}).`
+            : `The server returned an unexpected response (${status}). Check the backend log.`);
+    }
+}
+
 function renderEfficiencyScore(result) {
     const target = byId('wellbeing-result');
     if (!result) return;
-    target.textContent = `${Math.round(Number(result.score))}/100 · Orientierungswert aus deinen Angaben.`;
+    target.textContent = `${Math.round(Number(result.score))}/100 · Guidance score based on your entries.`;
     if (Number.isFinite(Number(result.stress_level))) {
         byId('stress-level').value = result.stress_level;
         byId('stress-level-value').value = result.stress_level;
@@ -27,7 +39,7 @@ async function loadEfficiencyScore() {
             renderEfficiencyScore(data.latest);
         }
     } catch {
-        byId('wellbeing-result').textContent = 'Einschätzung konnte nicht geladen werden.';
+        byId('wellbeing-result').textContent = 'Could not load assessment.';
     }
 }
 
@@ -37,7 +49,7 @@ async function saveEfficiencyScore(event) {
     const button = form.querySelector('button[type="submit"]');
     const target = byId('wellbeing-result');
     button.disabled = true;
-    target.textContent = 'Wird gespeichert …';
+    target.textContent = 'Saving …';
     try {
         const response = await fetch('/api/efficiency-score', {
             method: 'POST',
@@ -49,10 +61,10 @@ async function saveEfficiencyScore(event) {
             }),
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Einschätzung konnte nicht gespeichert werden.');
+        if (!response.ok) throw new Error('Could not save assessment.');
         renderEfficiencyScore(data);
     } catch (error) {
-        target.textContent = error instanceof Error ? error.message : 'Speichern fehlgeschlagen.';
+        target.textContent = error instanceof Error ? error.message : 'Could not save.';
     } finally {
         button.disabled = false;
     }
@@ -71,30 +83,30 @@ function renderHealthScore(health) {
     const score = count ? total / count : lastScore;
     if (!Number.isFinite(score)) {
         byId('health-percent').textContent = '–';
-        byId('health-score').textContent = 'Noch kein Healthscore vorhanden';
+        byId('health-score').textContent = 'No health score available yet';
         return;
     }
     activeHealthScore = score;
     byId('health-percent').textContent = `${Math.round(healthPercent(score))}%`;
-    byId('health-score').textContent = `${Math.round(score).toLocaleString('de-DE')} Rebuild-Punkte`;
+    byId('health-score').textContent = `${Math.round(score).toLocaleString('en-GB')} Rebuild points`;
 }
 
 function renderActivity(activity, window) {
     const details = [];
     const time = window?.start
-        ? new Date(window.start).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+        ? new Date(window.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
         : '';
-    if (window) details.push('30 Min.');
-    if (time) details.push(`um ${time}`);
+    if (window) details.push('30 min');
+    if (time) details.push(`at ${time}`);
     const delta = Number(activity.estimated_health_score_delta);
     if (Number.isFinite(delta)) {
         const impact = healthPercent(activeHealthScore + delta) - healthPercent(activeHealthScore);
-        details.push(`${impact >= 0 ? '+' : ''}${impact.toFixed(1).replace('.', ',')} Prozentpunkte geschätzt`);
+        details.push(`${impact >= 0 ? '+' : ''}${impact.toFixed(1)} estimated percentage points`);
     }
     const card = document.createElement('article');
     card.className = 'recommendation-activity-card';
     const title = document.createElement('h3');
-    title.textContent = activity.activity || 'Aktivität aus deinem Hobbyprofil';
+    title.textContent = activity.activity || 'Activity from your hobby profile';
     card.appendChild(title);
     if (details.length) {
         const meta = document.createElement('p');
@@ -118,7 +130,7 @@ async function loadRecommendations() {
     retry.hidden = true;
     text.hidden = false;
     byId('recommendation-list').replaceChildren(text);
-    text.textContent = 'Opty sucht eine passende Aktivität und freie Zeit …';
+    text.textContent = 'Opty is looking for an activity that fits your free time …';
 
     const [meResult, healthResult, recommendationResult] = await Promise.allSettled([
         fetch('/api/me', { credentials: 'include' }),
@@ -134,7 +146,7 @@ async function loadRecommendations() {
 
     if (meResult.status === 'fulfilled' && meResult.value.ok) {
         const user = await meResult.value.json();
-        byId('recommendation-user').textContent = user.usr || 'Dein Bereich';
+        byId('recommendation-user').textContent = user.usr || 'Your space';
     }
     if (healthResult.status === 'fulfilled' && healthResult.value.ok) {
         renderHealthScore(await healthResult.value.json());
@@ -143,15 +155,15 @@ async function loadRecommendations() {
     try {
         if (recommendationResult.status === 'rejected') throw recommendationResult.reason;
         const response = recommendationResult.value;
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Empfehlung konnte nicht geladen werden.');
+        const data = await readApiJson(response);
+        if (!response.ok) throw new Error('Could not load the recommendation.');
 
         const windowStart = data.window?.start
-            ? new Date(data.window.start).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+            ? new Date(data.window.start).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
             : '';
         byId('recommendation-window').textContent = data.window
-            ? `Freies Kalenderfenster: ${windowStart}–${new Date(data.window.end).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
-            : 'Heute wurde kein freies 30-Minuten-Fenster gefunden.';
+            ? `Free time slot: ${windowStart}–${new Date(data.window.end).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+            : 'No free 30-minute time slot found today.';
 
         const activities = Array.isArray(data.recommendation?.activities) ? data.recommendation.activities : [];
         if (activities.length) {
@@ -159,21 +171,21 @@ async function loadRecommendations() {
             byId('recommendation-list').replaceChildren(...cards);
             text.hidden = true;
             const recommendationText = cards.map((card) => card.dataset.summary).join('\n');
-            link.href = `/llm?ask=${encodeURIComponent(`Hilf mir, diese Empfehlung nachzuvollziehen: ${recommendationText}`)}`;
+            link.href = `/llm?ask=${encodeURIComponent(`Help me understand this recommendation: ${recommendationText}`)}`;
             link.hidden = false;
         } else {
             text.hidden = false;
             byId('recommendation-list').replaceChildren(text);
             text.textContent = data.recommendation_note || (!data.window
-                ? 'Heute wurde kein freies 30-Minuten-Fenster gefunden.'
-                : 'Trage Hobbys in deinem Profil ein, damit Opty passende Aktivitäten vorschlagen kann.');
+                ? 'No free 30-minute time slot found today.'
+                : 'Add hobbies to your profile so Opty can suggest activities that suit you.');
             link.hidden = true;
         }
         byId('recommendation-status').textContent = data.recommendation_note || '';
     } catch (error) {
         text.hidden = false;
         byId('recommendation-list').replaceChildren(text);
-        text.textContent = error instanceof Error ? error.message : 'Empfehlungen konnten nicht geladen werden.';
+        text.textContent = error instanceof Error ? error.message : 'Could not load recommendations.';
         retry.hidden = false;
     }
 }

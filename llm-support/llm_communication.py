@@ -116,6 +116,7 @@ class LlmRequestQueue:
         system_prompt = await asyncio.to_thread(
             vectordb.build_rag_context, request.username, request.content
         )
+        system_prompt += "\n\nAlways respond in English, even if the user writes in another language. Keep every user-facing answer in English."
         messages = [{"role": "system", "content": system_prompt}]
         messages.extend(self._conversation_messages(request.conversation))
         messages.append({"role": "user", "content": request.content})

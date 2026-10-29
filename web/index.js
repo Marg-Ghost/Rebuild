@@ -6,7 +6,7 @@ async function fetchJson(url) {
     const data = await response.json();
     if (!response.ok) {
         if (response.status === 401) window.location.href = '/login';
-        throw new Error(data.detail || 'Daten konnten nicht geladen werden.');
+        throw new Error('Could not load the data.');
     }
     return data;
 }
@@ -31,7 +31,7 @@ function renderHealthChart(history) {
         empty.setAttribute('y', '96');
         empty.setAttribute('text-anchor', 'middle');
         empty.setAttribute('class', 'chart-empty');
-        empty.textContent = 'Noch keine Verlaufseinträge';
+        empty.textContent = 'No history entries yet';
         chart.appendChild(empty);
         return;
     }
@@ -70,8 +70,8 @@ function renderHealthChart(history) {
     const firstDate = new Date(`${values[0][0]}T00:00:00`);
     const lastDate = new Date(`${values[values.length - 1][0]}T00:00:00`);
     byId('health-chart-caption').textContent = values.length === 1
-        ? `Erster Eintrag am ${firstDate.toLocaleDateString('de-DE')}`
-        : `${firstDate.toLocaleDateString('de-DE')} bis ${lastDate.toLocaleDateString('de-DE')}`;
+        ? `First entry on ${firstDate.toLocaleDateString('en-GB')}`
+        : `${firstDate.toLocaleDateString('en-GB')} bis ${lastDate.toLocaleDateString('en-GB')}`;
 }
 
 function renderCheckup(status) {
@@ -80,33 +80,33 @@ function renderCheckup(status) {
     const done = Math.min(checkups.length, 5);
     const percent = Math.round(done / 5 * 100);
     byId('checkupwert_today').textContent = `${done}/5`;
-    byId('checkup-status-label').textContent = done === 5 ? 'Abgeschlossen' : 'In Arbeit';
+    byId('checkup-status-label').textContent = done === 5 ? 'Complete' : 'In progress';
     setProgressRing(byId('checkup-ring'), percent);
 
     document.querySelectorAll('#checkin-segments [data-checkup-slot]').forEach((slot) => {
         const complete = Number(slot.dataset.checkupSlot) <= done;
         slot.classList.toggle('complete', complete);
-        slot.setAttribute('aria-label', `Check-in ${slot.dataset.checkupSlot}${complete ? ', abgeschlossen' : ', offen'}`);
+        slot.setAttribute('aria-label', `Check-in ${slot.dataset.checkupSlot}${complete ? ', complete' : ', open'}`);
     });
     const statusText = byId('sleep_checkup_today');
     const startLink = byId('start-checkup');
     if (status.processing) {
-        statusText.textContent = 'Dein Check-in wird im Hintergrund ausgewertet.';
+        statusText.textContent = 'Your check-in is being processed in the background.';
         startLink.hidden = true;
     } else if (sleep.status !== 'complete') {
-        statusText.textContent = 'Erfasse zuerst deinen Schlaf-Check-in. Danach kannst du fünfmal Essen und Bewegung seit dem letzten Check-in eintragen.';
+        statusText.textContent = 'Complete your sleep check-in first. Then you can log food and activity five times between check-ins.';
         startLink.href = '/sleep-checkup';
         startLink.textContent = sleep.status === 'pending'
-            ? 'Schlaf-Check-in fortsetzen →'
-            : 'Schlaf-Check-in starten →';
+            ? 'Continue sleep check-in →'
+            : 'Start sleep check-in →';
         startLink.hidden = false;
     } else if (done < 5) {
-        statusText.textContent = `Check-in ${done + 1} von 5: Trage Essen und Bewegung seit dem letzten Check-in ein.`;
+        statusText.textContent = `Check-in ${done + 1} of 5: Log food and activity since your last check-in.`;
         startLink.href = '/checkup';
-        startLink.textContent = `Check-in ${done + 1} starten →`;
+        startLink.textContent = `Check-in ${done + 1} →`;
         startLink.hidden = false;
     } else {
-        statusText.textContent = 'Alle fünf Check-ins für heute sind abgeschlossen.';
+        statusText.textContent = 'All five check-ins for today are complete.';
         startLink.hidden = true;
     }
 }
@@ -121,7 +121,7 @@ function renderHealthExplanation(currentScore, history, isToday) {
         .sort((left, right) => left.date.localeCompare(right.date));
 
     if (!Number.isFinite(currentScore)) {
-        assessment.textContent = 'Noch kein Tageswert vorhanden. Die interne Rechenbasis liegt bei 1.000 Punkten.';
+        assessment.textContent = 'No daily score yet. The internal baseline is 1,000 points.';
         return;
     }
 
@@ -132,8 +132,8 @@ function renderHealthExplanation(currentScore, history, isToday) {
     const scoreDate = isToday ? todayKey : currentHistoryEntry?.date;
     const scoreDifference = Math.round(currentScore - baseline);
     const comparison = scoreDifference === 0
-        ? 'entspricht der internen Rechenbasis von 1.000 Punkten.'
-        : `${Math.abs(scoreDifference).toLocaleString('de-DE')} Punkte ${scoreDifference < 0 ? 'unter' : 'über'} der internen Rechenbasis von 1.000.`;
+        ? 'matches the internal baseline of 1,000 points.'
+        : `${Math.abs(scoreDifference).toLocaleString('en-GB')} points ${scoreDifference < 0 ? 'below' : 'above'} the internal baseline of 1,000.`;
     const previousDay = scoreDate
         ? historyValues.filter((entry) => entry.date < scoreDate).at(-1)
         : undefined;
@@ -142,11 +142,11 @@ function renderHealthExplanation(currentScore, history, isToday) {
         : null;
     const dailyComparison = dailyChange === null
         ? ''
-        : ` Gegenüber dem letzten gespeicherten Verlaufstag (${new Date(`${previousDay.date}T00:00:00`).toLocaleDateString('de-DE')}) sind es ${Math.abs(dailyChange).toLocaleString('de-DE')} Punkte ${dailyChange < 0 ? 'weniger' : 'mehr'}.`;
+        : ` Compared with the previous saved day (${new Date(`${previousDay.date}T00:00:00`).toLocaleDateString('en-GB')}) the difference is ${Math.abs(dailyChange).toLocaleString('en-GB')} points ${dailyChange < 0 ? 'fewer' : 'more'}.`;
     const scoreLabel = isToday
-        ? 'Heute'
-        : `Letzter gespeicherter Tageswert${scoreDate ? ` (${new Date(`${scoreDate}T00:00:00`).toLocaleDateString('de-DE')})` : ''}`;
-    assessment.textContent = `${scoreLabel}: ${Math.round(currentScore).toLocaleString('de-DE')} Punkte; ${comparison}${dailyComparison} Das ist ein App-Modellwert, kein medizinischer Befund.`;
+        ? 'Today'
+        : `Last saved daily score${scoreDate ? ` (${new Date(`${scoreDate}T00:00:00`).toLocaleDateString('en-GB')})` : ''}`;
+    assessment.textContent = `${scoreLabel}: ${Math.round(currentScore).toLocaleString('en-GB')} points; ${comparison}${dailyComparison} This is an app model score, not a medical assessment.`;
 
     const values = [...historyValues.map((entry) => entry.score), currentScore, baseline];
     const low = Math.min(...values);
@@ -166,14 +166,14 @@ async function loadRecommendation() {
     try {
         const data = await fetchJson('/api/dashboard/recommendation');
         const recommendation = typeof data.recommendation === 'string' ? data.recommendation.trim() : '';
-        target.textContent = recommendation || 'Heute gibt es noch keine Empfehlung.';
+        target.textContent = recommendation || 'There are no recommendations for today yet.';
         retryButton.hidden = true;
         discussLink.hidden = !recommendation;
         if (recommendation) {
-            discussLink.href = `/llm?ask=${encodeURIComponent(`Hilf mir, diese Empfehlung nachzuvollziehen: ${recommendation}`)}`;
+            discussLink.href = `/llm?ask=${encodeURIComponent(`Help me understand this recommendation: ${recommendation}`)}`;
         }
     } catch (error) {
-        target.textContent = error instanceof Error ? `Opty konnte die Empfehlung nicht laden: ${error.message}` : 'Opty konnte die Empfehlung nicht laden.';
+        target.textContent = error instanceof Error ? `Opty could not load the recommendation: ${error.message}` : 'Opty could not load the recommendation.';
         discussLink.hidden = true;
         retryButton.hidden = false;
     }
@@ -182,7 +182,7 @@ async function loadRecommendation() {
 async function loadDashboard() {
     const status = byId('dashboard-status');
     const now = new Date();
-    byId('today-date').textContent = now.toLocaleDateString('de-DE', {
+    byId('today-date').textContent = now.toLocaleDateString('en-GB', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     }).toUpperCase();
 
@@ -193,7 +193,7 @@ async function loadDashboard() {
             fetchJson('/api/me'),
         ]);
 
-        byId('dashboard-username').textContent = user.usr || 'Dein Bereich';
+        byId('dashboard-username').textContent = user.usr || 'Your space';
         const count = Number(health[0]) || 0;
         const healthTotal = Number(health[1]) || 0;
         const history = health[2] && typeof health[2] === 'object' ? health[2] : {};
@@ -204,7 +204,7 @@ async function loadDashboard() {
             const todayKey = checkup.daily?.date || [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
             chartHistory[todayKey] = healthToday;
         }
-        byId('health_count').textContent = checkup.processing ? 'In Berechnung...' : (healthToday === undefined ? '--' : Math.round(healthToday).toLocaleString('de-DE'));
+        byId('health_count').textContent = checkup.processing ? 'Calculating...' : (healthToday === undefined ? '--' : Math.round(healthToday).toLocaleString('en-GB'));
         renderHealthExplanation(healthToday, history, count > 0);
         renderHealthChart(chartHistory);
         renderCheckup(checkup);

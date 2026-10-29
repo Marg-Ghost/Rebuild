@@ -1,22 +1,22 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#fffaf0">
-    <title>Anmelden | Rebuild</title>
+    <title>Sign in | Rebuild</title>
     <link rel="stylesheet" href="/static/styles/main.css">
 </head>
 <body class="auth-page">
     <main class="auth-shell">
-        <section class="auth-card" aria-label="Anmelden oder registrieren">
+        <section class="auth-card" aria-label="Sign in or create an account">
             <div class="auth-form-column">
                 <section id="login" class="auth-mode" aria-labelledby="login-title">
                     <h1 id="login-title">Sign In</h1>
                     <fieldset class="login-methods">
-                        <legend>Anmelden mit</legend>
-                        <label><input type="radio" name="login_method" value="username" checked onchange="updateLoginFields(); updateLoginIdentifierLabel()"> Benutzername</label>
-                        <label><input type="radio" name="login_method" value="email" onchange="updateLoginFields(); updateLoginIdentifierLabel()"> E-Mail</label>
+                        <legend>Sign in with</legend>
+                        <label><input type="radio" name="login_method" value="username" checked onchange="updateLoginFields(); updateLoginIdentifierLabel()"> Username</label>
+                        <label><input type="radio" name="login_method" value="email" onchange="updateLoginFields(); updateLoginIdentifierLabel()"> Email</label>
                     </fieldset>
 
                     <div class="auth-field">
@@ -28,8 +28,8 @@
                         <label for="pwd_input">Password</label>
                         <input type="password" id="pwd_input" autocomplete="current-password" required>
                     </div>
-                    <p class="auth-switch">no account? <button type="button" onclick="load_r_or_l('register')">Create one</button></p>
-                    <button class="auth-submit" type="button" onclick="loginUser()">Submit</button>
+                    <p class="auth-switch">No account? <button type="button" onclick="load_r_or_l('register')">Create an account</button></p>
+                    <button class="auth-submit" type="button" onclick="loginUser()">Sign in</button>
                     <p id="login_status" class="auth-status" aria-live="polite"></p>
                 </section>
 
@@ -40,11 +40,11 @@
                         <input type="text" id="usr_input_reg" autocomplete="username" required>
                     </div>
                     <div class="auth-field">
-                        <label for="email_input_reg">E-Mail</label>
+                        <label for="email_input_reg">Email</label>
                         <input type="email" id="email_input_reg" autocomplete="email" required>
                     </div>
                     <div class="auth-field">
-                        <label for="phone_input_reg">Telefon (optional)</label>
+                        <label for="phone_input_reg">Phone (optional)</label>
                         <input type="tel" id="phone_input_reg" autocomplete="tel">
                     </div>
                     <div class="auth-field">
@@ -52,14 +52,14 @@
                     <div class="auth-field">
                         <label for="pwd_input_reg">Password</label>
                         <input type="password" id="pwd_input_reg" autocomplete="new-password" minlength="12" maxlength="256" required>
-                        <small>Mindestens 12 Zeichen.</small>
+                        <small>At least 12 characters.</small>
                     </div>
-                    <p class="auth-switch">already have an account? <button type="button" onclick="load_r_or_l('login')">Sign in</button></p>
+                    <p class="auth-switch">Already have an account? <button type="button" onclick="load_r_or_l('login')">Sign in</button></p>
                     <button class="auth-submit" type="button" onclick="registerUser()">Create account</button>
                 </section>
             </div>
 
-            <aside class="auth-showcase" aria-label="Deine Gesundheit im Überblick">
+            <aside class="auth-showcase" aria-label="Your health at a glance">
                 <div class="auth-watermark" aria-hidden="true">
                     <span>REBUILD</span>
                     <img src="/static/assets/body.svg" alt="">
@@ -67,25 +67,25 @@
                 <div class="auth-topics">
                     <button class="auth-topic" type="button" aria-label="Nutrition" aria-expanded="false" aria-describedby="nutrition-tooltip">
                         <img src="/static/assets/food.svg" alt="">
-                        <span class="auth-tooltip" id="nutrition-tooltip" role="tooltip" hidden>Deine eingetragenen Lebensmittel werden anhand ihrer Nährwerte bewertet und zu einem Score verrechnet. Wähle passende Katalogeinträge und trage Mahlzeiten regelmäßig ein, damit der Wert aussagekräftiger wird.</span>
+                        <span class="auth-tooltip" id="nutrition-tooltip" role="tooltip" hidden>Your food entries are scored using their nutritional values. Choose matching catalog items and log meals regularly for a more meaningful score.</span>
                     </button>
                     <button class="auth-topic" type="button" aria-label="Health" aria-expanded="false" aria-describedby="health-tooltip">
                         <img src="/static/assets/health.svg" alt="">
-                        <span class="auth-tooltip" id="health-tooltip" role="tooltip" hidden>Der Gesamtwert startet bei 1000 und wird durch berechnete Schlaf-, Ernährungs- und Bewegungswerte angepasst. Regelmäßige, korrekte Einträge in allen drei Bereichen machen ihn aussagekräftiger.</span>
+                        <span class="auth-tooltip" id="health-tooltip" role="tooltip" hidden>The overall score starts at 1,000 and changes based on sleep, nutrition, and activity. Regular, accurate entries in all three areas make it more meaningful.</span>
                     </button>
                     <button class="auth-topic" type="button" aria-label="Sleep" aria-expanded="false" aria-describedby="sleep-tooltip">
                         <img src="/static/assets/sleep.svg" alt="">
-                        <span class="auth-tooltip" id="sleep-tooltip" role="tooltip" hidden>Dein Schlafwert wird aus Schlafdauer, Einschlafzeit und dem Zeitpunkt deines Check-ins berechnet. Regelmäßige, korrekte Angaben machen deinen Verlauf verlässlicher.</span>
+                        <span class="auth-tooltip" id="sleep-tooltip" role="tooltip" hidden>Your sleep score is based on sleep duration, bedtime, and when you check in. Regular, accurate entries make your history more reliable.</span>
                     </button>
                     <button class="auth-topic" type="button" aria-label="Activity" aria-expanded="false" aria-describedby="activity-tooltip">
                         <img src="/static/assets/activity.svg" alt="">
-                        <span class="auth-tooltip" id="activity-tooltip" role="tooltip" hidden>Deine eingetragenen Aktivitäten werden anhand von Merkmalen wie Energieverbrauch, Cardio und Kraft bewertet. Wähle passende Katalogeinträge und erfasse absolvierte Bewegung regelmäßig.</span>
+                        <span class="auth-tooltip" id="activity-tooltip" role="tooltip" hidden>Your activities are scored using factors such as energy use, cardio, and strength. Choose matching catalog items and log completed activities regularly.</span>
                     </button>
                 </div>
             </aside>
         </section>
     </main>
-    <script src="/static/main.js"></script>
+    <script src="/static/main.js?v=20261029-english-ui2"></script>
     <script src="/static/auth.js"></script>
 </body>
 </html>

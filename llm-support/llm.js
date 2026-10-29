@@ -28,7 +28,7 @@ async function request() {
     const visibleConversation = [...previousConversation, { role: "user", content: message }];
     displayGespräch(visibleConversation);
     sendButton.disabled = true;
-    status.textContent = "Opty denkt nach ...";
+    status.textContent = "Opty is thinking ...";
 
     try {
         const response = await fetch("/api/llm/chat", {
@@ -37,7 +37,7 @@ async function request() {
             body: JSON.stringify({ message, conversation: previousConversation }),
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || "Die Anfrage ist fehlgeschlagen.");
+        if (!response.ok) throw new Error("The request failed.");
 
         gespräch = [
             ...visibleConversation,
@@ -64,7 +64,7 @@ async function clearConversation() {
 
     sendButton.disabled = true;
     clearButton.disabled = true;
-    status.textContent = "Gespräch wird als persönliches Memory gespeichert ...";
+    status.textContent = "Saving this conversation as a personal memory …";
     try {
         const response = await fetch("/api/llm/conversation/clear", {
             method: "POST",
@@ -72,10 +72,10 @@ async function clearConversation() {
             body: JSON.stringify({ conversation: gespräch }),
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || "Speichern fehlgeschlagen.");
+        if (!response.ok) throw new Error("Could not save.");
         gespräch = [];
         displayGespräch();
-        status.textContent = data.saved ? "Gespräch gespeichert." : "";
+        status.textContent = data.saved ? "Conversation saved." : "";
     } catch (error) {
         status.textContent = error.message;
     } finally {

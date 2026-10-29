@@ -1,24 +1,24 @@
-# Konto, Anmeldung und DEA
+# Account, Sign-in, and Input Validation
 
-## Bausteine
+## Components
 
-- **Oberfläche:** `web/pages/login/root.html`, `web/pages/login/register_info.html`, `web/auth.js` und `web/main.js`.
-- **HTTP-Schicht:** `/login`, `/register`, `/register_info`, `/register_checkup` sowie geschützte Seiten in `server.py`.
-- **Validierung:** `input_validator.py` enthält `DeterministischerEndlicherAutomat`.
-- **Identität und Persistenz:** `SessionMiddleware` in `server.py` und SQLite-Funktionen in `data/user/db_interaction.py`.
+- **Interface:** `web/pages/login/root.html`, `web/pages/login/register_info.html`, `web/auth.js`, and `web/main.js`.
+- **HTTP layer:** `/login`, `/register`, `/register_info`, `/register_checkup`, and protected pages in `server.py`.
+- **Validation:** `input_validator.py` contains `DeterministischerEndlicherAutomat`.
+- **Identity and persistence:** `SessionMiddleware` in `server.py` and SQLite functions in `data/user/db_interaction.py`.
 
-## Ablauf
+## Flow
 
-1. Der Browser sendet Login- oder Registrierungsdaten als JSON an FastAPI.
-2. `DeterministischerEndlicherAutomat.is_valid_email` prüft E-Mail-Adressen mit expliziten DFA-Zuständen (`start`, lokaler Teil, `@`, Domain, Punkt und 2–3 Buchstaben TLD). `match`/`case` wählt die Zustandsübergänge. Die Klasse enthält zusätzlich allgemeine Hilfsprüfungen für Pflichtfelder und Längen; diese Helfer sind keine eigenen DEA-Automaten.
-3. `server.py` prüft Feldgrenzen und Passwortlänge und wendet eine pro Prozess geführte Rate-Limit-Queue auf Login und Registrierung an.
-4. Passwort-Hashing und Nutzeranlage erfolgen in den Datenbankfunktionen. Bei erfolgreichem Login wird der Nutzername in einem signierten Session-Cookie gespeichert.
-5. Geschützte Endpunkte lesen den Nutzer aus `request.session`; der Browser hält kein Login-Token in `localStorage`.
+1. The browser sends sign-in or registration data as JSON to FastAPI.
+2. `DeterministischerEndlicherAutomat.is_valid_email` checks email addresses using explicit DFA states (`start`, local part, `@`, domain, dot, and a 2–3 letter TLD). `match`/`case` selects state transitions. The class also contains general helper checks for required fields and lengths; these helpers are not separate DFA automata.
+3. `server.py` checks field limits and password length, and applies a per-process rate-limit queue to sign-in and registration.
+4. Password hashing and user creation happen in the database functions. After a successful sign-in, the username is stored in a signed session cookie.
+5. Protected endpoints read the user from `request.session`; the browser does not keep a sign-in token in `localStorage`.
 
-## Sicherheits- und Architekturgrenzen
+## Security and architecture limits
 
-- Die Session wird mit `SessionMiddlewareSecretKey` signiert; `SESSION_HTTPS_ONLY` steuert das Secure-Attribut.
-- Mutierende Requests mit `Origin` oder `Referer` werden in `same_origin_for_mutations` auf denselben Host geprüft.
-- Rate-Limits liegen im Prozessspeicher und werden nicht zwischen mehreren Uvicorn-Workern geteilt.
-- Der DFA ist eine bewusst einfache Syntaxprüfung. Er verifiziert weder die Existenz einer Domain noch die Zustellbarkeit der Adresse.
-- Datenbankzugriffe und E-Mail-Eindeutigkeitsregeln sind in `data/user/db_interaction.py` implementiert, nicht in der DEA-Klasse.
+- The session is signed with `SessionMiddlewareSecretKey`; `SESSION_HTTPS_ONLY` controls the Secure attribute.
+- Mutating requests with an `Origin` or `Referer` header are checked against the same host by `same_origin_for_mutations`.
+- Rate limits are held in process memory and are not shared between multiple Uvicorn workers.
+- The DFA is a deliberately simple syntax check. It does not verify that a domain exists or that an address can receive mail.
+- Database access and email uniqueness rules are implemented in `data/user/db_interaction.py`, not in the DFA class.

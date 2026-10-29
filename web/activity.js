@@ -3,7 +3,7 @@ const activityById = (id) => document.getElementById(id);
 function formatActivityImpact(value) {
     const score = Number(value);
     if (!Number.isFinite(score)) return '--';
-    const formatted = Math.abs(score).toLocaleString('de-DE', { maximumFractionDigits: 1 });
+    const formatted = Math.abs(score).toLocaleString('en-GB', { maximumFractionDigits: 1 });
     return `${score > 0 ? '+' : score < 0 ? '−' : ''}${formatted}`;
 }
 
@@ -15,7 +15,7 @@ function renderActivityHistory(history) {
 
     if (values.length === 0) {
         path.setAttribute('d', '');
-        caption.textContent = 'Dein Activity-Verlauf erscheint nach den ersten Check-ins.';
+        caption.textContent = 'Your activity history will appear after your first check-ins.';
         return;
     }
 
@@ -24,7 +24,7 @@ function renderActivityHistory(history) {
         .filter((item) => Number.isFinite(item.impact));
     if (pointsData.length === 0) {
         path.setAttribute('d', '');
-        caption.textContent = 'Für den Verlauf liegen noch keine auswertbaren Check-ins vor.';
+        caption.textContent = 'There is not enough check-in data to show a history yet.';
         return;
     }
 
@@ -42,8 +42,8 @@ function renderActivityHistory(history) {
     const firstDate = new Date(`${pointsData[0].date}T00:00:00`);
     const formattedDate = Number.isNaN(firstDate.getTime())
         ? pointsData[0].date
-        : firstDate.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' });
-    caption.textContent = `Täglicher Activity-Score seit ${formattedDate} · ${pointsData.length} Tage`;
+        : firstDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    caption.textContent = `Daily activity score since ${formattedDate} · ${pointsData.length} days`;
 }
 
 function renderActivityEntries(checkups) {
@@ -53,7 +53,7 @@ function renderActivityEntries(checkups) {
     if (!checkups.length) {
         const empty = document.createElement('p');
         empty.className = 'food-empty-state';
-        empty.textContent = 'Heute wurden noch keine Activity-Einträge gespeichert.';
+        empty.textContent = 'No activity entries saved for today yet.';
         list.append(empty);
         return;
     }
@@ -68,7 +68,7 @@ function renderActivityEntries(checkups) {
             ? checkup.activity.map((entry) => typeof entry === 'string'
                 ? entry
                 : `${entry.name} (${entry.duration_minutes} min)`).join(', ')
-            : 'Keine Activity-Einträge';
+            : 'No activity entries';
 
         const checkupLabel = document.createElement('span');
         checkupLabel.className = 'food-entry-checkup';
@@ -77,7 +77,7 @@ function renderActivityEntries(checkups) {
         const impact = document.createElement('strong');
         impact.className = 'food-entry-impact';
         impact.textContent = formatActivityImpact(checkup.impact);
-        impact.setAttribute('aria-label', `Score-Veränderung ${impact.textContent}`);
+        impact.setAttribute('aria-label', `Score change ${impact.textContent}`);
 
         row.append(names, checkupLabel, impact);
         list.append(row);
@@ -90,7 +90,7 @@ async function loadActivityDashboard() {
     try {
         const response = await fetch('/api/activity/summary', { credentials: 'include' });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || 'Activity-Daten konnten nicht geladen werden.');
+        if (!response.ok) throw new Error('Could not load activity data.');
 
         activityById('activity-counter-value').textContent = data.checkups.length
             ? formatActivityImpact(data.today_impact)
@@ -100,7 +100,7 @@ async function loadActivityDashboard() {
     } catch (error) {
         status.textContent = error.message;
         renderActivityEntries([]);
-        activityById('activity-entry-list').firstElementChild.textContent = 'Activity-Einträge konnten nicht geladen werden.';
+        activityById('activity-entry-list').firstElementChild.textContent = 'Could not load activity entries.';
     }
 }
 
