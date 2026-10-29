@@ -5,7 +5,7 @@ const catalogVectorLabels = {
     activity: ['Energy (kcal/30 min)', 'Cardio', 'Strength', 'Flexibility', 'Coordination', 'Stress relief', 'Joint strain', 'Injury risk']
 };
 
-async function loadCheck-inCatalog() {
+async function loadCheckupCatalog() {
     const status = document.getElementById('checkup_status');
     const submitButton = document.querySelector('.submit-button');
     try {
@@ -299,10 +299,10 @@ function confirm_register() {
 
 window.addEventListener('DOMContentLoaded', () => {
     if (document.querySelector('.catalog-control input[data-kind]')) {
-        loadCheck-inCatalog();
-        loadDailyCheck-inSummary();
+        loadCheckupCatalog();
+        loadDailyCheckupSummary();
     }
-    if (document.getElementById('sleep_checkup_status')) loadSleepCheck-inState();
+    if (document.getElementById('sleep_checkup_status')) loadSleepCheckupState();
 });
 
 function normalizeCatalogName(name) {
@@ -491,7 +491,7 @@ async function resolveAllReferenceInputs() {
     }
 }
 
-async function loadDailyCheck-inSummary() {
+async function loadDailyCheckupSummary() {
     const dateElement = document.getElementById('checkup_date');
     if (!dateElement) return;
 
@@ -552,7 +552,7 @@ async function send_daily_checkup() {
     }
 }
 
-async function loadSleepCheck-inState() {
+async function loadSleepCheckupState() {
     const status = document.getElementById('sleep_checkup_status');
     try {
         const response = await fetch('/api/sleep-checkup', { credentials: 'include' });
@@ -570,7 +570,7 @@ async function loadSleepCheck-inState() {
     }
 }
 
-async function submitSleepCheck-in(action) {
+async function submitSleepCheckup(action) {
     const status = document.getElementById('sleep_checkup_status');
     const payload = { action };
     if (action === 'slept') {
@@ -612,5 +612,5 @@ Object.assign(window, {
     remove_note,
     confirm_register,
     send_daily_checkup,
-    submitSleepCheck-in
+    submitSleepCheckup
 });
