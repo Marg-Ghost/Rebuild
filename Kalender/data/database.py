@@ -4,22 +4,26 @@ from datetime import date as current_date, datetime, time as current_time, timed
 from pathlib import Path
 
 DB_PATH = Path(__file__).resolve().with_name("kalender.db")
-conn = sqlite3.connect(DB_PATH)
-conn.row_factory = sqlite3.Row
-conn.execute("PRAGMA foreign_keys = ON")
-cursor = conn.cursor()
+
+
+def _connect():
+    connection = sqlite3.connect(DB_PATH, timeout=10)
+    connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA foreign_keys = ON")
+    return connection
 
 
 def init_db():
-    cursor.execute("""
+    with closing(_connect()) as connection, connection:
+        connection.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             email TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL
         )
-    """)
-    cursor.execute("""
+        """)
+        connection.execute("""
         CREATE TABLE IF NOT EXISTS google_calendar_sources (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL UNIQUE,
@@ -27,8 +31,8 @@ def init_db():
             last_synced TEXT,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
-    """)
-    cursor.execute("""
+        """)
+        connection.execute("""
         CREATE TABLE IF NOT EXISTS tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
@@ -43,33 +47,29 @@ def init_db():
             task_end_at TEXT,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
-    """)
-    task_columns = {row["name"] for row in conn.execute("PRAGMA table_info(tasks)")}
-    for column, definition in (
-        ("is_google_event", "INTEGER NOT NULL DEFAULT 0"),
-        ("google_event_id", "TEXT"),
-        ("google_source_id", "INTEGER"),
-        ("task_end_at", "TEXT"),
-    ):
-        if column not in task_columns:
-            cursor.execute(f'ALTER TABLE tasks ADD COLUMN "{column}" {definition}')
-    cursor.execute("""
+        """)
+        task_columns = {
+            row["name"] for row in connection.execute("PRAGMA table_info(tasks)")
+        }
+        for column, definition in (
+            ("is_google_event", "INTEGER NOT NULL DEFAULT 0"),
+            ("google_event_id", "TEXT"),
+            ("google_source_id", "INTEGER"),
+            ("task_end_at", "TEXT"),
+        ):
+            if column not in task_columns:
+                connection.execute(
+                    f'ALTER TABLE tasks ADD COLUMN "{column}" {definition}'
+                )
+        connection.execute("""
         CREATE UNIQUE INDEX IF NOT EXISTS idx_google_task_identity
         ON tasks (user_id, google_event_id)
         WHERE google_event_id IS NOT NULL
-    """)
-    cursor.execute("""
+        """)
+        connection.execute("""
         CREATE INDEX IF NOT EXISTS idx_user_tasks
         ON tasks (user_id, task_date)
-    """)
-    conn.commit()
-
-
-def _connect():
-    connection = sqlite3.connect(DB_PATH, timeout=10)
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA foreign_keys = ON")
-    return connection
+        """)
 
 
 def _get_or_create_user_id(connection, username):
@@ -112,13 +112,13 @@ def save_date(usr, date):
             raise ValueError("Ein Termin darf höchstens 24 Stunden dauern")
         task_end_at = end.isoformat(timespec="minutes")
 
-    user_id = _get_or_create_user_id(conn, usr)
-    cursor.execute("""
+    with closing(_connect()) as connection, connection:
+        user_id = _get_or_create_user_id(connection, usr)
+        cursor = connection.execute("""
         INSERT INTO tasks (user_id, task_date, task_time, task_end_at, importance, task_type, content)
         VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (user_id, task_date, task_time, task_end_at, importance, date.task_type, date.content or None))
-    conn.commit()
-    return cursor.lastrowid
+        """, (user_id, task_date, task_time, task_end_at, importance, date.task_type, date.content or None))
+        return cursor.lastrowid
 
 
 def sync_google_calendar_events(username, ics_url, events):
@@ -226,17 +226,20 @@ def get_data(usr, month, year=None):
     month_start = current_date(year, month, 1)
     next_month = current_date(year + (month == 12), month % 12 + 1, 1)
 
-    user = conn.execute("SELECT id FROM users WHERE username = ?", (usr,)).fetchone()
-    if user is None:
-        return []
-    cursor.execute("""
+    with closing(_connect()) as connection:
+        user = connection.execute(
+            "SELECT id FROM users WHERE username = ?", (usr,)
+        ).fetchone()
+        if user is None:
+            return []
+        cursor = connection.execute("""
         SELECT id, task_date, task_time, task_end_at, importance, task_type, content,
                is_google_event
         FROM tasks
         WHERE user_id = ? AND task_date >= ? AND task_date < ?
         ORDER BY task_date, task_time, id
-    """, (user["id"], month_start.isoformat(), next_month.isoformat()))
-    return [dict(row) for row in cursor.fetchall()]
+        """, (user["id"], month_start.isoformat(), next_month.isoformat()))
+        return [dict(row) for row in cursor.fetchall()]
 
 
 init_db()
