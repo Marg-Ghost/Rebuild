@@ -8,7 +8,7 @@
 4. `GET /api/brain/summary` reads the user's history.
 5. `/brain` and `web/brain.js` display sleep hours, late nights, quality, and history.
 
-Sleep reference values are stored in `data/ai_konstanten/health.db`. Sleep is also included in the Rebuild point calculation and the local workload/recovery formula. These are app guidance values, not a medical diagnosis.
+Sleep reference values are stored in `data/ai_konstanten/health.db`. Sleep is included in the Rebuild point calculation and the Recommendations page's heuristic efficiency estimate. The estimate also uses available food and activity check-in scores, with a small positive stress adjustment; workload only shapes activity suggestions. These are app estimates, not medical measurements.
 
 ## Responsibilities
 

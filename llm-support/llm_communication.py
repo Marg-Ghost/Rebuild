@@ -11,15 +11,13 @@ USER_REQUEST = "user"
 RECOMMENDATION_REQUEST = "recommendation"
 SYSTEM_REQUEST = "system"
 SUPER_SYSTEM_REQUEST = "super_system"
-CHECKUP_REQUEST = "checkup"
 
 REQUEST_PRIORITIES = {
     USER_REQUEST: 0,
     # Recommendations follow personal chat requests immediately.
     RECOMMENDATION_REQUEST: 1,
-    CHECKUP_REQUEST: 2,
-    SUPER_SYSTEM_REQUEST: 3,
-    SYSTEM_REQUEST: 4,
+    SUPER_SYSTEM_REQUEST: 2,
+    SYSTEM_REQUEST: 3,
 }
 
 class LlmRequest:
@@ -108,8 +106,6 @@ class LlmRequestQueue:
                 self._requests.task_done()
 
     async def _process(self, request):
-        if request.request_type == CHECKUP_REQUEST:
-            return await self._run_checkup(request)
         if request.request_type == SUPER_SYSTEM_REQUEST:
             return await self._summarize_and_store(request)
 
@@ -121,52 +117,6 @@ class LlmRequestQueue:
         messages.extend(self._conversation_messages(request.conversation))
         messages.append({"role": "user", "content": request.content})
         return await self._chat(messages)
-
-    async def _run_checkup(self, request):
-        """Run the structured checkup inference with one guarded retry."""
-        import json
-        import logging
-        from pydantic import BaseModel, ConfigDict, Field
-
-        class CheckupResult(BaseModel):
-            model_config = ConfigDict(extra="forbid")
-            health_score: int = Field(ge=0, le=100)
-            burnout_risk: str = Field(pattern=r"^(Low|Medium|High)$")
-            summary: str
-            recommendations: list[str] = Field(min_length=2, max_length=2)
-
-        exact_prompt = (
-            'Du bist eine strikte Daten-API. Antworte AUSSCHLIESSLICH mit einem gültigen, '
-            'geparsten JSON-Objekt. Verwende KEINE Markdown-Codeblocks (kein ```json), '
-            'KEINE Einleitung, KEINE Erklärungen. Das Response-Format MUSS exakt diesem '
-            'Schema entsprechen:\n{\n  "health_score": <int zwischen 0 und 100>,\n'
-            '  "burnout_risk": "<Low|Medium|High>",\n'
-            '  "summary": "<Kurze Zusammenfassung>",\n'
-            '  "recommendations": ["<Empfehlung 1>", "<Empfehlung 2>"]\n}'
-        )
-        fallback_prompt = (
-            'Gib nur ein JSON-Objekt mit health_score (Ganzzahl 0..100), '
-            'burnout_risk (Low, Medium oder High), summary (Text) und '
-            'recommendations (genau zwei Texte) zurück.'
-        )
-        for attempt, prompt in enumerate((exact_prompt, fallback_prompt)):
-            try:
-                response = await self.client.chat(
-                    model=self.model,
-                    messages=[{"role": "system", "content": prompt},
-                              {"role": "user", "content": request.content}],
-                    format="json",
-                    keep_alive=-1,
-                )
-                message = response.get("message") if isinstance(response, dict) else response.message
-                content = message.get("content", "") if isinstance(message, dict) else message.content
-                return CheckupResult.model_validate(json.loads(content)).model_dump()
-            except Exception as error:
-                logging.getLogger(__name__).warning("Checkup JSON Versuch %s fehlgeschlagen: %s", attempt + 1, error)
-        logging.getLogger(__name__).error("Checkup-Auswertung fehlgeschlagen; nutze sicheren Default")
-        return {"health_score": 50, "burnout_risk": "Medium",
-                "summary": "Auswertung nicht verfügbar.",
-                "recommendations": ["Bitte später erneut versuchen.", "Bei Beschwerden medizinischen Rat einholen."]}
 
     async def _summarize_and_store(self, request):
         conversation = self._conversation_text(request.conversation)

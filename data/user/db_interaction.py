@@ -10,6 +10,7 @@ DB_PATH = Path(__file__).resolve().with_name("user.db")
 def init_db() -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("PRAGMA foreign_keys = ON")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS login (
@@ -128,24 +129,47 @@ def init_db() -> None:
         )
         conn.execute(
             """
-            CREATE TABLE IF NOT EXISTS efficiency_scores (
+            CREATE TABLE IF NOT EXISTS efficiency_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id TEXT NOT NULL,
-                score REAL NOT NULL CHECK (score BETWEEN 0 AND 100),
-                burnout_risk_level TEXT NOT NULL
-                    CHECK (burnout_risk_level IN ('low', 'moderate', 'high')),
-                sleep_hours REAL NOT NULL CHECK (sleep_hours BETWEEN 0 AND 24),
-                stress_level INTEGER NOT NULL CHECK (stress_level BETWEEN 0 AND 10),
-                workload_level INTEGER NOT NULL CHECK (workload_level BETWEEN 0 AND 10),
-                timestamp TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES login(username)
+                timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                stress_level INTEGER NOT NULL CHECK (stress_level BETWEEN 1 AND 10),
+                workload_level INTEGER NOT NULL CHECK (workload_level BETWEEN 1 AND 10),
+                sleep_hours REAL,
+                sleep_quality REAL,
+                sleep_score REAL CHECK (sleep_score BETWEEN 0 AND 100),
+                food_score REAL CHECK (food_score BETWEEN 0 AND 100),
+                activity_score REAL CHECK (activity_score BETWEEN 0 AND 100),
+                stress_bonus REAL NOT NULL DEFAULT 0,
+                efficiency_score REAL NOT NULL CHECK (efficiency_score BETWEEN 0 AND 100),
+                decay_rate_per_hour REAL NOT NULL DEFAULT 10,
+                time_left_minutes INTEGER NOT NULL CHECK (time_left_minutes >= 0),
+                formula_version INTEGER NOT NULL DEFAULT 2,
+                FOREIGN KEY (user_id) REFERENCES login(username) ON DELETE CASCADE
             )
             """
         )
+        efficiency_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(efficiency_logs)")
+        }
+        for column, definition in (
+            ("sleep_hours", "REAL"),
+            ("sleep_quality", "REAL"),
+            ("sleep_score", "REAL"),
+            ("food_score", "REAL"),
+            ("activity_score", "REAL"),
+            ("stress_bonus", "REAL NOT NULL DEFAULT 0"),
+            ("decay_rate_per_hour", "REAL NOT NULL DEFAULT 10"),
+            ("formula_version", "INTEGER NOT NULL DEFAULT 1"),
+        ):
+            if column not in efficiency_columns:
+                conn.execute(
+                    f'ALTER TABLE efficiency_logs ADD COLUMN "{column}" {definition}'
+                )
         conn.execute(
             """
-            CREATE INDEX IF NOT EXISTS efficiency_scores_user_timestamp_idx
-            ON efficiency_scores(user_id, timestamp DESC)
+            CREATE INDEX IF NOT EXISTS efficiency_logs_user_timestamp_idx
+            ON efficiency_logs(user_id, timestamp DESC)
             """
         )
         conn.execute(
@@ -556,44 +580,73 @@ def save_profile_for_user(
     return True
 
 
-def save_efficiency_score(
+def save_efficiency_log(
     username: str,
-    score: float,
-    burnout_risk_level: str,
-    sleep_hours: float,
     stress_level: int,
     workload_level: int,
-) -> int:
+    sleep_hours: float,
+    sleep_quality: float | None,
+    metrics: dict,
+) -> dict:
     with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("PRAGMA foreign_keys = ON")
         cursor = conn.execute(
             """
-            INSERT INTO efficiency_scores
-                (user_id, score, burnout_risk_level, sleep_hours, stress_level, workload_level)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO efficiency_logs
+                (user_id, stress_level, workload_level, sleep_hours, sleep_quality,
+                 sleep_score, food_score, activity_score, stress_bonus,
+                 efficiency_score, decay_rate_per_hour, time_left_minutes, formula_version)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 2)
             """,
             (
-                username,
-                score,
-                burnout_risk_level,
-                sleep_hours,
-                stress_level,
-                workload_level,
+                username, stress_level, workload_level, sleep_hours, sleep_quality,
+                metrics["sleep_score"], metrics["food_score"], metrics["activity_score"],
+                metrics["stress_bonus"], metrics["efficiency_score"],
+                metrics["decay_rate_per_hour"], metrics["time_left_minutes"],
             ),
         )
-    return cursor.lastrowid
+        row = conn.execute(
+            """
+            SELECT id, timestamp, stress_level, workload_level, sleep_hours,
+                   sleep_quality, sleep_score, food_score, activity_score,
+                   stress_bonus, efficiency_score, decay_rate_per_hour,
+                   time_left_minutes, formula_version
+            FROM efficiency_logs WHERE id=? AND user_id=?
+            """,
+            (cursor.lastrowid, username),
+        ).fetchone()
+    return {
+        "id": row[0],
+        "timestamp": row[1],
+        "stress_level": row[2],
+        "workload_level": row[3],
+        "sleep_hours": row[4],
+        "sleep_quality": row[5],
+        "sleep_score": row[6],
+        "food_score": row[7],
+        "activity_score": row[8],
+        "stress_bonus": row[9],
+        "efficiency_score": row[10],
+        "decay_rate_per_hour": row[11],
+        "time_left_minutes": row[12],
+        "formula_version": row[13],
+    }
 
 
-def get_recent_efficiency_scores(username: str, limit: int = 7) -> list[dict]:
+def get_efficiency_logs(username: str, limit: int = 50) -> list[dict]:
     if limit <= 0:
         return []
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
         rows = conn.execute(
             """
-            SELECT score, burnout_risk_level, sleep_hours, stress_level,
-                   workload_level, timestamp
-            FROM efficiency_scores
-            WHERE user_id=?
+            SELECT id, timestamp, stress_level, workload_level, sleep_hours,
+                   sleep_quality, sleep_score, food_score, activity_score,
+                   stress_bonus, efficiency_score, decay_rate_per_hour,
+                   time_left_minutes, formula_version
+            FROM efficiency_logs
+            WHERE user_id=? AND formula_version=2
             ORDER BY timestamp DESC, id DESC
             LIMIT ?
             """,

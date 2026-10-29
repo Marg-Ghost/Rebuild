@@ -13,8 +13,8 @@
 
 1. The browser sends the message, visible conversation, and session cookie to `/api/llm/chat`.
 2. `server.py` validates the number, roles, and length of messages, then submits a user-scoped request to the queue.
-3. The queue sorts by priority and stable insertion order: user request (0), recommendation (1), check-in (2), summary (3), system request (4). One worker processes requests sequentially.
-4. For normal chats, `vectordb.build_rag_context` creates a system context from the profile, check-ins, health history, efficiency scores, today's calendar data, personal memories, and the most similar general Chroma references.
+3. The queue sorts by priority and stable insertion order: user request (0), recommendation (1), summary (2), system request (3). One worker processes requests sequentially. Check-in scoring is calculated locally and does not wait on an unused LLM health or burnout assessment.
+4. For normal chats, `vectordb.build_rag_context` creates a system context from the profile, check-ins, health history, recent efficiency logs, today's calendar data, personal memories, and the most similar general Chroma references.
 5. The queue sends the context, conversation, and user message to the configured Ollama client. The model and server address come from `OLLAMA_HOST` and `OLLAMA_MODEL` or their selection functions.
 
 ## Data and storage boundaries

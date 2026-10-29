@@ -8,6 +8,6 @@ The calendar database stores user-scoped tasks and optional time ranges. The UI 
 
 ## Google iCal connection
 
-`POST /api/calendar/connect-google` accepts a private iCal address. `Kalender/google_calendar.py` checks the host, scheme, and DNS targets, downloads the feed with size and event limits, parses events, and stores the source or imported events. `GET /api/calendar/google/status` returns the connection status.
+`POST /api/calendar/connect-google` accepts a private iCal address. `Kalender/google_calendar.py` checks the host, scheme, and DNS targets, downloads the feed with size and event limits, parses events, and stores the source and imported events. This is a one-time import each time the endpoint is called; no background sync runs. `GET /api/calendar/google/status` returns whether a source is stored and when it was last imported.
 
-Imported events are also considered when searching for free time slots for activity recommendations. This flow does not use Google OAuth; it connects through a private iCal URL.
+Imported events are also considered when searching for free time slots for activity recommendations. Only tasks and events already stored in Rebuild are considered. This flow does not use Google OAuth; it imports through a private iCal URL.

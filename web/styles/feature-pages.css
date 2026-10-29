@@ -114,6 +114,18 @@
   font-size: 13px;
 }
 
+.food-page .score-explainer {
+  display: inline-flex;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.food-page .score-explainer .health-info-icon {
+  width: 16px;
+  height: 16px;
+  font-size: 11px;
+}
+
 .food-page .brain-chart-line {
   stroke: var(--feature-forest);
   stroke-width: 2;

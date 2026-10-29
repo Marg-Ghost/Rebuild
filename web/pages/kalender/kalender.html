@@ -30,7 +30,7 @@
             <section class="calendar-intro" aria-labelledby="calendar-title">
                 <p class="eyebrow">YOUR OVERVIEW</p>
                 <h1 id="calendar-title">Calendar</h1>
-                <p>Keep track of your events and next steps.</p>
+                <p>View and add tasks. Editing and deleting tasks are not available yet.</p>
             </section>
 
             <section class="calendar-card" aria-label="Monthly calendar">
@@ -42,7 +42,7 @@
                         <button id="today_button" class="calendar-today-button" type="button" onclick="show_current_month()">Today</button>
                     </div>
                     <div class="calendar-toolbar-actions">
-                        <button id="connect_google_button" class="calendar-google-button" type="button" onclick="open_google_calendar_dialog()">Connect Google Calendar</button>
+                        <button id="connect_google_button" class="calendar-google-button" type="button" onclick="open_google_calendar_dialog()">Import Google Calendar</button>
                         <button id="toggle_add_button" class="calendar-add-button" type="button" aria-controls="add_date" aria-expanded="false" onclick="toggle_add()">Add task</button>
                     </div>
                 </div>
@@ -106,21 +106,21 @@
         <dialog id="google_calendar_dialog" class="calendar-dialog" aria-labelledby="google-calendar-title">
             <form id="google_calendar_form" class="calendar-dialog-content">
                 <button class="calendar-dialog-close" type="button" aria-label="Close dialog" onclick="close_google_calendar_dialog()">&times;</button>
-                <p class="eyebrow">CONNECT A CALENDAR</p>
-                <h2 id="google-calendar-title">Connect Google Calendar</h2>
+                <p class="eyebrow">IMPORT CALENDAR EVENTS</p>
+                <h2 id="google-calendar-title">Import events from Google Calendar</h2>
                 <p>In Google Calendar, open <strong>Settings → Integrate calendar</strong> and copy the <strong>Secret address in iCal format</strong>. Treat this link like a password: anyone with it can read your events.</p>
                 <label for="google_ics_url">Private iCal address</label>
                 <input id="google_ics_url" name="ics_url" type="url" maxlength="2048" autocomplete="off" placeholder="https://calendar.google.com/calendar/ical/…" required>
-                <p class="calendar-dialog-note">Event titles and times will be imported. Ollama assigns a category and importance. The private link is stored on this server for future syncs.</p>
+                <p class="calendar-dialog-note">This imports event titles and times once. Ollama assigns a category and importance. Rebuild stores the private link, but does not sync automatically. To update events, submit the link again.</p>
                 <p id="google_calendar_status" class="calendar-status" role="status" aria-live="polite"></p>
                 <div class="calendar-dialog-actions">
                     <button class="calendar-cancel-button" type="button" onclick="close_google_calendar_dialog()">Cancel</button>
-                    <button id="google_calendar_submit" type="submit">Connect &amp; sync</button>
+                    <button id="google_calendar_submit" type="submit">Import events</button>
                 </div>
             </form>
         </dialog>
         <script src="/static/feature-nav.js?v=20261029-english-ui"></script>
-        <script src="/kalender-static/kalender.js?v=20261029-english-ui"></script>
+        <script src="/kalender-static/kalender.js?v=20261029-import-wording"></script>
             <script src="/static/reminders.js?v=20261029-english-ui"></script>
     </body>
 </html>

@@ -337,6 +337,22 @@
 .recommendations-page .home-welcome > p:last-child { max-width: 800px; line-height: 1.55; }
 .recommendation-note { color: var(--muted); font-size: 13px; line-height: 1.55; }
 .recommendations-page .recommendation-panel .recommendation-note { color: #d3ded6; }
+.efficiency-reading { display: grid; gap: 3px; justify-items: end; margin: 18px 0 10px; }
+.efficiency-reading strong { font-size: 42px; line-height: 1; }
+.efficiency-reading span { color: var(--muted); font-size: 12px; text-align: right; }
+.efficiency-countdown-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid rgb(32 41 37 / 10%); }
+.efficiency-countdown-row span { color: var(--muted); font-size: 13px; }
+.efficiency-countdown-row strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+.efficiency-history-wrap { position: relative; min-height: 145px; margin-top: auto; }
+.efficiency-history-chart { display: block; width: 100%; height: 145px; overflow: visible; }
+.efficiency-chart-gridline { stroke: rgb(32 41 37 / 12%); stroke-dasharray: 3 5; }
+.efficiency-chart-threshold { stroke: var(--coral); stroke-dasharray: 5 4; }
+.efficiency-chart-label { fill: var(--muted); font-size: 11px; }
+.efficiency-chart-line { fill: none; stroke: var(--forest); stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; }
+.efficiency-chart-dot { fill: #91b69d; stroke: white; stroke-width: 2; }
+.efficiency-chart-dot-current { fill: var(--coral); }
+.efficiency-history-wrap > .recommendation-note { position: absolute; inset: 48px 0 auto; text-align: center; }
+.efficiency-chart-caption { display: block; margin-top: -4px; color: var(--muted); font-size: 11px; text-align: right; }
 .recommendation-activity-card {
   margin-top: 22px;
   padding: 17px 19px;
@@ -643,7 +659,8 @@
 
 .health-explainer:hover .health-tooltip,
 .health-explainer:focus .health-tooltip,
-.health-explainer:focus-within .health-tooltip {
+.health-explainer:focus-within .health-tooltip,
+.health-explainer[aria-expanded="true"] .health-tooltip {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);

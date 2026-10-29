@@ -6,7 +6,7 @@
         <meta name="theme-color" content="#FFFAED">
         <title>Activity | Rebuild</title>
         <link rel="stylesheet" href="/static/styles/main.css?v=20261029-feature-alignment">
-        <link rel="stylesheet" href="/static/styles/feature-pages.css?v=20261029-smaller-halos">
+        <link rel="stylesheet" href="/static/styles/feature-pages.css?v=20261029-score-help">
     </head>
     <body class="brain-page feature-page food-page">
         <header class="dashboard-topbar">
@@ -36,7 +36,17 @@
             <section class="food-data" aria-label="Your activity check-ins">
                 <section class="brain-counter-card food-counter-card" aria-labelledby="activity-counter-title">
                     <div class="brain-counter-value" id="activity-counter-value">--</div>
-                    <h1 id="activity-counter-title">Activity score today</h1>
+                    <h1 id="activity-counter-title">Activity points today
+                        <span class="health-explainer score-explainer" tabindex="0" role="group" aria-label="About activity points" aria-describedby="activity-score-tooltip">
+                            <span class="health-info-icon" aria-hidden="true">?</span>
+                            <span class="health-tooltip" id="activity-score-tooltip" role="tooltip">
+                                <strong>What does this number mean?</strong>
+                                <p>This is the change to your Rebuild points from today's activity check-ins. It is not a measure of how much you moved.</p>
+                                <p>Rebuild scores each activity using its catalog or model value, then converts that value into points. A value below the neutral score can subtract points; a higher value can add points. Activity duration also affects the contribution.</p>
+                                <small>A negative number does not mean you were too inactive. It means the activity's current score mapped to a negative point change.</small>
+                            </span>
+                        </span>
+                    </h1>
                     <svg class="brain-history-chart food-history-chart" viewBox="0 0 360 100" role="img" aria-label="Activity score history for the last seven days">
                         <path class="brain-chart-line" id="activity-chart-line" d=""></path>
                     </svg>

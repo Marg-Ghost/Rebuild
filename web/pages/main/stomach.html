@@ -6,7 +6,7 @@
         <meta name="theme-color" content="#FFFAED">
         <title>Nutrition | Rebuild</title>
         <link rel="stylesheet" href="/static/styles/main.css?v=20261029-feature-alignment">
-        <link rel="stylesheet" href="/static/styles/feature-pages.css?v=20261029-smaller-halos">
+        <link rel="stylesheet" href="/static/styles/feature-pages.css?v=20261029-score-help">
     </head>
     <body class="brain-page feature-page food-page">
         <header class="dashboard-topbar">
@@ -36,7 +36,17 @@
             <section class="food-data" aria-label="Your nutrition check-ins">
                 <section class="brain-counter-card food-counter-card" aria-labelledby="food-counter-title">
                     <div class="brain-counter-value" id="food-counter-value">--</div>
-                    <h1 id="food-counter-title">Nutrition score today</h1>
+                    <h1 id="food-counter-title">Nutrition points today
+                        <span class="health-explainer score-explainer" tabindex="0" role="group" aria-label="About nutrition points" aria-describedby="food-score-tooltip">
+                            <span class="health-info-icon" aria-hidden="true">?</span>
+                            <span class="health-tooltip" id="food-score-tooltip" role="tooltip">
+                                <strong>What does this number mean?</strong>
+                                <p>This is the change to your Rebuild points from today's food check-ins. It is not the amount of food you logged.</p>
+                                <p>Rebuild scores the foods you enter and converts their average score into points. A neutral result, or a score with no matching point value, can show as 0.</p>
+                                <small>So 0 does not mean that no food was entered. Check the entries below to see what was logged.</small>
+                            </span>
+                        </span>
+                    </h1>
                     <svg class="brain-history-chart food-history-chart" viewBox="0 0 360 100" role="img" aria-label="Food score history for the last seven days">
                         <path class="brain-chart-line" id="food-chart-line" d=""></path>
                     </svg>

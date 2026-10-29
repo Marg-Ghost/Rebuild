@@ -157,7 +157,7 @@ async function connect_google_calendar(event) {
         close_google_calendar_dialog();
         form.reset();
         await get_all_enties(selected_month, selected_year);
-        show_status(`${result.imported_count} Google events synced.`);
+        show_status(`${result.imported_count} Google events imported.`);
     } catch (error) {
         status.textContent = error instanceof Error
             ? error.message

@@ -51,7 +51,7 @@ The overview also displays an Opty recommendation. The server combines check-in,
 
 The displayed daily value is an internal calculation, not a medically validated health score. Each check-in starts at 1,000 points; sleep, food, and activity impacts change that value. The page displays the average of today's check-ins. Sleep is included in the first check-in but not in later ones, so additional check-ins can shift the average. Registration profile data does not currently affect this value. Its explanation shows the difference from the baseline and the previous saved day, not a medical classification.
 
-A separate daily workload and recovery score ranges from 0 to 100. It combines sleep (40%), self-reported stress (30%), and self-reported workload (30%). Stress and workload are each entered on a 0–10 scale; sleep comes from the sleep check-in. Scores of 80–100 are labelled low risk, 50–79 moderate risk, and 0–49 high burnout risk. This is a transparent guidance value, not a validated test or diagnosis. Inputs and results are stored per user in `efficiency_scores`.
+The Recommendations page estimates efficiency from sleep quality, available food and activity check-in scores, and a small stress bonus (0.3 points per stress point, up to 3). Missing food or activity scores are omitted. Workload is saved for activity suggestions but does not affect efficiency. Each saved estimate is logged in `efficiency_logs` and decays by a fixed 10 points per hour; the countdown estimates when it falls below 20%. This is a heuristic, not a measurement of actual focus or productivity. Existing `efficiency_scores` records are retained as legacy data and are not migrated into the new history.
 
 ## Check-ins
 
@@ -91,7 +91,7 @@ Activities are mapped to features through the reference catalog and scored by th
 
 The `/llm` page provides a chat with Opty. `llm-support/llm.js` keeps the conversation in the open browser page and sends new messages to `/api/llm/chat`.
 
-The server queues requests in `LlmRequestQueue`. User messages take priority over automatically generated system recommendations. For every request, `build_rag_context` combines the profile (including current problems and concerns), health and check-in data, recent workload values, today's calendar tasks and events, personal summaries, and relevant Chroma context before sending the system prompt to Ollama.
+The server queues requests in `LlmRequestQueue`. User messages take priority over automatically generated system recommendations. For every request, `build_rag_context` combines the profile (including current problems and concerns), health and check-in data, recent efficiency logs, today's calendar tasks and events, personal summaries, and relevant Chroma context before sending the system prompt to Ollama.
 
 The `GhostReferenceV1` Chroma collection is populated from the versioned general reference file; the old `Ghost` collection is no longer queried. Personal summaries are stored in `llm_problem_memory` with a user identifier and loaded only for that same user. Health, profile, and calendar data are also queried for the signed-in user.
 
@@ -105,7 +105,7 @@ For a faster response, set `OLLAMA_MODEL=llama3.2:1b` before startup; an explici
 
 `/kalender` displays a monthly task view. Browser logic is in `Kalender/web/kalender.js`; it loads a month through `/api/kalender/get` and saves tasks through `/api/kalender/add`. Tasks include a date, optional time, importance, type, and content.
 
-The API scopes tasks to the signed-in user. Tasks are stored in the calendar database and sorted by date and time. The interface can switch months, return to the current month, and open the add-task form. The current calendar endpoints do not support editing or deleting existing tasks.
+The API scopes tasks to the signed-in user. Tasks are stored in the calendar database and sorted by date and time. The interface can switch months and add tasks, but cannot edit or delete them. Google Calendar support imports events once from a private iCal link; it does not sync automatically or write changes back to Google.
 
 ## Current limitations
 
