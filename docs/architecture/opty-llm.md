@@ -16,6 +16,7 @@
 3. The queue sorts by priority and stable insertion order: user request (0), recommendation (1), summary (2), system request (3). One worker processes requests sequentially. Check-in scoring is calculated locally and does not wait on an unused LLM health or burnout assessment.
 4. For normal chats, `vectordb.build_rag_context` creates a system context from the profile, check-ins, health history, recent efficiency logs, today's calendar data, personal memories, and the most similar general Chroma references.
 5. The queue sends the context, conversation, and user message to the configured Ollama client. The model and server address come from `OLLAMA_HOST` and `OLLAMA_MODEL` or their selection functions.
+6. The chat endpoint returns the complete answer as JSON. In the browser, `llm-support/llm.js` deterministically parses a small Markdown subset into typed blocks and inline style segments, then creates DOM elements without interpreting model output as HTML. Lists, headings, quotes, bold, italic, and inline code are formatted; unmatched markers and ordinary quotation marks remain text.
 
 ## Data and storage boundaries
 

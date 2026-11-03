@@ -176,6 +176,59 @@
     white-space: pre-wrap;
 }
 
+.assistant-conversation .message > p,
+.assistant-conversation .message > h3,
+.assistant-conversation .message > h4,
+.assistant-conversation .message > blockquote,
+.assistant-conversation .message > ul,
+.assistant-conversation .message > ol {
+    margin: 0;
+}
+
+.assistant-conversation .message > p + p,
+.assistant-conversation .message > p + h3,
+.assistant-conversation .message > p + h4,
+.assistant-conversation .message > p + blockquote,
+.assistant-conversation .message > p + ul,
+.assistant-conversation .message > p + ol,
+.assistant-conversation .message > h3 + *,
+.assistant-conversation .message > h4 + *,
+.assistant-conversation .message > blockquote + *,
+.assistant-conversation .message > ul + *,
+.assistant-conversation .message > ol + * {
+    margin-top: 0.65em;
+}
+
+.assistant-conversation .message > h3,
+.assistant-conversation .message > h4 {
+    color: inherit;
+    font: inherit;
+    font-weight: 750;
+}
+
+.assistant-conversation .message > ul,
+.assistant-conversation .message > ol {
+    padding-left: 1.4em;
+}
+
+.assistant-conversation .message li + li {
+    margin-top: 0.3em;
+}
+
+.assistant-conversation .message blockquote {
+    padding-left: 0.8em;
+    border-left: 2px solid #b7c9bd;
+    color: #53645a;
+}
+
+.assistant-conversation .message code {
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: rgb(32 41 37 / 7%);
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.95em;
+}
+
 .assistant-conversation .message-user {
     justify-self: end;
     border-radius: 14px 5px 14px 14px;
