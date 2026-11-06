@@ -207,6 +207,11 @@
 }
 .browser-reminder-toggle:hover { border-color: var(--forest); }
 .browser-reminder-toggle:focus-visible { outline: 2px solid var(--forest); outline-offset: 2px; }
+.browser-reminder-toggle[aria-pressed="true"] {
+  border-color: var(--forest);
+  background: var(--forest);
+  color: #fff;
+}
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -985,6 +990,7 @@
   .user-chip > span:not(.user-avatar) { display: none; }
   .browser-reminder-toggle { width: 36px; padding: 7px; overflow: hidden; font-size: 0; }
   .browser-reminder-toggle::before { content: "◷"; font-size: 17px; }
+  .browser-reminder-toggle[aria-pressed="true"]::before { content: "✓"; }
   .dashboard-shell { width: min(100% - 32px, 560px); padding-top: 27px; }
   .home-shell { padding-top: 20px; }
   .home-components-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 20px; }

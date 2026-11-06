@@ -32,11 +32,17 @@
 
     function refreshButton() {
         const session = readSession();
-        const active = Boolean(session && session.expiresAt > Date.now());
-        button.textContent = active ? 'Erinnerungen aktiv ✓' : 'Enable reminders';
+        const active = Boolean(
+            session
+            && session.expiresAt > Date.now()
+            && 'Notification' in window
+            && Notification.permission === 'granted'
+        );
+        button.textContent = active ? 'Reminders on ✓' : 'Enable reminders';
         button.title = active
             ? 'Every two hours for up to ten hours. Click to turn off.'
             : 'Every two hours for up to ten hours.';
+        button.setAttribute('aria-label', active ? 'Reminders are on' : 'Enable reminders');
         button.setAttribute('aria-pressed', String(active));
     }
 
