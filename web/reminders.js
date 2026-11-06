@@ -11,7 +11,7 @@
     button.textContent = 'Enable reminders';
     button.setAttribute('aria-pressed', 'false');
     const status = document.createElement('span');
-    status.className = 'visually-hidden';
+    status.className = 'browser-reminder-status';
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
     userChip.append(button, status);
@@ -46,12 +46,23 @@
         button.setAttribute('aria-pressed', String(active));
     }
 
+    function setStatus(message) {
+        status.textContent = message;
+        status.hidden = !message;
+    }
+
     function checkReminder() {
         const session = readSession();
         if (!session) return refreshButton();
         const now = Date.now();
-        if (session.expiresAt <= now || !('Notification' in window) || Notification.permission !== 'granted') {
+        if (session.expiresAt <= now) {
             localStorage.removeItem(STORAGE_KEY);
+            setStatus('This reminder session has ended. Enable reminders to start another session.');
+            return refreshButton();
+        }
+        if (!('Notification' in window) || Notification.permission !== 'granted') {
+            localStorage.removeItem(STORAGE_KEY);
+            setStatus('Reminders stopped because browser notification permission is unavailable.');
             return refreshButton();
         }
         if (session.nextAt <= now) {
@@ -67,25 +78,33 @@
 
     button.addEventListener('click', async () => {
         if (!('Notification' in window) || !window.isSecureContext) {
-            status.textContent = 'Browser reminders are not available here.';
+            setStatus('Reminders require browser notifications and a secure page (HTTPS or localhost).');
             return;
         }
         if (readSession()?.expiresAt > Date.now()) {
             localStorage.removeItem(STORAGE_KEY);
-            status.textContent = 'Browser reminders are turned off.';
+            setStatus('Reminders are turned off.');
             refreshButton();
             return;
         }
-        const permission = Notification.permission === 'default'
-            ? await Notification.requestPermission()
-            : Notification.permission;
+        let permission;
+        try {
+            permission = Notification.permission === 'default'
+                ? await Notification.requestPermission()
+                : Notification.permission;
+        } catch (error) {
+            console.error('Could not request browser notification permission.', error);
+            setStatus('The browser could not request notification permission. Check your browser settings.');
+            return;
+        }
         if (permission !== 'granted') {
-            status.textContent = 'Allow notifications in your browser settings.';
+            setStatus('Reminders are off. Allow notifications for this site in your browser settings.');
+            refreshButton();
             return;
         }
         const now = Date.now();
         saveSession({ startedAt: now, nextAt: now + INTERVAL_MS, expiresAt: now + SESSION_MS });
-        status.textContent = 'Reminders will appear every two hours for up to ten hours.';
+        setStatus('Reminders are on. The first notification will appear in two hours.');
         refreshButton();
     });
 

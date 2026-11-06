@@ -212,6 +212,13 @@
   background: var(--forest);
   color: #fff;
 }
+.browser-reminder-status {
+  max-width: 240px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.browser-reminder-status[hidden] { display: none; }
 .visually-hidden {
   position: absolute;
   width: 1px;
