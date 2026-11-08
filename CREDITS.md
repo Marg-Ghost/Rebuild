@@ -1,0 +1,9 @@
+# Graphics Credits
+## Webpage icons
+
+1. **Brain:** Icon made by [Magnific](https://www.flaticon.com/authors/magnific) from [www.flaticon.com](https://www.flaticon.com/): [Brain](https://www.flaticon.com/free-icon/brain_11604100?term=brain&page=1&position=17&origin=style&related_id=11604100)
+2. **Stomach:** Icon made by [Nur syifa fauziah](https://www.flaticon.com/authors/nur-syifa-fauziah) from [www.flaticon.com](https://www.flaticon.com/): [Stomach](https://www.flaticon.com/free-icon/stomach_15598688?term=stomach&page=1&position=2&origin=search&related_id=15598688)
+3. **Muscle:** Icon made by [pojok d](https://www.flaticon.com/authors/pojok-d) from [www.flaticon.com](https://www.flaticon.com/): [Muscle](https://www.flaticon.com/free-icon/muscle_8855320?term=muscle&related_id=8855320)
+4. **Sneaker:** Icon made by [Mayor Icons](https://www.flaticon.com/authors/mayor-icons) from [www.flaticon.com](https://www.flaticon.com/): [Sneaker](https://www.flaticon.com/free-icon/sneaker_6829643?term=sneakers+shoes&page=2&position=62&origin=search&related_id=6829643)
+5. **Body-Human:** Icon made by [Magnific](https://www.flaticon.com/authors/magnific) from [www.flaticon.com](https://www.flaticon.com/): [Standing human body silhouette](https://www.flaticon.com/free-icon/standing-human-body-silhouette_30473?term=body&page=1&position=2&origin=search&related_id=30473)
+6. **Health:** “Forest tree nature garden” icon by [Eibidi Media](https://icon-icons.com/authors/1300-eibidi-media), via [Icon-Icons](https://icon-icons.com/), [source](https://icon-icons.com/icon/forest-tree-nature-garden-plant-environment-ecology/275323), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Modified for this project: recolored green, changed the borders to white, and added the subtitle “Health.”
