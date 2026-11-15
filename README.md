@@ -1,5 +1,5 @@
 # Rebuild
-<img width="500" height="500" alt="logo" src="https://github.com/user-attachments/assets/023a272b-7561-4897-ab5d-bcb234fc5766" />
+<img width="200" height="200" alt="logo" src="https://github.com/user-attachments/assets/023a272b-7561-4897-ab5d-bcb234fc5766" />
 
 Rebuild is a personal wellness tracking app for sleep, nutrition, activity, daily check-ins, and calendar planning. It includes Opty, an AI assistant powered by Ollama.
 
